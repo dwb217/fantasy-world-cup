@@ -428,6 +428,213 @@
     return root;
   }
 
+  /* ---------- projections ---------- */
+
+  // Palette (mirrors styles.css custom props; SVG needs literal colors).
+  const PC = { accent: "#2f81f7", accent2: "#f7b32f", green: "#2ea043", muted: "#8b97a6", border: "#2a3340", panel2: "#1c232c" };
+  const pctTxt = (p) => (p >= 0.1 ? Math.round(p * 100) : (p * 100).toFixed(p >= 0.01 ? 0 : 1)) + "%";
+  const scale = (lo, hi, x0, x1) => (v) => x0 + ((v - lo) / (hi - lo || 1)) * (x1 - x0);
+
+  // Horizontal box-and-whisker (p5–p95 whisker, p25–p75 box, median, mean) over a shared domain.
+  function boxPlotSVG(p, mean, dom) {
+    const W = 600, H = 30, pad = 4, mid = H / 2;
+    const sx = scale(dom.lo, dom.hi, pad, W - pad);
+    const x5 = sx(p.p5), x25 = sx(p.p25), x50 = sx(p.p50), x75 = sx(p.p75), x95 = sx(p.p95), xm = sx(mean);
+    return `<svg class="chart" viewBox="0 0 ${W} ${H}" preserveAspectRatio="none" role="img">
+      <line x1="${x5}" y1="${mid}" x2="${x95}" y2="${mid}" stroke="${PC.muted}" stroke-width="2"/>
+      <line x1="${x5}" y1="${mid-6}" x2="${x5}" y2="${mid+6}" stroke="${PC.muted}" stroke-width="2"/>
+      <line x1="${x95}" y1="${mid-6}" x2="${x95}" y2="${mid+6}" stroke="${PC.muted}" stroke-width="2"/>
+      <rect x="${x25}" y="${mid-9}" width="${Math.max(1,x75-x25)}" height="18" fill="${PC.accent}" fill-opacity="0.35" stroke="${PC.accent}" stroke-width="1.5"/>
+      <line x1="${x50}" y1="${mid-9}" x2="${x50}" y2="${mid+9}" stroke="${PC.accent}" stroke-width="3"/>
+      <line x1="${xm}" y1="${mid-9}" x2="${xm}" y2="${mid+9}" stroke="${PC.accent2}" stroke-width="2" stroke-dasharray="2 2"/>
+    </svg>`;
+  }
+
+  // Vertical histogram from {start,width,probs}; marks median & mean ticks on the axis.
+  function histSVG(h, median, mean, unitLabel) {
+    const W = 600, H = 130, padL = 4, padR = 4, padB = 16, padT = 6;
+    const n = h.probs.length;
+    const maxP = Math.max(...h.probs) || 1;
+    const bw = (W - padL - padR) / n;
+    const sy = (p) => padT + (1 - p / maxP) * (H - padT - padB);
+    const xOfVal = (v) => padL + ((v - h.start) / (h.width * n)) * (W - padL - padR);
+    let bars = "";
+    for (let i = 0; i < n; i++) {
+      const x = padL + i * bw, hgt = (H - padT - padB) - (sy(h.probs[i]) - padT);
+      bars += `<rect x="${x + 0.5}" y="${sy(h.probs[i])}" width="${Math.max(0.5, bw - 1)}" height="${Math.max(0, hgt)}" fill="${PC.accent}" fill-opacity="0.65"/>`;
+    }
+    const axisY = H - padB;
+    const tick = (v, color, dash) => `<line x1="${xOfVal(v)}" y1="${padT}" x2="${xOfVal(v)}" y2="${axisY}" stroke="${color}" stroke-width="1.5" ${dash ? 'stroke-dasharray="3 3"' : ""}/>`;
+    // a few x labels
+    const labels = [0, Math.floor(n / 2), n - 1].map((i) => {
+      const v = h.start + i * h.width, x = padL + (i + 0.5) * bw;
+      return `<text x="${x}" y="${H - 4}" fill="${PC.muted}" font-size="10" text-anchor="middle">${v}</text>`;
+    }).join("");
+    return `<svg class="chart" viewBox="0 0 ${W} ${H}" preserveAspectRatio="none" role="img">
+      <line x1="${padL}" y1="${axisY}" x2="${W - padR}" y2="${axisY}" stroke="${PC.border}"/>
+      ${bars}${tick(median, PC.accent, false)}${tick(mean, PC.accent2, true)}${labels}
+    </svg>`;
+  }
+
+  // Expected cumulative points by stage: p25–p75 band + mean line.
+  function cumulativeSVG(cum, dom) {
+    const W = 600, H = 150, padL = 4, padR = 4, padT = 8, padB = 22;
+    const n = cum.length;
+    const sx = (i) => padL + (n === 1 ? 0 : (i / (n - 1)) * (W - padL - padR));
+    const sy = scale(dom.lo, dom.hi, H - padB, padT);
+    const up = cum.map((c, i) => `${sx(i)},${sy(c.p75)}`).join(" ");
+    const dn = cum.map((c, i) => `${sx(i)},${sy(c.p25)}`).reverse().join(" ");
+    const meanLine = cum.map((c, i) => `${sx(i)},${sy(c.mean)}`).join(" ");
+    const dots = cum.map((c, i) => `<line x1="${sx(i)}" y1="${sy(c.mean)-3}" x2="${sx(i)}" y2="${sy(c.mean)+3}" stroke="${PC.accent}" stroke-width="3"/>`).join("");
+    const labels = cum.map((c, i) => `<text x="${sx(i)}" y="${H - 6}" fill="${PC.muted}" font-size="10" text-anchor="${i===0?'start':i===n-1?'end':'middle'}">${esc(c.stage)}</text>`).join("");
+    return `<svg class="chart" viewBox="0 0 ${W} ${H}" preserveAspectRatio="none" role="img">
+      <polygon points="${up} ${dn}" fill="${PC.accent}" fill-opacity="0.18"/>
+      <polyline points="${meanLine}" fill="none" stroke="${PC.accent}" stroke-width="2.5"/>
+      ${dots}${labels}
+    </svg>`;
+  }
+
+  // Tiny Poisson goal-distribution sparkline (P(0),P(1),...,P(4),P(5+)).
+  function poissonSpark(dist) {
+    const W = 78, H = 24, n = dist.length, bw = W / n, maxP = Math.max(...dist) || 1;
+    let bars = "";
+    for (let i = 0; i < n; i++) {
+      const hgt = (dist[i] / maxP) * (H - 2);
+      bars += `<rect x="${i * bw + 0.5}" y="${H - hgt}" width="${bw - 1}" height="${hgt}" fill="${PC.green}" fill-opacity="0.8"/>`;
+    }
+    return `<svg class="spark" viewBox="0 0 ${W} ${H}" role="img" aria-label="goal distribution">${bars}</svg>`;
+  }
+
+  function renderProjections() {
+    const root = el("div", "proj");
+    const P = window.PROJECTIONS;
+    if (!P || !P.managers) {
+      root.appendChild(el("p", "muted",
+        "Projections haven't been generated yet. Run <code>node scripts/build_projections.js</code> to create <code>data/projections.js</code>."));
+      return root;
+    }
+    const mgrs = P.managers;
+
+    const intro = el("div", "proj-intro");
+    intro.innerHTML =
+      `<p class="muted">Pre-tournament Monte-Carlo projection over <b>${P.meta.nSims.toLocaleString()}</b> simulated World Cups. ` +
+      `${esc(P.meta.format)}. Every simulated match is scored with the same rules as the live standings.</p>`;
+    root.appendChild(intro);
+
+    // ---- shared domain for points charts ----
+    const lo = Math.floor(Math.min(...mgrs.map((m) => m.pct.p5)) / 10) * 10;
+    const hi = Math.ceil(Math.max(...mgrs.map((m) => m.pct.p95)) / 10) * 10;
+    const dom = { lo: Math.max(0, lo - 5), hi: hi + 5 };
+
+    // ===== Section 1: projected standings with uncertainty =====
+    root.appendChild(el("h3", "proj-h", "Projected standings"));
+    root.appendChild(el("p", "proj-sub muted",
+      `Box = middle 50% of outcomes (25th–75th percentile); whiskers span the 5th–95th. ` +
+      `<span class="lg-median">┃</span> median · <span class="lg-mean">┋</span> mean. Range: ${dom.lo}–${dom.hi} pts.`));
+    const bp = el("div", "boxplots");
+    mgrs.forEach((m, i) => {
+      const row = el("div", "bp-row");
+      row.innerHTML =
+        `<div class="bp-rank">${i + 1}</div>` +
+        `<div class="bp-name">${esc(m.name)}<span class="muted">${m.teamCount} teams</span></div>` +
+        `<div class="bp-chart">${boxPlotSVG(m.pct, m.mean, dom)}</div>` +
+        `<div class="bp-val">${m.mean}<small>±${m.std}</small></div>`;
+      bp.appendChild(row);
+    });
+    root.appendChild(bp);
+
+    // ===== Section 2: finishing-position heatmap =====
+    root.appendChild(el("h3", "proj-h", "Probability of finishing in each position"));
+    const heat = el("div", "heat-wrap");
+    const ht = el("table", "heat");
+    let head = `<thead><tr><th>Manager</th>`;
+    for (let i = 0; i < mgrs.length; i++) head += `<th class="num">${i + 1}${["st","nd","rd"][i] || "th"}</th>`;
+    head += `</tr></thead>`;
+    let body = "<tbody>";
+    mgrs.forEach((m) => {
+      body += `<tr><td class="heat-name">${esc(m.name)}</td>`;
+      m.finish.forEach((p) => {
+        const op = Math.min(1, 0.08 + p * 1.4);
+        const strong = p >= 0.18;
+        body += `<td class="num heat-cell" style="background:rgba(47,129,247,${op.toFixed(3)})">` +
+          `<span class="${strong ? "" : "muted"}">${p >= 0.005 ? pctTxt(p) : "·"}</span></td>`;
+      });
+      body += `</tr>`;
+    });
+    body += "</tbody>";
+    ht.innerHTML = head + body;
+    heat.appendChild(ht);
+    root.appendChild(heat);
+
+    // ===== Section 3: per-manager detail cards =====
+    root.appendChild(el("h3", "proj-h", "Manager detail"));
+    root.appendChild(el("p", "proj-sub muted", "Tap a manager for their points distribution, how points accumulate through the rounds, and a team-by-team breakdown."));
+    const teamsByOwner = {};
+    P.teams.forEach((t) => { (teamsByOwner[t.owner] = teamsByOwner[t.owner] || []).push(t); });
+
+    mgrs.forEach((m, i) => {
+      const card = el("div", "standing-card proj-card");
+      const head2 = el("button", "standing-head");
+      head2.setAttribute("aria-expanded", "false");
+      head2.innerHTML = `
+        <span class="rank">${i + 1}</span>
+        <span class="name">${esc(m.name)}</span>
+        <span class="sub muted">1st ${pctTxt(m.finish[0])} · top-2 ${pctTxt(m.finish[0] + m.finish[1])}</span>
+        <span class="pts">${m.mean}<small>pts</small></span>
+        <span class="chev">▾</span>`;
+      const body2 = el("div", "standing-body");
+
+      // distribution + cumulative side by side
+      const charts = el("div", "proj-charts");
+      const c1 = el("div", "proj-chart-box");
+      c1.innerHTML = `<div class="chart-title">Points distribution <span class="muted">(P5 ${m.pct.p5} · median ${m.pct.p50} · P95 ${m.pct.p95})</span></div>` +
+        histSVG(m.hist, m.pct.p50, m.mean);
+      const c2 = el("div", "proj-chart-box");
+      c2.innerHTML = `<div class="chart-title">Expected points by stage <span class="muted">(mean + 25–75% band)</span></div>` +
+        cumulativeSVG(m.cumulative, dom);
+      charts.appendChild(c1); charts.appendChild(c2);
+      body2.appendChild(charts);
+
+      // team table
+      const tbl = el("table", "mini proj-teams");
+      tbl.innerHTML = `<thead><tr>
+        <th>Team</th><th class="num">Proj</th><th>Goals/game</th>
+        <th class="num">Adv</th><th class="num">R16</th><th class="num">QF</th><th class="num">SF</th><th class="num">Win</th>
+      </tr></thead>`;
+      const tb = el("tbody");
+      (teamsByOwner[m.name] || []).slice().sort((a, b) => b.mean - a.mean).forEach((t) => {
+        const tr = el("tr");
+        tr.innerHTML =
+          `<td>${esc(t.team)}</td>` +
+          `<td class="num"><b>${t.mean}</b></td>` +
+          `<td class="spark-cell">${poissonSpark(t.goalDist)}<span class="muted lam">${t.lambda}</span></td>` +
+          `<td class="num">${pctTxt(t.prog.advance)}</td>` +
+          `<td class="num">${pctTxt(t.prog.r16)}</td>` +
+          `<td class="num">${pctTxt(t.prog.qf)}</td>` +
+          `<td class="num">${pctTxt(t.prog.sf)}</td>` +
+          `<td class="num">${pctTxt(t.prog.champion)}</td>`;
+        tb.appendChild(tr);
+      });
+      tbl.appendChild(tb);
+      body2.appendChild(tbl);
+
+      head2.addEventListener("click", () => {
+        const open = card.classList.toggle("open");
+        head2.setAttribute("aria-expanded", open ? "true" : "false");
+      });
+      card.appendChild(head2); card.appendChild(body2);
+      root.appendChild(card);
+    });
+
+    // model footnote
+    const foot = el("p", "muted proj-foot");
+    foot.innerHTML = `<b>Model.</b> ${esc(P.meta.note)} ` +
+      `Goals/game shows each team's Poisson goal distribution — bars are P(0),P(1),P(2),P(3),P(4),P(5+); the number is the mean (λ). ` +
+      `Generated ${esc((P.meta.generatedAt || "").slice(0, 10))}. Re-run with <code>node scripts/build_projections.js</code>.`;
+    root.appendChild(foot);
+    return root;
+  }
+
   /* ---------- auto-update countdown ---------- */
 
   function nextRun(now) {
@@ -475,8 +682,9 @@
   /* ---------- tabs ---------- */
 
   const TABS = {
-    standings: { label: "Standings", render: renderStandings },
-    teams:     { label: "Teams", render: renderTeams },
+    standings:   { label: "Standings", render: renderStandings },
+    projections: { label: "Projections", render: renderProjections },
+    teams:       { label: "Teams", render: renderTeams },
     results:   { label: "Results", render: renderResults },
     points:    { label: "Game Points", render: renderGamePoints },
     rules:     { label: "Rules", render: renderRules },
