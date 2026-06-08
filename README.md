@@ -1,7 +1,8 @@
 # 🏆 Fantasy World Cup
 
-A self-contained website for a draft-style fantasy World Cup league. Standings
-recompute automatically from match results — no server, no database, no build step.
+A website for a draft-style fantasy World Cup league. Results are pulled from a
+sports API every 4 hours, standings recompute automatically, and trusted editors
+can correct results right in the app. No database, no build step.
 
 ## How it works
 
@@ -33,88 +34,80 @@ score at the end of extra time.
 
 ## Viewing the site
 
-Just open `index.html` in a browser (double-click works). Tabs:
+Tabs:
 
 - **Standings** — managers ranked by total points; click a manager to expand the per-team breakdown.
 - **Teams** — every team, its owner, and its points.
-- **Matches** — log of all results with points awarded.
-- **Add Result** — enter scores in the browser.
+- **Results** — the full match list, with an **Edit** mode for corrections (see below).
 - **Rules** — the scoring reference.
 
-## Getting results in
+The header shows a live **countdown to the next automatic update** and when the
+results last changed.
 
-There are two ways results reach the site. You can use either or both.
+## How results get in
 
-### Automatic — pull from TheSportsDB every 4 hours (recommended)
+### Automatic — pull from TheSportsDB every 4 hours
 
 A script fetches the 2026 World Cup results from [TheSportsDB](https://www.thesportsdb.com)
-and regenerates `data/matches.js`. A GitHub Actions workflow runs it on a schedule.
+and regenerates `data/matches.js`.
 
-- Run it yourself any time: `node scripts/fetch_scores.js` (Node 18+; no npm install needed).
-- Scheduled: `.github/workflows/update-scores.yml` runs every 4 hours, commits any
-  changed scores, and — if the repo serves the site via GitHub Pages — auto-publishes.
-  You can also trigger it manually from the repo's **Actions** tab.
-- The free TheSportsDB key (`123`) works out of the box. To use a premium key, add a
-  repository secret named `SPORTSDB_KEY`.
+- `.github/workflows/update-scores.yml` runs `scripts/fetch_scores.js` every 4 hours and
+  commits any changed scores. You can also trigger it manually from the repo's **Actions** tab.
+- Run it yourself any time: `node scripts/fetch_scores.js` (Node 18+, no npm install needed).
+- The free TheSportsDB key (`123`) works out of the box. For a premium key, add a repository
+  secret named `SPORTSDB_KEY`.
 
 **Two things the API can't give us, and how they're handled:**
 
 1. **Team names** that differ from the draft (e.g. "Czech Republic" → "Czechia") are
-   translated in `scripts/team_aliases.js`. If a new mismatch ever appears, the script
-   prints a warning telling you exactly what to add.
-2. **Penalty-shootout winners.** The API provides the after-extra-time score and a status
-   (so the +1 extra-time and +1 penalties bonuses are detected automatically) but **not
-   who won the shootout.** When a knockout match ends level, the script flags it with its
-   `eventId`. Resolve it in `data/overrides.js`:
-   ```js
-   byEventId: {
-     "1665716": { shootoutWinner: "Argentina" },
-   }
-   ```
-   Overrides also let you correct a wrong score or force the extra-time/penalty flags.
-   **`data/overrides.js` is never overwritten** — your corrections persist across refreshes.
+   translated in `scripts/team_aliases.js`; a new mismatch prints a warning telling you what to add.
+2. **Penalty-shootout winners.** The API gives the after-extra-time score and a status code
+   (so the +1 extra-time / +1 penalties bonuses are detected automatically) but **not who won
+   the shootout.** A level knockout match is flagged with its `eventId` for you to resolve —
+   easiest in the **Results → Edit** screen, or by hand in `data/overrides.js`.
 
-### Manual — enter a result by hand
+### Editing results in the web app
 
-- **In the browser:** go to the **Add Result** tab, enter the match (it updates instantly),
-  then click **⬇ Download matches.js** and replace the file. Manual entries are tagged
-  `source:"manual"` and are **preserved** when the automatic importer runs.
-- **Or** add a full match to `manualMatches` in `data/overrides.js` (handy for anything
-  the API is missing entirely).
+The **Results** tab has an **✎ Edit** mode. Anyone with the **edit password** can fix a
+score, set a shootout winner, or toggle the extra-time / penalty flags, then **Save to repo**.
 
-> The importer treats `data/matches.js` as generated output: it refreshes all
-> TheSportsDB matches, keeps your manual ones, and applies your overrides.
+Saving POSTs to the `/api/save-result` serverless function, which commits the change to
+`data/overrides.js` in the GitHub repo (gated by the password, using a server-side token).
+Because edits live in `data/overrides.js` — which the importer applies on top of the API data
+on every run — **your edits survive the automatic refreshes** instead of being overwritten.
 
-## Publishing (free)
+## Deploying on Vercel
 
-Any static host works. Easiest options:
+1. Push this repo to GitHub (already done if you're reading this there).
+2. In Vercel, **Add New Project → import the repo.** It's a zero-config static site with a
+   serverless function in `api/`; no build settings needed.
+3. Add three **Environment Variables** (Project → Settings → Environment Variables — see
+   `.env.example`):
+   - `GH_TOKEN` — a fine-grained GitHub PAT with **Contents: read & write** on this repo
+     ([create one](https://github.com/settings/tokens?type=beta))
+   - `GH_REPO` — `dwb217/fantasy-world-cup`
+   - `EDIT_PASSWORD` — the shared password editors will type to save
+4. Redeploy. Every push (from the 4-hour Action *or* from a web-app edit) auto-deploys, so
+   the live site stays current.
 
-- **GitHub Pages:** push this folder to a repo, enable Pages on the `main` branch.
-- **Netlify / Vercel / Cloudflare Pages:** drag-and-drop the folder, or connect the repo.
-
-Because everything is static, hosting is free and the standings update for
-everyone whenever you publish a new `data/matches.js`.
+The GitHub Action handles the 4-hour score pulls (GitHub's cron is free and generous); the
+Vercel function handles on-demand edits. Both just commit to the repo, which stays the single
+source of truth.
 
 ## Files
 
 ```
 index.html                       the page
 styles.css                       styling
-app.js                           scoring engine + UI
+app.js                           scoring engine + UI (standings, editable results, countdown)
 data/draft.js                    who drafted which teams
 data/rules.js                    scoring rules (labels + points)
-data/matches.js                  match results that drive the site (generated + manual)
-data/overrides.js                hand-maintained corrections (shootout winners, etc.)
+data/matches.js                  match results from the API (generated; has a "last updated" stamp)
+data/overrides.js                corrections layered on top (shootout winners, fixes, manual games)
+api/save-result.js               serverless function: commits edits to data/overrides.js
 scripts/fetch_scores.js          TheSportsDB importer
 scripts/config.js                league id, season, rounds, status codes
 scripts/team_aliases.js          API team name -> draft name map
 .github/workflows/update-scores.yml   runs the importer every 4 hours
+.env.example                     the env vars the serverless function needs
 ```
-
-## Note on the 4-hour automation
-
-The scheduled refresh needs an always-on runner, which is what GitHub Actions
-provides for free — so to get true hands-off updates, the project should live in a
-GitHub repo (serving the site via GitHub Pages is the simplest pairing). If you'd
-rather not use GitHub, you can run `node scripts/fetch_scores.js` on any machine on
-a schedule (e.g. macOS `launchd`/`cron`), but it only updates while that machine is on.
