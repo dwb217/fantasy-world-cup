@@ -52,7 +52,14 @@ const DROP = {
 };
 for (const t in DROP) RATING[t] += DROP[t];
 
-const MU = 1.35;   // baseline goals per team per game
+// MU sets goals/game (~2.8 at 1.2, matching real WC ~2.5–2.9). K sets how
+// strongly the rating gap skews results. Note a known tension: the high K that
+// keeps minnows realistic (few upset wins) also pushes the group draw rate a bit
+// low (~20% vs a real ~25–30%), since pure-strength pots manufacture lopsided
+// games. We favor realistic minnows over realistic draws; one global K can't do
+// both. The projected standings ORDER is stable across MU, so this only nudges
+// absolute point totals, not the ranking.
+const MU = 1.2;    // baseline goals per team per game
 const K  = 0.9;    // rating sensitivity (higher = fewer upsets, wider spread)
 const ET = 0.33;   // extra-time goal-rate multiplier
 
