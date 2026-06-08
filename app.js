@@ -378,6 +378,56 @@
     return root;
   }
 
+  /* ---------- per-game fantasy points ---------- */
+
+  function koSuffix(m) {
+    if (m.stage !== "knockout") return "";
+    if (m.penalties && m.shootoutWinner) return ` · ${esc(m.shootoutWinner)} won on penalties`;
+    if (m.extraTime) return " · after extra time";
+    return "";
+  }
+
+  function gamePointsCard(m) {
+    const card = el("div", "gp-card");
+    const ko = m.stage === "knockout";
+    const head = el("div", "gp-head");
+    head.innerHTML = `
+      <span class="stage ${m.stage}">${esc(m.roundLabel || (ko ? "Knockout" : "Group"))}</span>
+      <span class="gp-score">${esc(m.teamA)} <b>${m.scoreA}–${m.scoreB}</b> ${esc(m.teamB)}<span class="muted">${koSuffix(m)}</span></span>
+      <span class="muted gp-date">${fmtDate(m.date)}</span>`;
+    card.appendChild(head);
+
+    [m.teamA, m.teamB].forEach((team) => {
+      const owner = TEAM_OWNER[team];
+      const res = scoreTeamInMatch(team, m);
+      const row = el("div", "gp-row");
+      const chips = res.items.length
+        ? res.items.map((i) => `<span class="gp-chip">${esc(i.label)} <b>+${i.points}</b></span>`).join("")
+        : `<span class="muted">no points</span>`;
+      row.innerHTML = `
+        <div class="gp-owner"><span class="gp-mgr">${esc(owner || "—")}</span><span class="muted">via ${esc(team)}</span></div>
+        <div class="gp-chips">${chips}</div>
+        <div class="gp-total"><span class="badge">+${res.total}</span></div>`;
+      card.appendChild(row);
+    });
+    return card;
+  }
+
+  function renderGamePoints() {
+    const root = el("div");
+    if (!MATCHES.length) {
+      root.appendChild(el("p", "muted",
+        "No games played yet — once results come in, this shows the fantasy points each manager earns from every game."));
+      return root;
+    }
+    root.appendChild(el("p", "muted",
+        "Fantasy points each manager earned from every game, with the bonus breakdown. Only the managers who own a team in the match score from it."));
+    const sorted = MATCHES.slice().sort((a, b) =>
+      String(b.date).localeCompare(String(a.date)) || (b.round || 0) - (a.round || 0) || (b.id || 0) - (a.id || 0));
+    sorted.forEach((m) => root.appendChild(gamePointsCard(m)));
+    return root;
+  }
+
   /* ---------- auto-update countdown ---------- */
 
   function nextRun(now) {
@@ -428,6 +478,7 @@
     standings: { label: "Standings", render: renderStandings },
     teams:     { label: "Teams", render: renderTeams },
     results:   { label: "Results", render: renderResults },
+    points:    { label: "Game Points", render: renderGamePoints },
     rules:     { label: "Rules", render: renderRules },
   };
   function showTab(key) {
