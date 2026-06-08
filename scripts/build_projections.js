@@ -44,8 +44,16 @@ const RATING = {
   "New Zealand":1620, Curacao:1580, Haiti:1560,
 };
 
+// Floor calibration: push the genuine minnows down toward realistic Elo so the
+// weakest teams don't bank ~6 pts from upset wins they'd almost never get.
+const DROP = {
+  Haiti:-110, Curacao:-110, "New Zealand":-80, "Cape Verde":-70, Jordan:-60,
+  Iraq:-50, Uzbekistan:-40, "Saudi Arabia":-30, Qatar:-30, Panama:-30,
+};
+for (const t in DROP) RATING[t] += DROP[t];
+
 const MU = 1.35;   // baseline goals per team per game
-const K  = 0.55;   // rating sensitivity
+const K  = 0.9;    // rating sensitivity (higher = fewer upsets, wider spread)
 const ET = 0.33;   // extra-time goal-rate multiplier
 
 const TEAMS = [].concat(...Object.values(DRAFT));
