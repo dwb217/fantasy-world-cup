@@ -214,7 +214,9 @@
     root.appendChild(bar);
 
     if (!MATCHES.length) {
-      root.appendChild(el("p", "muted", "No results yet. Matches will appear here once games are played."));
+      root.appendChild(el("p", "muted",
+        "No results yet — the first games are June 11, 2026. Matches appear here automatically " +
+        "(pulled from the API every 4 hours), and you'll be able to edit scores and set shootout winners once they're played."));
       wireEditToggle(root);
       return root;
     }
