@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Fantasy World Cup</title>
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <header class="site-header">
+    <div class="wrap">
+      <h1>🏆 Fantasy World Cup</h1>
+      <p class="tagline">Draft league · standings update automatically from match results</p>
+    </div>
+  </header>
+
+  <nav class="tabs-bar"><div class="wrap" id="tabs"></div></nav>
+
+  <main class="wrap">
+    <div id="panel"></div>
+  </main>
+
+  <footer class="site-footer">
+    <div class="wrap muted">
+      Results live in <code>data/matches.js</code> · standings recompute on every load.
+    </div>
+  </footer>
+
+  <!-- data first, then the app -->
+  <script src="data/draft.js"></script>
+  <script src="data/rules.js"></script>
+  <script src="data/matches.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>

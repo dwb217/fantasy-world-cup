@@ -1,0 +1,10 @@
+Scoring Rules
+
+6 points for a win
+2 points for a draw
+1 point for a clean sheet
+1 point for 2 or more goals
+1 point for 4 or more goals
+1 point for winning by more 2 or more goals 
+1 point for getting to overtime in knockout matches
+1 point for getting to penalty kicks in knockout matches. 
