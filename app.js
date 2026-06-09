@@ -450,46 +450,59 @@
     </svg>`;
   }
 
-  // Vertical histogram from {start,width,probs}; marks median & mean ticks on the axis.
-  function histSVG(h, median, mean, unitLabel) {
-    const W = 600, H = 130, padL = 4, padR = 4, padB = 16, padT = 6;
+  // Vertical histogram from {start,width,probs}; marks median & mean ticks, with a
+  // local y-axis (probability) so the bars fill the plot.
+  function histSVG(h, median, mean) {
+    const W = 600, H = 380, padL = 40, padR = 10, padB = 30, padT = 16;
     const n = h.probs.length;
     const maxP = Math.max(...h.probs) || 1;
     const bw = (W - padL - padR) / n;
     const sy = (p) => padT + (1 - p / maxP) * (H - padT - padB);
     const xOfVal = (v) => padL + ((v - h.start) / (h.width * n)) * (W - padL - padR);
+    const axisY = H - padB;
     let bars = "";
     for (let i = 0; i < n; i++) {
-      const x = padL + i * bw, hgt = (H - padT - padB) - (sy(h.probs[i]) - padT);
-      bars += `<rect x="${x + 0.5}" y="${sy(h.probs[i])}" width="${Math.max(0.5, bw - 1)}" height="${Math.max(0, hgt)}" fill="${PC.accent}" fill-opacity="0.65"/>`;
+      const x = padL + i * bw, hgt = axisY - sy(h.probs[i]);
+      bars += `<rect x="${x + 0.5}" y="${sy(h.probs[i])}" width="${Math.max(0.5, bw - 1)}" height="${Math.max(0, hgt)}" fill="${PC.accent}" fill-opacity="0.7"/>`;
     }
-    const axisY = H - padB;
-    const tick = (v, color, dash) => `<line x1="${xOfVal(v)}" y1="${padT}" x2="${xOfVal(v)}" y2="${axisY}" stroke="${color}" stroke-width="1.5" ${dash ? 'stroke-dasharray="3 3"' : ""}/>`;
-    // a few x labels
+    // y gridlines/labels (probability %)
+    const grid = [0, maxP / 2, maxP].map((p) =>
+      `<line x1="${padL}" y1="${sy(p)}" x2="${W - padR}" y2="${sy(p)}" stroke="${PC.border}" stroke-width="1" stroke-dasharray="2 3"/>` +
+      `<text x="${padL - 6}" y="${sy(p) + 4}" fill="${PC.muted}" font-size="13" text-anchor="end">${(p * 100).toFixed(0)}%</text>`).join("");
+    const tick = (v, color, dash) => `<line x1="${xOfVal(v)}" y1="${padT}" x2="${xOfVal(v)}" y2="${axisY}" stroke="${color}" stroke-width="2" ${dash ? 'stroke-dasharray="4 3"' : ""}/>`;
     const labels = [0, Math.floor(n / 2), n - 1].map((i) => {
       const v = h.start + i * h.width, x = padL + (i + 0.5) * bw;
-      return `<text x="${x}" y="${H - 4}" fill="${PC.muted}" font-size="10" text-anchor="middle">${v}</text>`;
+      return `<text x="${x}" y="${H - 8}" fill="${PC.muted}" font-size="13" text-anchor="middle">${v}</text>`;
     }).join("");
-    return `<svg class="chart" viewBox="0 0 ${W} ${H}" preserveAspectRatio="none" role="img">
-      <line x1="${padL}" y1="${axisY}" x2="${W - padR}" y2="${axisY}" stroke="${PC.border}"/>
-      ${bars}${tick(median, PC.accent, false)}${tick(mean, PC.accent2, true)}${labels}
+    return `<svg class="chart tall" viewBox="0 0 ${W} ${H}" role="img">
+      ${grid}${bars}${tick(median, PC.accent, false)}${tick(mean, PC.accent2, true)}
+      <line x1="${padL}" y1="${axisY}" x2="${W - padR}" y2="${axisY}" stroke="${PC.border}"/>${labels}
     </svg>`;
   }
 
-  // Expected cumulative points by stage: p25–p75 band + mean line.
-  function cumulativeSVG(cum, dom) {
-    const W = 600, H = 150, padL = 4, padR = 4, padT = 8, padB = 22;
+  // Expected cumulative points by stage: p25–p75 band + mean line, on a y-axis
+  // scaled to THIS manager's own range so the accumulation shape is visible.
+  function cumulativeSVG(cum) {
+    const W = 600, H = 380, padL = 40, padR = 10, padT = 16, padB = 30;
     const n = cum.length;
+    const lo0 = Math.min(...cum.map((c) => c.p25));
+    const hi0 = Math.max(...cum.map((c) => c.p75));
+    const span = hi0 - lo0 || 1;
+    const lo = lo0 - span * 0.12, hi = hi0 + span * 0.12;
     const sx = (i) => padL + (n === 1 ? 0 : (i / (n - 1)) * (W - padL - padR));
-    const sy = scale(dom.lo, dom.hi, H - padB, padT);
+    const sy = scale(lo, hi, H - padB, padT);
     const up = cum.map((c, i) => `${sx(i)},${sy(c.p75)}`).join(" ");
     const dn = cum.map((c, i) => `${sx(i)},${sy(c.p25)}`).reverse().join(" ");
     const meanLine = cum.map((c, i) => `${sx(i)},${sy(c.mean)}`).join(" ");
-    const dots = cum.map((c, i) => `<line x1="${sx(i)}" y1="${sy(c.mean)-3}" x2="${sx(i)}" y2="${sy(c.mean)+3}" stroke="${PC.accent}" stroke-width="3"/>`).join("");
-    const labels = cum.map((c, i) => `<text x="${sx(i)}" y="${H - 6}" fill="${PC.muted}" font-size="10" text-anchor="${i===0?'start':i===n-1?'end':'middle'}">${esc(c.stage)}</text>`).join("");
-    return `<svg class="chart" viewBox="0 0 ${W} ${H}" preserveAspectRatio="none" role="img">
+    const dots = cum.map((c, i) => `<circle cx="${sx(i)}" cy="${sy(c.mean)}" r="3.5" fill="${PC.accent}"/>`).join("");
+    const grid = [lo0, (lo0 + hi0) / 2, hi0].map((v) =>
+      `<line x1="${padL}" y1="${sy(v)}" x2="${W - padR}" y2="${sy(v)}" stroke="${PC.border}" stroke-width="1" stroke-dasharray="2 3"/>` +
+      `<text x="${padL - 6}" y="${sy(v) + 4}" fill="${PC.muted}" font-size="13" text-anchor="end">${Math.round(v)}</text>`).join("");
+    const labels = cum.map((c, i) => `<text x="${sx(i)}" y="${H - 8}" fill="${PC.muted}" font-size="13" text-anchor="${i === 0 ? "start" : i === n - 1 ? "end" : "middle"}">${esc(c.stage)}</text>`).join("");
+    return `<svg class="chart tall" viewBox="0 0 ${W} ${H}" role="img">
+      ${grid}
       <polygon points="${up} ${dn}" fill="${PC.accent}" fill-opacity="0.18"/>
-      <polyline points="${meanLine}" fill="none" stroke="${PC.accent}" stroke-width="2.5"/>
+      <polyline points="${meanLine}" fill="none" stroke="${PC.accent}" stroke-width="3"/>
       ${dots}${labels}
     </svg>`;
   }
@@ -591,7 +604,7 @@
         histSVG(m.hist, m.pct.p50, m.mean);
       const c2 = el("div", "proj-chart-box");
       c2.innerHTML = `<div class="chart-title">Expected points by stage <span class="muted">(mean + 25–75% band)</span></div>` +
-        cumulativeSVG(m.cumulative, dom);
+        cumulativeSVG(m.cumulative);
       charts.appendChild(c1); charts.appendChild(c2);
       body2.appendChild(charts);
 
