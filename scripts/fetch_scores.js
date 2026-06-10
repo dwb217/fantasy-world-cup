@@ -57,6 +57,37 @@ function isFinished(ev) {
   return !CONFIG.pendingStatuses.has(status);
 }
 
+/* ---------- discover round numbers actually in use this season ----------
+   TheSportsDB's knockout round numbering is unpredictable (2022 put the Round
+   of 16 under intRound=16, not 125), so beyond the configured guesses we ask
+   the "next events" and "past events" endpoints what round numbers real
+   fixtures carry, and fetch those rounds too. */
+async function discoverRounds() {
+  const found = new Set();
+  for (const ep of ["eventsnextleague.php", "eventspastleague.php"]) {
+    try {
+      const data = await getJson(`${CONFIG.base}/${CONFIG.apiKey}/${ep}?id=${CONFIG.leagueId}`);
+      for (const ev of data.events || []) {
+        if (ev.strSeason && String(ev.strSeason) !== String(CONFIG.season)) continue;
+        const r = Number(ev.intRound);
+        if (Number.isInteger(r) && r > 0) found.add(r);
+      }
+    } catch (e) {
+      console.warn(`${ep}: request failed (${e.message})`);
+    }
+    await sleep(CONFIG.reqDelayMs);
+  }
+  return found;
+}
+
+// Knockout label from the official 2026 calendar (round numbers are unreliable).
+function knockoutLabelByDate(date) {
+  for (const w of CONFIG.knockoutWindows || []) {
+    if (date && date >= w.from && date <= w.to) return w.label;
+  }
+  return null;
+}
+
 async function main() {
   const win = loadWindowFile("data/draft.js");
   loadWindowFile("data/overrides.js");
@@ -68,9 +99,17 @@ async function main() {
 
   const warnings = { unmapped: new Set(), needsReview: [] };
 
-  /* ---- fetch every configured round ---- */
+  /* ---- fetch every configured + discovered round ---- */
+  const discovered = await discoverRounds();
+  const extraRounds = [...discovered].filter((r) => !CONFIG.requestRounds.includes(r));
+  if (extraRounds.length) {
+    console.log(`discovered round number(s) in use beyond the configured list: ${extraRounds.join(", ")}`);
+  }
+  const rounds = [...new Set([...CONFIG.requestRounds, ...discovered])].sort((a, b) => a - b);
+
   const apiMatches = [];
-  for (const r of CONFIG.requestRounds) {
+  const seenEventIds = new Set();
+  for (const r of rounds) {
     const url = `${CONFIG.base}/${CONFIG.apiKey}/eventsround.php?id=${CONFIG.leagueId}&s=${CONFIG.season}&r=${r}`;
     let data;
     try {
@@ -85,15 +124,17 @@ async function main() {
 
     const isGroup = CONFIG.groupRounds.has(r);
     const stage = isGroup ? "group" : "knockout";
-    const roundLabel = CONFIG.roundLabels[r] || (isGroup ? `Matchday ${r}` : `Knockout (round ${r})`);
-    if (!CONFIG.roundLabels[r] && !isGroup) {
-      console.warn(`round ${r}: has data but no label configured — treating as knockout ("${roundLabel}")`);
-    }
 
     let finished = 0;
     for (const ev of events) {
+      if (seenEventIds.has(ev.idEvent)) continue; // same event listed under two rounds
       if (!isFinished(ev)) continue;
       finished++;
+      seenEventIds.add(ev.idEvent);
+
+      const roundLabel = isGroup
+        ? (CONFIG.roundLabels[r] || `Matchday ${r}`)
+        : (knockoutLabelByDate(ev.dateEvent) || CONFIG.roundLabels[r] || `Knockout (round ${r})`);
 
       const teamA = canonicalTeam(ev.strHomeTeam);
       const teamB = canonicalTeam(ev.strAwayTeam);
@@ -119,6 +160,14 @@ async function main() {
         shootoutWinner: null,
       };
 
+      // A level knockout score means the game went to extra time AND a
+      // shootout by definition, even when the API's status flag fails to say
+      // so (verified to happen: 2022 Croatia–Brazil was marked plain FT).
+      if (match.stage === "knockout" && match.scoreA === match.scoreB) {
+        match.extraTime = true;
+        match.penalties = true;
+      }
+
       // Apply manual override for this event, if any.
       const ov = OVERRIDES.byEventId && OVERRIDES.byEventId[match.eventId];
       if (ov) Object.assign(match, ov);
@@ -133,7 +182,7 @@ async function main() {
 
       apiMatches.push(match);
     }
-    console.log(`round ${r} (${roundLabel}): ${events.length} events, ${finished} finished`);
+    console.log(`round ${r} (${stage}): ${events.length} events, ${finished} finished`);
     await sleep(CONFIG.reqDelayMs);
   }
 

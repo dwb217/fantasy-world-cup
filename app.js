@@ -80,8 +80,11 @@
     if (gf >= 2) add("twoGoals");
     if (gf >= 4) add("fourGoals");
     if (gf - ga >= 2) add("winByTwo");
-    if (knockout && m.extraTime) add("extraTime");
-    if (knockout && m.penalties) add("penalties");
+    // A level knockout score implies extra time + a shootout by definition,
+    // even if the imported flags missed it (the API's status field is flaky).
+    const level = gf === ga;
+    if (knockout && (m.extraTime || level)) add("extraTime");
+    if (knockout && (m.penalties || level)) add("penalties");
 
     const total = items.reduce((s, i) => s + i.points, 0);
     return { total, items };
