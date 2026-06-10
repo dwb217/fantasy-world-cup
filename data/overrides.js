@@ -14,8 +14,11 @@
 //     scoreA: 3, scoreB: 3,          // optional: correct a wrong score (home/away)
 //   },
 //
-// manualMatches: full matches the API doesn't have at all. Same shape as the
-// entries in data/matches.js. Give each a unique negative id to avoid clashes.
+// manualMatches: full matches the API doesn't have at all — the backup if the
+// auto-import breaks. Easiest added/removed via the site's Edit mode ("Add a
+// match manually"), or by hand here: same shape as entries in data/matches.js,
+// each with a unique NEGATIVE id. Once the API imports the same game (same
+// date + teams), the imported result automatically replaces the manual entry.
 window.OVERRIDES = {
   byEventId: {
   },

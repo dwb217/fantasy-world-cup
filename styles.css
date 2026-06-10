@@ -179,6 +179,24 @@ table.full th, table.full td { padding: 11px 14px; }
 .results-wrap.editing .ko-cell .check { display: inline-flex; }
 .results-wrap.editing .ko-cell .ro-ko { display: none; }
 
+/* upcoming fixtures: listed but not yet scored */
+.results-table tr.upcoming td { opacity: .6; }
+.results-wrap.editing .results-table tr.upcoming td { opacity: 1; }
+
+/* manual match entry (backup if the auto-import misses a game) — edit mode only */
+.add-bar { display: none; flex-direction: column; gap: 8px; margin-top: 16px; padding: 12px 14px;
+  background: var(--panel-2); border: 1px solid var(--border); border-radius: 10px; }
+.results-wrap.editing .add-bar { display: flex; }
+.add-title { font-size: .88rem; }
+.add-fields { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
+.add-fields select, .add-fields input { background: var(--panel); border: 1px solid var(--border);
+  color: var(--text); border-radius: 6px; padding: 6px 8px; font-size: .88rem; }
+.add-fields input[type="number"] { width: 52px; text-align: center; }
+.rm-btn { display: none; background: none; border: 1px solid var(--border); color: var(--muted);
+  border-radius: 6px; cursor: pointer; padding: 1px 7px; margin-left: 6px; font-size: .8rem; }
+.rm-btn:hover { color: #f85149; border-color: #f85149; }
+.results-wrap.editing .rm-btn { display: inline-block; }
+
 .save-bar { display: none; align-items: center; gap: 12px; margin-top: 16px; flex-wrap: wrap; }
 .results-wrap.editing .save-bar { display: flex; }
 .save-bar .pw { display: flex; flex-direction: column; gap: 4px; font-size: .8rem; color: var(--muted); }

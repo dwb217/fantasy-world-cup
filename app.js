@@ -32,7 +32,10 @@
 
   function buildMatches() {
     const ov = window.OVERRIDES || { byEventId: {}, manualMatches: [] };
-    const base = (window.MATCHES || []).map((m) => ({ ...m }));
+    // API matches come from the committed file; manual matches are rebuilt from
+    // overrides (the single source of truth) so web-app adds/removals apply
+    // immediately, even before the importer regenerates data/matches.js.
+    const base = (window.MATCHES || []).filter((m) => m.source !== "manual").map((m) => ({ ...m }));
     for (const m of base) {
       if (m.eventId && ov.byEventId && ov.byEventId[m.eventId]) Object.assign(m, ov.byEventId[m.eventId]);
     }
@@ -56,6 +59,13 @@
   }
 
   /* ---------- scoring engine ---------- */
+
+  // Fixtures are listed before they're played (scores null); only matches with
+  // a real result — from the API or a manual edit — count for points.
+  function hasResult(m) {
+    return Number.isFinite(Number(m.scoreA)) && m.scoreA !== null && m.scoreA !== "" &&
+           Number.isFinite(Number(m.scoreB)) && m.scoreB !== null && m.scoreB !== "";
+  }
 
   function scoreTeamInMatch(team, m) {
     const isA = m.teamA === team;
@@ -103,6 +113,7 @@
       table[manager].teams.forEach((row, i) => (teamRowIndex[row.team] = { manager, i }));
     }
     for (const m of MATCHES) {
+      if (!hasResult(m)) continue;
       for (const team of [m.teamA, m.teamB]) {
         const idx = teamRowIndex[team];
         if (!idx) continue;
@@ -139,10 +150,10 @@
   function renderStandings() {
     const root = el("div");
     const standings = computeStandings();
-    const played = MATCHES.length;
+    const played = MATCHES.filter(hasResult).length;
     const intro = el("p", "muted");
     intro.textContent = played
-      ? `${played} match${played === 1 ? "" : "es"} scored.`
+      ? `${played} of ${MATCHES.length} matches scored.`
       : "No results yet — the tournament kicks off June 11. Standings will fill in automatically.";
     root.appendChild(intro);
 
@@ -182,6 +193,7 @@
     const pts = {}, gp = {};
     ALL_TEAMS.forEach((t) => { pts[t] = 0; gp[t] = 0; });
     for (const m of MATCHES) {
+      if (!hasResult(m)) continue;
       for (const team of [m.teamA, m.teamB]) {
         if (!(team in pts)) continue;
         pts[team] += scoreTeamInMatch(team, m).total; gp[team] += 1;
@@ -213,29 +225,29 @@
       <button id="edit-toggle" class="btn">${unlocked ? "Done editing" : "✎ Edit results"}</button>
       <span id="edit-hint" class="muted">${unlocked
         ? "Change scores, set shootout winners, then Save."
-        : "Results update automatically. Click Edit to correct a score or set a shootout winner."}</span>`;
+        : "Scores fill in automatically from the API. Click Edit to enter or correct a score by hand (e.g. if the auto-import is down)."}</span>`;
     root.appendChild(bar);
 
     if (!MATCHES.length) {
       root.appendChild(el("p", "muted",
         "No results yet — the first games are June 11, 2026. Matches appear here automatically " +
         "(pulled from the API every 4 hours), and you'll be able to edit scores and set shootout winners once they're played."));
-      wireEditToggle(root);
-      return root;
+    } else {
+      const sorted = MATCHES.slice().sort((a, b) =>
+        String(a.date).localeCompare(String(b.date)) || (a.round || 0) - (b.round || 0) || (a.id || 0) - (b.id || 0));
+
+      const tbl = el("table", "full results-table");
+      tbl.innerHTML = `<thead><tr>
+        <th>Date</th><th>Round</th><th>Home</th><th class="num">Score</th><th>Away</th>
+        <th>Knockout extras</th><th>Pts</th>
+      </tr></thead>`;
+      const tb = el("tbody");
+      sorted.forEach((m) => tb.appendChild(resultRow(m)));
+      tbl.appendChild(tb);
+      root.appendChild(tbl);
     }
 
-    const sorted = MATCHES.slice().sort((a, b) =>
-      String(a.date).localeCompare(String(b.date)) || (a.round || 0) - (b.round || 0) || (a.id || 0) - (b.id || 0));
-
-    const tbl = el("table", "full results-table");
-    tbl.innerHTML = `<thead><tr>
-      <th>Date</th><th>Round</th><th>Home</th><th class="num">Score</th><th>Away</th>
-      <th>Knockout extras</th><th>Pts</th>
-    </tr></thead>`;
-    const tb = el("tbody");
-    sorted.forEach((m) => tb.appendChild(resultRow(m)));
-    tbl.appendChild(tb);
-    root.appendChild(tbl);
+    root.appendChild(addMatchBar());
 
     // Save controls (only meaningful in edit mode)
     const save = el("div", "save-bar");
@@ -251,33 +263,110 @@
     return root;
   }
 
+  /* ---------- manual match entry (backup when the auto-import misses a game) ---------- */
+
+  const ROUND_OPTIONS = [
+    { label: "Matchday 1", stage: "group" },
+    { label: "Matchday 2", stage: "group" },
+    { label: "Matchday 3", stage: "group" },
+    { label: "Round of 32", stage: "knockout" },
+    { label: "Round of 16", stage: "knockout" },
+    { label: "Quarter-Final", stage: "knockout" },
+    { label: "Semi-Final", stage: "knockout" },
+    { label: "Third Place", stage: "knockout" },
+    { label: "Final", stage: "knockout" },
+  ];
+
+  function addMatchBar() {
+    const wrap = el("div", "add-bar");
+    const teamOpts = ALL_TEAMS.map((t) => `<option value="${esc(t)}">${esc(t)}</option>`).join("");
+    const roundOpts = ROUND_OPTIONS.map((o, i) => `<option value="${i}">${esc(o.label)}</option>`).join("");
+    const today = new Date().toISOString().slice(0, 10);
+    wrap.innerHTML = `
+      <div class="add-title"><b>Add a match manually</b>
+        <span class="muted">— backup in case the auto-import misses a game. Use the match's scheduled date:
+        if the API later imports the same game (same date + teams), the imported result takes over automatically.</span></div>
+      <div class="add-fields">
+        <input type="date" id="add-date" value="${today}">
+        <select id="add-round">${roundOpts}</select>
+        <select id="add-a">${teamOpts}</select>
+        <input type="number" id="add-sa" min="0" value="0">
+        <span class="muted">–</span>
+        <input type="number" id="add-sb" min="0" value="0">
+        <select id="add-b">${teamOpts}</select>
+        <button id="add-btn" class="btn">+ Add match</button>
+        <span id="add-msg" class="form-msg err"></span>
+      </div>`;
+    wrap.querySelector("#add-b").selectedIndex = Math.min(1, ALL_TEAMS.length - 1);
+    wrap.querySelector("#add-btn").addEventListener("click", () => {
+      const msg = wrap.querySelector("#add-msg");
+      const date = wrap.querySelector("#add-date").value;
+      const opt = ROUND_OPTIONS[Number(wrap.querySelector("#add-round").value)] || ROUND_OPTIONS[0];
+      const teamA = wrap.querySelector("#add-a").value;
+      const teamB = wrap.querySelector("#add-b").value;
+      const scoreA = Math.max(0, Number(wrap.querySelector("#add-sa").value) || 0);
+      const scoreB = Math.max(0, Number(wrap.querySelector("#add-sb").value) || 0);
+      if (!date) { msg.textContent = "Pick the match date."; return; }
+      if (teamA === teamB) { msg.textContent = "Pick two different teams."; return; }
+      if (MATCHES.some((m) => keyOf(m) === keyOf({ date, teamA, teamB }))) {
+        msg.textContent = "That match is already listed — edit it in the table instead.";
+        return;
+      }
+      const used = OVERRIDES_EDIT.manualMatches.map((m) => Math.abs(Number(m.id) || 0));
+      const id = -(Math.max(0, ...used) + 1);
+      collectEdits(document.getElementById("panel")); // keep other unsaved row edits across the re-render
+      OVERRIDES_EDIT.manualMatches.push({
+        id, source: "manual", date, stage: opt.stage, roundLabel: opt.label,
+        teamA, teamB, scoreA, scoreB,
+        extraTime: false, penalties: false, shootoutWinner: null,
+      });
+      dirty.add("manual:" + id);
+      refreshMatches();
+      showTab("results");
+    });
+    return wrap;
+  }
+
   function resultRow(m) {
     const key = m.eventId || ("manual:" + m.id);
     const tr = el("tr");
     tr.dataset.key = key;
     const ko = m.stage === "knockout";
-    const aPts = (m.teamA in TEAM_OWNER) ? scoreTeamInMatch(m.teamA, m).total : 0;
-    const bPts = (m.teamB in TEAM_OWNER) ? scoreTeamInMatch(m.teamB, m).total : 0;
+    const played = hasResult(m);
+    if (!played) tr.className = "upcoming";
+    const aPts = played && (m.teamA in TEAM_OWNER) ? scoreTeamInMatch(m.teamA, m).total : null;
+    const bPts = played && (m.teamB in TEAM_OWNER) ? scoreTeamInMatch(m.teamB, m).total : null;
     const overridden = !!(m.eventId && OVERRIDES_EDIT.byEventId[m.eventId]) || m.source === "manual";
 
     tr.innerHTML = `
       <td class="muted">${fmtDate(m.date)}</td>
-      <td><span class="stage ${m.stage}">${esc(m.roundLabel || (ko ? "Knockout" : "Group"))}</span>${overridden ? ' <span class="edited" title="has a manual override">✎</span>' : ""}</td>
+      <td><span class="stage ${m.stage}">${esc(m.roundLabel || (ko ? "Knockout" : "Group"))}</span>${overridden ? ' <span class="edited" title="has a manual override">✎</span>' : ""}${m.source === "manual" ? ' <button class="rm-btn" title="Remove this manually added match">✕</button>' : ""}</td>
       <td>${esc(m.teamA)} <span class="muted owner">${esc(TEAM_OWNER[m.teamA] || "")}</span></td>
       <td class="num score-cell">
-        <span class="ro-score">${m.scoreA}–${m.scoreB}</span>
+        <span class="ro-score">${played ? `${m.scoreA}–${m.scoreB}` : '<span class="muted">vs</span>'}</span>
         <span class="edit-score">
-          <input type="number" min="0" class="sc" data-side="A" value="${m.scoreA}">
-          <input type="number" min="0" class="sc" data-side="B" value="${m.scoreB}">
+          <input type="number" min="0" class="sc" data-side="A" value="${played ? m.scoreA : ""}" placeholder="–">
+          <input type="number" min="0" class="sc" data-side="B" value="${played ? m.scoreB : ""}" placeholder="–">
         </span>
       </td>
       <td>${esc(m.teamB)} <span class="muted owner">${esc(TEAM_OWNER[m.teamB] || "")}</span></td>
       <td class="ko-cell">${ko ? koControls(m) : '<span class="muted">—</span>'}</td>
-      <td class="num"><span class="badge">${aPts}</span> / <span class="badge">${bPts}</span></td>`;
+      <td class="num">${played ? `<span class="badge">${aPts}</span> / <span class="badge">${bPts}</span>` : '<span class="muted">—</span>'}</td>`;
 
     // mark dirty on any input change
     tr.querySelectorAll("input,select").forEach((inp) =>
       inp.addEventListener("change", () => { dirty.add(key); updateSaveState(); }));
+
+    const rm = tr.querySelector(".rm-btn");
+    if (rm) rm.addEventListener("click", () => {
+      const id = Number(key.slice("manual:".length));
+      collectEdits(document.getElementById("panel")); // keep other unsaved row edits across the re-render
+      OVERRIDES_EDIT.manualMatches = OVERRIDES_EDIT.manualMatches.filter((x) => Number(x.id) !== id);
+      dirty.delete(key);
+      dirty.add("removed:" + id); // a removal is also an unsaved change
+      refreshMatches();
+      showTab("results");
+    });
     return tr;
   }
 
@@ -320,12 +409,17 @@
     root.querySelectorAll("tr[data-key]").forEach((tr) => {
       const key = tr.dataset.key;
       if (!dirty.has(key)) return;
+      // An empty score box means "no result entered" — never turn it into 0.
       const scores = {};
-      tr.querySelectorAll(".sc").forEach((i) => (scores[i.dataset.side] = Number(i.value)));
+      tr.querySelectorAll(".sc").forEach((i) => {
+        if (i.value !== "") scores[i.dataset.side] = Number(i.value);
+      });
       const et = tr.querySelector(".et");
       const pk = tr.querySelector(".pk");
       const so = tr.querySelector(".so");
-      const patch = { scoreA: scores.A, scoreB: scores.B };
+      const patch = {};
+      if ("A" in scores) patch.scoreA = scores.A;
+      if ("B" in scores) patch.scoreB = scores.B;
       if (et) patch.extraTime = et.checked;
       if (pk) patch.penalties = pk.checked;
       if (so) patch.shootoutWinner = so.value || null;
@@ -418,14 +512,15 @@
 
   function renderGamePoints() {
     const root = el("div");
-    if (!MATCHES.length) {
+    const played = MATCHES.filter(hasResult);
+    if (!played.length) {
       root.appendChild(el("p", "muted",
         "No games played yet — once results come in, this shows the fantasy points each manager earns from every game."));
       return root;
     }
     root.appendChild(el("p", "muted",
         "Fantasy points each manager earned from every game, with the bonus breakdown. Only the managers who own a team in the match score from it."));
-    const sorted = MATCHES.slice().sort((a, b) =>
+    const sorted = played.slice().sort((a, b) =>
       String(b.date).localeCompare(String(a.date)) || (b.round || 0) - (a.round || 0) || (b.id || 0) - (a.id || 0));
     sorted.forEach((m) => root.appendChild(gamePointsCard(m)));
     return root;
@@ -532,9 +627,14 @@
     const mgrs = P.managers;
 
     const intro = el("div", "proj-intro");
-    intro.innerHTML =
-      `<p class="muted">Pre-tournament Monte-Carlo projection over <b>${P.meta.nSims.toLocaleString()}</b> simulated World Cups. ` +
-      `${esc(P.meta.format)}. Every simulated match is scored with the same rules as the live standings.</p>`;
+    const playedN = P.meta.playedMatches || 0;
+    intro.innerHTML = playedN
+      ? `<p class="muted">Monte-Carlo forecast over <b>${P.meta.nSims.toLocaleString()}</b> simulated tournaments, ` +
+        `conditioned on the <b>${playedN}</b> result${playedN === 1 ? "" : "s"} so far — played games are locked at their actual points, ` +
+        `only the remaining games are simulated. Refreshes daily at 10:00 UTC. ${esc(P.meta.format)}.</p>`
+      : `<p class="muted">Pre-tournament Monte-Carlo projection over <b>${P.meta.nSims.toLocaleString()}</b> simulated World Cups. ` +
+        `${esc(P.meta.format)}. Every simulated match is scored with the same rules as the live standings. ` +
+        `Once games kick off, this updates daily (10:00 UTC) based on the results that have come in.</p>`;
     root.appendChild(intro);
 
     // ---- shared domain for points charts ----

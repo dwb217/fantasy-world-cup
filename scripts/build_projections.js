@@ -1,20 +1,30 @@
-/* Pre-tournament projections generator.
+/* Tournament projections generator.
  *
  * The 7 managers' drafts together are exactly the 48-team field, so the union of
- * the draft IS the World Cup. This Monte-Carlo simulates the whole tournament
- * many times, scoring every match with the SAME rules as the live app
+ * the draft IS the World Cup. This Monte-Carlo simulates the tournament many
+ * times, scoring every match with the SAME rules as the live app
  * (data/rules.js / scoreTeamInMatch in app.js), and writes the aggregated
  * distributions to data/projections.js (window.PROJECTIONS), which the
  * Projections tab renders.
  *
- * Re-run any time the draft or ratings change:
+ * The simulation is CONDITIONED on reality (data/matches.js):
+ *   - the real groups are derived from the fixture list;
+ *   - matches that have been played are locked at their actual score and the
+ *     actual fantasy points they produced — only remaining games are simulated;
+ *   - real knockout pairings are used once fixtures exist; rounds whose
+ *     pairings aren't known yet use random pairing among the simulated
+ *     survivors; a level knockout game with no shootoutWinner recorded yet is
+ *     decided per-sim by rating.
+ * Run scripts/fetch_scores.js first so data/matches.js is fresh. A CI workflow
+ * (.github/workflows/update-projections.yml) does this daily at 10:00 UTC.
+ *
  *     node scripts/build_projections.js [nSims]
  *
  * Model: Elo-style team ratings -> per-match expected goals via Poisson, which
  * naturally produces realistic W/D/L, clean-sheet, 2+/4+ goal and win-by-2 rates
- * that feed the bonus rules. Group draw uses balanced seeding pots; the knockout
- * bracket is random pairing among the 32 qualifiers. Ratings are hand-set from
- * ~2026 form and are the one thing to tweak if you disagree with a team.
+ * that feed the bonus rules. If no fixture list exists yet, the group draw falls
+ * back to balanced seeding pots. Ratings are hand-set from ~2026 form and are
+ * the one thing to tweak if you disagree with a team.
  */
 
 "use strict";
@@ -25,10 +35,11 @@ const ROOT = path.resolve(__dirname, "..");
 const N = Number(process.argv[2]) || 20000;
 
 /* ---- draft = single source of truth (data/draft.js) ---- */
-const draftSrc = fs.readFileSync(path.join(ROOT, "data/draft.js"), "utf8");
 const window = {};
-eval(draftSrc); // defines window.DRAFT
+eval(fs.readFileSync(path.join(ROOT, "data/draft.js"), "utf8"));   // window.DRAFT
+eval(fs.readFileSync(path.join(ROOT, "data/matches.js"), "utf8")); // window.MATCHES
 const DRAFT = window.DRAFT;
+const ALL_MATCHES = window.MATCHES || [];
 
 /* ---- team strength (Elo-ish, ~2026 form). Tweak these. ---- */
 const RATING = {
@@ -98,7 +109,80 @@ function scoreKo(gf, ga, advanced, wentET, wentPK) {
   return p;
 }
 
-/* balanced seeding pots */
+/* ---- condition on what has actually happened ---- */
+
+const hasResult = (m) =>
+  m.scoreA !== null && m.scoreA !== "" && Number.isFinite(Number(m.scoreA)) &&
+  m.scoreB !== null && m.scoreB !== "" && Number.isFinite(Number(m.scoreB));
+
+const groupFix = ALL_MATCHES.filter((m) => m.stage === "group" && m.teamA in RATING && m.teamB in RATING);
+const koFixAll = ALL_MATCHES.filter((m) => m.stage === "knockout" && m.teamA in RATING && m.teamB in RATING);
+const PLAYED = ALL_MATCHES.filter(hasResult).length;
+
+// The real groups fall out of the fixture list: each team's 3 distinct group
+// opponents define its group of 4. Returns null (→ random-pots fallback) if the
+// schedule isn't loaded or doesn't form 12 clean groups.
+function deriveGroups() {
+  if (groupFix.length !== 72) return null;
+  const opp = {};
+  for (const f of groupFix) {
+    (opp[f.teamA] = opp[f.teamA] || new Set()).add(f.teamB);
+    (opp[f.teamB] = opp[f.teamB] || new Set()).add(f.teamA);
+  }
+  if (Object.keys(opp).length !== 48) return null;
+  const seen = new Set(), groups = [];
+  for (const t of Object.keys(opp)) {
+    if (seen.has(t)) continue;
+    if (opp[t].size !== 3) return null;
+    const g = [t, ...opp[t]];
+    for (const x of g) { if (seen.has(x)) return null; seen.add(x); }
+    groups.push(g);
+  }
+  return groups.length === 12 ? groups : null;
+}
+const FIXED_GROUPS = deriveGroups();
+
+// Known knockout fixtures, bucketed by round size. Labels come from the
+// importer's date-window mapping; anything unrecognized disables the use of
+// real pairings (random pairing still works) rather than corrupting a bracket.
+const KO_SIZE = { "Round of 32": 32, "Round of 16": 16, "Quarter-Final": 8, "Semi-Final": 4, "Final": 2 };
+let koBySize = { 32: [], 16: [], 8: [], 4: [], 2: [] };
+let thirdPlaceFix = null;
+for (const f of koFixAll) {
+  if (f.roundLabel === "Third Place") { thirdPlaceFix = f; continue; }
+  const s = KO_SIZE[f.roundLabel];
+  if (!s) {
+    console.warn(`Unrecognized knockout round label "${f.roundLabel}" — ignoring real knockout pairings.`);
+    koBySize = { 32: [], 16: [], 8: [], 4: [], 2: [] };
+    thirdPlaceFix = null;
+    break;
+  }
+  koBySize[s].push(f);
+}
+
+// Once the full Round of 32 is announced, the qualifier list is a fact — use it
+// instead of re-deriving from standings (our tiebreakers approximate FIFA's and
+// could differ in razor-thin cases).
+const REAL_QUALIFIERS = (() => {
+  if (koBySize[32].length !== 16) return null;
+  const q = [...new Set(koBySize[32].flatMap((f) => [f.teamA, f.teamB]))];
+  return q.length === 32 ? q : null;
+})();
+
+// Outcome facts for a played knockout fixture. A level score means ET + PK by
+// definition; winner is null when the shootout winner hasn't been recorded yet
+// (then each sim decides it by rating, reflecting the real uncertainty).
+function actualKoOutcome(f) {
+  const level = Number(f.scoreA) === Number(f.scoreB);
+  return {
+    wentET: level ? true : !!f.extraTime,
+    wentPK: level ? true : !!f.penalties,
+    winner: !level ? (Number(f.scoreA) > Number(f.scoreB) ? f.teamA : f.teamB)
+                   : (f.shootoutWinner || null),
+  };
+}
+
+/* balanced seeding pots (pre-schedule fallback only) */
 const ranked = TEAMS.slice().sort((a, b) => RATING[b] - RATING[a]);
 const POTS = [ranked.slice(0,12), ranked.slice(12,24), ranked.slice(24,36), ranked.slice(36,48)];
 const shuffle = (a) => { for (let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]];} return a; };
@@ -127,52 +211,104 @@ for (let s = 0; s < N; s++) {
   const mPts = {}; MANAGERS.forEach(m => mPts[m] = STAGES.map(() => 0));
   const addTeam = (t, p, stageIdx) => { pts[t] += p; mPts[owner[t]][stageIdx] += p; };
 
-  // group draw
-  const pots = POTS.map(p => shuffle(p.slice()));
-  const groups = [];
-  for (let g = 0; g < 12; g++) groups.push([pots[0][g], pots[1][g], pots[2][g], pots[3][g]]);
+  // groups: the real draw when the schedule is known, otherwise random pots
+  const groups = FIXED_GROUPS ||
+    (() => {
+      const pots = POTS.map(p => shuffle(p.slice()));
+      const out = [];
+      for (let g = 0; g < 12; g++) out.push([pots[0][g], pots[1][g], pots[2][g], pots[3][g]]);
+      return out;
+    })();
 
   const stand = {};
-  for (const g of groups) {
-    for (const t of g) stand[t] = [0,0,0]; // pts, gd, gf
-    for (let i = 0; i < 4; i++) for (let j = i+1; j < 4; j++) {
-      const a = g[i], b = g[j];
-      const ga = pois(lam(a,b)), gb = pois(lam(b,a));
-      addTeam(a, scoreGroup(ga,gb), 0); addTeam(b, scoreGroup(gb,ga), 0);
-      teamGoals[a]+=ga; teamGoals[b]+=gb; teamGames[a]++; teamGames[b]++;
-      if (ga>gb) stand[a][0]+=3; else if (gb>ga) stand[b][0]+=3; else {stand[a][0]++;stand[b][0]++;}
-      stand[a][1]+=ga-gb; stand[b][1]+=gb-ga; stand[a][2]+=ga; stand[b][2]+=gb;
+  for (const g of groups) for (const t of g) stand[t] = [0,0,0]; // pts, gd, gf
+
+  const playGroupGame = (a, b, ga, gb) => {
+    addTeam(a, scoreGroup(ga,gb), 0); addTeam(b, scoreGroup(gb,ga), 0);
+    teamGoals[a]+=ga; teamGoals[b]+=gb; teamGames[a]++; teamGames[b]++;
+    if (ga>gb) stand[a][0]+=3; else if (gb>ga) stand[b][0]+=3; else {stand[a][0]++;stand[b][0]++;}
+    stand[a][1]+=ga-gb; stand[b][1]+=gb-ga; stand[a][2]+=ga; stand[b][2]+=gb;
+  };
+
+  if (FIXED_GROUPS) {
+    // real fixtures: played ones locked at the actual score, the rest simulated
+    for (const f of groupFix) {
+      if (hasResult(f)) playGroupGame(f.teamA, f.teamB, Number(f.scoreA), Number(f.scoreB));
+      else playGroupGame(f.teamA, f.teamB, pois(lam(f.teamA,f.teamB)), pois(lam(f.teamB,f.teamA)));
+    }
+  } else {
+    for (const g of groups) {
+      for (let i = 0; i < 4; i++) for (let j = i+1; j < 4; j++) {
+        playGroupGame(g[i], g[j], pois(lam(g[i],g[j])), pois(lam(g[j],g[i])));
+      }
     }
   }
-  const cmp = (x,y) => (stand[y][0]-stand[x][0]) || (stand[y][1]-stand[x][1]) || (stand[y][2]-stand[x][2]) || (RATING[y]-RATING[x]);
-  let qualifiers = []; const thirds = [];
-  for (const g of groups) { const gs = g.slice().sort(cmp); qualifiers.push(gs[0], gs[1]); thirds.push(gs[2]); }
-  thirds.sort(cmp); qualifiers = qualifiers.concat(thirds.slice(0,8)); // 32
+
+  let qualifiers;
+  if (REAL_QUALIFIERS) {
+    qualifiers = REAL_QUALIFIERS.slice();
+  } else {
+    const cmp = (x,y) => (stand[y][0]-stand[x][0]) || (stand[y][1]-stand[x][1]) || (stand[y][2]-stand[x][2]) || (RATING[y]-RATING[x]);
+    qualifiers = []; const thirds = [];
+    for (const g of groups) { const gs = g.slice().sort(cmp); qualifiers.push(gs[0], gs[1]); thirds.push(gs[2]); }
+    thirds.sort(cmp); qualifiers = qualifiers.concat(thirds.slice(0,8)); // 32
+  }
   for (const t of qualifiers) teamProg[t].advance++;
 
-  // knockout: random bracket
-  let cur = shuffle(qualifiers.slice());
-  while (cur.length > 1) {
-    const si = stageIdxBySize[cur.length];
-    const next = [];
-    for (let i = 0; i < cur.length; i += 2) {
-      const a = cur[i], b = cur[i+1];
-      let ga = pois(lam(a,b)), gb = pois(lam(b,a)), wentET=false, wentPK=false;
+  // a single knockout game: locked if played, simulated otherwise
+  const playKoGame = (a, b, fixture, si) => {
+    let ga, gb, wentET = false, wentPK = false, w;
+    if (fixture && hasResult(fixture)) {
+      ga = Number(fixture.scoreA); gb = Number(fixture.scoreB);
+      const o = actualKoOutcome(fixture);
+      wentET = o.wentET; wentPK = o.wentPK;
+      w = o.winner || koWinner(a, b, 0, 0); // level, shootout winner not recorded yet
+      teamGoals[a]+=ga; teamGoals[b]+=gb; teamGames[a]++; teamGames[b]++;
+    } else {
+      ga = pois(lam(a,b)); gb = pois(lam(b,a));
       teamGoals[a]+=ga; teamGoals[b]+=gb; teamGames[a]++; teamGames[b]++;
       if (ga === gb) { wentET=true; const ea=pois(lam(a,b)*ET), eb=pois(lam(b,a)*ET); ga+=ea; gb+=eb; teamGoals[a]+=ea; teamGoals[b]+=eb; if (ga===gb) wentPK=true; }
-      const w = koWinner(a,b,ga,gb), l = (w===a)?b:a;
-      const wgf=(w===a)?ga:gb, wga=(w===a)?gb:ga, lgf=(l===a)?ga:gb, lga=(l===a)?gb:ga;
-      addTeam(w, scoreKo(wgf,wga,true,wentET,wentPK), si);
-      addTeam(l, scoreKo(lgf,lga,false,wentET,wentPK), si);
-      next.push(w);
+      w = koWinner(a,b,ga,gb);
     }
-    if (cur.length === 32) for (const t of next) teamProg[t].r16++;
-    else if (cur.length === 16) for (const t of next) teamProg[t].qf++;
-    else if (cur.length === 8) for (const t of next) teamProg[t].sf++;
-    else if (cur.length === 4) for (const t of next) teamProg[t].final++;
+    const l = (w===a)?b:a;
+    const wgf=(w===a)?ga:gb, wga=(w===a)?gb:ga, lgf=(l===a)?ga:gb, lga=(l===a)?gb:ga;
+    addTeam(w, scoreKo(wgf,wga,true,wentET,wentPK), si);
+    addTeam(l, scoreKo(lgf,lga,false,wentET,wentPK), si);
+    return w;
+  };
+
+  // knockout: real pairings where fixtures exist, random pairing for the rest
+  let cur = shuffle(qualifiers.slice());
+  let sfLosers = [];
+  while (cur.length > 1) {
+    const S = cur.length;
+    const si = stageIdxBySize[S];
+    const inRound = new Set(cur);
+    const next = [];
+    const paired = new Set();
+    const actual = (koBySize[S] || []).filter(f =>
+      inRound.has(f.teamA) && inRound.has(f.teamB) && !paired.has(f.teamA) && !paired.has(f.teamB) &&
+      (paired.add(f.teamA), paired.add(f.teamB), true));
+    for (const f of actual) next.push(playKoGame(f.teamA, f.teamB, f, si));
+    const pool = shuffle(cur.filter(t => !paired.has(t)));
+    for (let i = 0; i + 1 < pool.length; i += 2) next.push(playKoGame(pool[i], pool[i+1], null, si));
+    if (S === 32) for (const t of next) teamProg[t].r16++;
+    else if (S === 16) for (const t of next) teamProg[t].qf++;
+    else if (S === 8) for (const t of next) teamProg[t].sf++;
+    else if (S === 4) { for (const t of next) teamProg[t].final++; sfLosers = cur.filter(t => !next.includes(t)); }
     cur = next;
   }
   teamProg[cur[0]].champion++;
+
+  // third-place game (a real, points-scoring match between the SF losers)
+  if (sfLosers.length === 2) {
+    const [a, b] = sfLosers;
+    const fix = (thirdPlaceFix &&
+      ((thirdPlaceFix.teamA === a && thirdPlaceFix.teamB === b) ||
+       (thirdPlaceFix.teamA === b && thirdPlaceFix.teamB === a)))
+      ? thirdPlaceFix : null;
+    playKoGame(fix ? fix.teamA : a, fix ? fix.teamB : b, fix, 5);
+  }
 
   // record
   const totals = {};
@@ -243,14 +379,27 @@ const teamsOut = TEAMS.map(t => {
   };
 }).sort((a,b) => b.mean - a.mean);
 
+const noteParts = [];
+if (PLAYED) {
+  noteParts.push(`Conditioned on the ${PLAYED} match result${PLAYED === 1 ? "" : "s"} so far: played games are locked at their actual scores and points; only the remaining games are simulated.`);
+} else {
+  noteParts.push("Pre-tournament estimate, not a prediction of any single outcome.");
+}
+noteParts.push("Team strength is Elo-style (hand-set, ~2026 form); per-match goals are Poisson from the rating gap, scored with the live app's exact rules.");
+noteParts.push(FIXED_GROUPS
+  ? "Groups are the real draw; real knockout pairings are used once fixtures are announced (random pairing until then)."
+  : "Group draw uses balanced pots; knockout bracket is random pairing.");
+
 const out = {
   meta: {
     nSims: N,
     generatedAt: new Date().toISOString(),
+    playedMatches: PLAYED,
+    scheduledMatches: ALL_MATCHES.length,
     model: { mu: MU, k: K, etFactor: ET },
     stages: STAGES,
     format: "48 teams · 12 groups of 4 · top 2 + 8 best thirds → R32 → R16 → QF → SF → Final",
-    note: "Monte-Carlo projection. Team strength is Elo-style (hand-set, ~2026 form); per-match goals are Poisson from the rating gap, scored with the live app's exact rules. Group draw uses balanced pots; knockout bracket is random pairing. Pre-tournament estimate, not a prediction of any single outcome.",
+    note: noteParts.join(" "),
   },
   managers: managersOut,
   teams: teamsOut,
@@ -258,12 +407,13 @@ const out = {
 
 const banner =
 `// AUTO-GENERATED by scripts/build_projections.js — do not hand-edit.
-// Pre-tournament Monte-Carlo projections (${N} simulated World Cups).
-// Re-run: node scripts/build_projections.js
+// Monte-Carlo projections (${N} simulated tournaments), conditioned on the
+// results in data/matches.js at build time (${PLAYED} played). Refreshed daily
+// at 10:00 UTC by .github/workflows/update-projections.yml.
 `;
 fs.writeFileSync(path.join(ROOT, "data/projections.js"),
   banner + "window.PROJECTIONS = " + JSON.stringify(out, null, 2) + ";\n");
 
-console.log(`Wrote data/projections.js (${N} sims).`);
+console.log(`Wrote data/projections.js (${N} sims, ${PLAYED} real results locked in, groups ${FIXED_GROUPS ? "real" : "random pots"}).`);
 console.log("Projected standings:");
 managersOut.forEach((m,i) => console.log(`  ${i+1}. ${m.name.padEnd(8)} ${String(m.mean).padStart(6)} ±${m.std}  (win title region p95=${m.pct.p95})`));
