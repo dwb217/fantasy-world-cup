@@ -179,6 +179,12 @@ table.full th, table.full td { padding: 11px 14px; }
 .results-wrap.editing .ko-cell .check { display: inline-flex; }
 .results-wrap.editing .ko-cell .ro-ko { display: none; }
 
+/* per-manager points in the results table */
+.results-table .pts-cell { white-space: nowrap; }
+.results-table .pts-owner { display: inline-flex; align-items: center; gap: 4px;
+  font-size: .76rem; color: var(--muted); }
+.results-table .pts-owner + .pts-owner { margin-left: 10px; }
+
 /* upcoming fixtures: listed but not yet scored */
 .results-table tr.upcoming td { opacity: .6; }
 .results-wrap.editing .results-table tr.upcoming td { opacity: 1; }

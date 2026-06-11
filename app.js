@@ -334,8 +334,20 @@
     const ko = m.stage === "knockout";
     const played = hasResult(m);
     if (!played) tr.className = "upcoming";
-    const aPts = played && (m.teamA in TEAM_OWNER) ? scoreTeamInMatch(m.teamA, m).total : null;
-    const bPts = played && (m.teamB in TEAM_OWNER) ? scoreTeamInMatch(m.teamB, m).total : null;
+    // Points per MANAGER (one entry if the same manager owns both teams, none
+    // if no involved team is owned).
+    const mgrPts = {};
+    if (played) {
+      for (const team of [m.teamA, m.teamB]) {
+        const o = TEAM_OWNER[team];
+        if (o) mgrPts[o] = (mgrPts[o] || 0) + scoreTeamInMatch(team, m).total;
+      }
+    }
+    const ptsCell = played && Object.keys(mgrPts).length
+      ? Object.entries(mgrPts)
+          .map(([o, p]) => `<span class="pts-owner">${esc(o)} <span class="badge">+${p}</span></span>`)
+          .join(" ")
+      : '<span class="muted">—</span>';
     const overridden = !!(m.eventId && OVERRIDES_EDIT.byEventId[m.eventId]) || m.source === "manual";
 
     tr.innerHTML = `
@@ -351,7 +363,7 @@
       </td>
       <td>${esc(m.teamB)} <span class="muted owner">${esc(TEAM_OWNER[m.teamB] || "")}</span></td>
       <td class="ko-cell">${ko ? koControls(m) : '<span class="muted">—</span>'}</td>
-      <td class="num">${played ? `<span class="badge">${aPts}</span> / <span class="badge">${bPts}</span>` : '<span class="muted">—</span>'}</td>`;
+      <td class="num pts-cell">${ptsCell}</td>`;
 
     // mark dirty on any input change
     tr.querySelectorAll("input,select").forEach((inp) =>
