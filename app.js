@@ -8,8 +8,6 @@
   const DRAFT = window.DRAFT || {};
   const RULES = window.RULES || {};
 
-  // Auto-update cadence — keep in sync with .github/workflows/update-scores.yml
-  const UPDATE_INTERVAL_HOURS = 4;
   const SAVE_ENDPOINT = "/api/save-result";
 
   /* ---------- lookups ---------- */
@@ -909,15 +907,11 @@
     return root;
   }
 
-  /* ---------- auto-update countdown ---------- */
-
-  function nextRun(now) {
-    // GitHub Action cron: minute 0 of every Nth UTC hour, stepping from UTC midnight.
-    const step = UPDATE_INTERVAL_HOURS * 3600 * 1000;
-    let t = Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate(), 0, 0, 0, 0);
-    while (t <= now.getTime()) t += step;
-    return new Date(t);
-  }
+  /* ---------- auto-update status ----------
+     Scores import event-driven now: the update-scores workflow polls every
+     10 minutes during each game's post-game window (see scripts/
+     should_fetch.js), so a result lands minutes after the API ingests it.
+     Instead of a cron countdown, show what we're actually waiting for. */
 
   function relTime(iso) {
     if (!iso) return null;
@@ -934,23 +928,40 @@
   function startCountdown() {
     const node = document.getElementById("update-status");
     if (!node) return;
+    const POST_GAME_HOURS = 7; // matches scripts/should_fetch.js GIVE_UP_HOURS
     const tick = () => {
-      const now = new Date();
-      const next = nextRun(now);
-      let s = Math.max(0, Math.floor((next.getTime() - now.getTime()) / 1000));
-      const h = Math.floor(s / 3600); s -= h * 3600;
-      const mm = Math.floor(s / 60); const ss = s - mm * 60;
-      const pad = (n) => String(n).padStart(2, "0");
-      const localTime = next.toLocaleTimeString(undefined, { hour: "numeric", minute: "2-digit" });
+      const now = Date.now();
+      const pending = (window.MATCHES || []).filter((m) =>
+        !(Number.isFinite(m.scoreA) && Number.isFinite(m.scoreB)) &&
+        m.kickoff && !isNaN(Date.parse(m.kickoff)));
+      const inWindow = pending.filter((m) => {
+        const ko = Date.parse(m.kickoff);
+        return ko <= now && now - ko <= POST_GAME_HOURS * 3600 * 1000;
+      });
+      const nextKo = pending.map((m) => Date.parse(m.kickoff))
+        .filter((t) => t > now).sort((a, b) => a - b)[0];
+
+      let main;
+      if (inWindow.length) {
+        const names = inWindow.map((m) => `${m.teamA}–${m.teamB}`).join(", ");
+        main = `<b>${names}</b> under way — score auto-imports minutes after full time`;
+      } else if (nextKo) {
+        const ko = new Date(nextKo);
+        const time = ko.toLocaleTimeString(undefined, { hour: "numeric", minute: "2-digit" });
+        const days = Math.floor((ko - new Date(new Date(now).toDateString())) / 86400000);
+        const day = days === 0 ? "today" : days === 1 ? "tomorrow"
+          : ko.toLocaleDateString(undefined, { weekday: "short", month: "short", day: "numeric" });
+        main = `Next match ${day} at <b>${time}</b> — score auto-imports after full time`;
+      } else {
+        main = `Scores auto-import minutes after each game ends`;
+      }
       const updated = relTime(window.MATCHES_GENERATED_AT);
       node.innerHTML =
-        `<span class="dot"></span>` +
-        `<span>Next auto-update in <b>${h}h ${pad(mm)}m ${pad(ss)}s</b> ` +
-        `<span class="muted">(~${localTime}, every ${UPDATE_INTERVAL_HOURS}h)</span></span>` +
+        `<span class="dot"></span><span>${main}</span>` +
         (updated ? `<span class="muted">· results updated ${updated}</span>` : "");
     };
     tick();
-    setInterval(tick, 1000);
+    setInterval(tick, 30000);
   }
 
   /* ---------- tabs ---------- */
