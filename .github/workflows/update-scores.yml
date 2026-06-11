@@ -3,14 +3,14 @@ name: Update scores
 # Imports results from TheSportsDB as soon as possible after full time. The
 # job wakes every 10 minutes, but scripts/should_fetch.js only lets it call
 # the API when an unscored match kicked off ~1¾–7 hours ago (i.e. a result
-# could have just landed). One ungated daily run keeps the fixture list and
-# kickoff times fresh. Commits to data/matches.js only happen when match data
-# actually changed, which triggers a redeploy of the site.
+# could have just landed). When a fetch brings in a new result, the
+# Monte-Carlo projections are rebuilt in the same run so odds update with the
+# scores. The daily update-projections workflow handles the full refresh
+# (fixture list, kickoff times, daily odds-history point).
 
 on:
   schedule:
     - cron: "*/10 * * * *" # gated by scripts/should_fetch.js
-    - cron: "23 6 * * *" # daily full refresh (always fetches)
   workflow_dispatch: {} # lets you trigger a run manually from the Actions tab
 
 permissions:
@@ -33,10 +33,10 @@ jobs:
       - name: Decide whether to call the API
         id: gate
         run: |
-          # Manual runs and the daily refresh always fetch; the 10-minute cron
-          # only fetches when a match may have just finished.
-          if [[ "${{ github.event_name }}" != "schedule" || "${{ github.event.schedule }}" == "23 6 * * *" ]]; then
-            echo "Forced run (manual trigger or daily refresh)."
+          # Manual runs always fetch; the 10-minute cron only fetches when a
+          # match may have just finished.
+          if [[ "${{ github.event_name }}" != "schedule" ]]; then
+            echo "Forced run (manual trigger)."
             echo "run=true" >> "$GITHUB_OUTPUT"
           else
             echo "run=$(node scripts/should_fetch.js)" >> "$GITHUB_OUTPUT"
@@ -51,15 +51,33 @@ jobs:
           WC_SEASON: "2026"
         run: node scripts/fetch_scores.js
 
+      - name: Check whether results changed
+        id: diff
+        if: steps.gate.outputs.run == 'true'
+        run: |
+          if [[ -n "$(git status --porcelain data/matches.js)" ]]; then
+            echo "changed=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "changed=false" >> "$GITHUB_OUTPUT"
+            echo "No score changes."
+          fi
+
+      # Only when a result actually came in — an unconditional rebuild would
+      # commit Monte-Carlo noise on every gated run.
+      - name: Rebuild projections on new results
+        if: steps.diff.outputs.changed == 'true'
+        run: node scripts/build_projections.js 20000
+
       - name: Commit changes if any
         if: steps.gate.outputs.run == 'true'
         run: |
           git config user.name "scores-bot"
           git config user.email "actions@github.com"
-          if [[ -n "$(git status --porcelain data/matches.js)" ]]; then
-            git add data/matches.js
+          if [[ -n "$(git status --porcelain data/matches.js data/projections.js data/odds_history.js)" ]]; then
+            git add data/matches.js data/projections.js data/odds_history.js
             git commit -m "Update scores ($(date -u +'%Y-%m-%d %H:%M UTC'))"
+            git pull --rebase
             git push
           else
-            echo "No score changes."
+            echo "Nothing to commit."
           fi

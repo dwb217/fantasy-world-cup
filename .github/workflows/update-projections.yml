@@ -1,9 +1,11 @@
 name: Update projections
 
-# Re-runs the Monte-Carlo projections once a day (10:00 UTC — after the last
-# games of the previous day in North America have finished), conditioned on
-# the results that have come in. Refreshes scores first so the projection sees
-# the latest data, then commits both generated files.
+# Daily full refresh (10:00 UTC — after the last games of the previous day in
+# North America have finished): re-fetches the fixture list and kickoff times,
+# re-runs the Monte-Carlo projections, and guarantees a daily odds-history
+# point even on days without games. Prompt post-game updates are handled by
+# the update-scores workflow, which rebuilds projections whenever a new
+# result comes in.
 
 on:
   schedule:
