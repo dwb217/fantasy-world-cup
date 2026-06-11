@@ -188,8 +188,8 @@
 
   /* ---------- teams ---------- */
 
-  function renderTeams() {
-    const root = el("div");
+  // Actual points and games played per team, from the results so far.
+  function teamActuals() {
     const pts = {}, gp = {};
     ALL_TEAMS.forEach((t) => { pts[t] = 0; gp[t] = 0; });
     for (const m of MATCHES) {
@@ -199,6 +199,12 @@
         pts[team] += scoreTeamInMatch(team, m).total; gp[team] += 1;
       }
     }
+    return { pts, gp };
+  }
+
+  function renderTeams() {
+    const root = el("div");
+    const { pts, gp } = teamActuals();
     const sorted = ALL_TEAMS.slice().sort((a, b) => pts[b] - pts[a] || a.localeCompare(b));
     const tbl = el("table", "full");
     tbl.innerHTML = `<thead><tr><th>Team</th><th>Manager</th><th class="num">GP</th><th class="num">Pts</th></tr></thead>`;
@@ -628,6 +634,50 @@
     return `<svg class="spark" viewBox="0 0 ${W} ${H}" role="img" aria-label="goal distribution">${bars}</svg>`;
   }
 
+  // Manager line colors (odds-history chart + legend).
+  const MGR_COLORS = ["#2f81f7", "#f7b32f", "#2ea043", "#f85149", "#a371f7", "#39c5cf", "#e85aad"];
+
+  // Title-odds-over-time line chart from window.ODDS_HISTORY (one entry/day).
+  function oddsHistorySection() {
+    const hist = window.ODDS_HISTORY;
+    if (!hist || !hist.length) return null;
+    const managers = Object.keys(DRAFT);
+    const latest = hist[hist.length - 1].titleOdds || {};
+    const order = managers.slice().sort((a, b) => (latest[b] || 0) - (latest[a] || 0));
+    const color = {};
+    order.forEach((m, i) => (color[m] = MGR_COLORS[i % MGR_COLORS.length]));
+
+    const W = 600, H = 380, padL = 44, padR = 10, padT = 16, padB = 30;
+    const n = hist.length;
+    const maxP = Math.max(0.05, ...hist.flatMap((h) => order.map((m) => h.titleOdds[m] || 0))) * 1.15;
+    const sx = (i) => padL + (n === 1 ? (W - padL - padR) / 2 : (i / (n - 1)) * (W - padL - padR));
+    const sy = (p) => padT + (1 - p / maxP) * (H - padT - padB);
+    const grid = [0, maxP / 2, maxP].map((p) =>
+      `<line x1="${padL}" y1="${sy(p)}" x2="${W - padR}" y2="${sy(p)}" stroke="${PC.border}" stroke-width="1" stroke-dasharray="2 3"/>` +
+      `<text x="${padL - 6}" y="${sy(p) + 4}" fill="${PC.muted}" font-size="13" text-anchor="end">${Math.round(p * 100)}%</text>`).join("");
+    const step = Math.max(1, Math.ceil(n / 6));
+    const labels = hist.map((h, i) => (i % step === 0 || i === n - 1)
+      ? `<text x="${sx(i)}" y="${H - 8}" fill="${PC.muted}" font-size="12" text-anchor="${i === 0 ? "start" : i === n - 1 ? "end" : "middle"}">${esc(fmtDate(h.date))}</text>` : "").join("");
+    const series = order.map((m) => {
+      const ptsStr = hist.map((h, i) => `${sx(i)},${sy(h.titleOdds[m] || 0)}`).join(" ");
+      const dots = hist.map((h, i) => `<circle cx="${sx(i)}" cy="${sy(h.titleOdds[m] || 0)}" r="3" fill="${color[m]}"/>`).join("");
+      return (n > 1 ? `<polyline points="${ptsStr}" fill="none" stroke="${color[m]}" stroke-width="2.5"/>` : "") + dots;
+    }).join("");
+
+    const sec = el("div");
+    sec.appendChild(el("h3", "proj-h", "Title odds over time"));
+    sec.appendChild(el("p", "proj-sub muted",
+      "Each manager's probability of finishing 1st, from the daily re-projection." +
+      (n === 1 ? " The chart grows as the tournament progresses." : "")));
+    const legend = order.map((m) =>
+      `<span class="odds-key"><span class="odds-swatch" style="background:${color[m]}"></span>${esc(m)} <b>${pctTxt(latest[m] || 0)}</b></span>`).join("");
+    sec.appendChild(el("div", "odds-legend", legend));
+    const box = el("div", "proj-chart-box odds-chart");
+    box.innerHTML = `<svg class="chart tall" viewBox="0 0 ${W} ${H}" role="img">${grid}${series}${labels}</svg>`;
+    sec.appendChild(box);
+    return sec;
+  }
+
   function renderProjections() {
     const root = el("div", "proj");
     const P = window.PROJECTIONS;
@@ -693,6 +743,10 @@
     ht.innerHTML = head + body;
     heat.appendChild(ht);
     root.appendChild(heat);
+
+    // ===== Section 2b: title odds over time (grows daily) =====
+    const oddsSec = oddsHistorySection();
+    if (oddsSec) root.appendChild(oddsSec);
 
     // ===== Section 3: per-manager detail cards =====
     root.appendChild(el("h3", "proj-h", "Manager detail"));
@@ -763,6 +817,98 @@
     return root;
   }
 
+  /* ---------- draft value: steals & busts by auction price ---------- */
+
+  function renderValue() {
+    const root = el("div", "value");
+    const PR = window.PRICES;
+    const P = window.PROJECTIONS;
+    if (!PR || !P || !P.teams) {
+      root.appendChild(el("p", "muted", "Draft value needs data/prices.js and data/projections.js."));
+      return root;
+    }
+    const { pts: actual, gp } = teamActuals();
+    const projByTeam = {};
+    P.teams.forEach((t) => (projByTeam[t.team] = t.mean));
+
+    const rows = ALL_TEAMS
+      .filter((t) => PR[t] != null && projByTeam[t] != null)
+      .map((t) => ({ team: t, owner: TEAM_OWNER[t], price: PR[t], actual: actual[t], gp: gp[t], proj: projByTeam[t] }));
+    const totalProj = rows.reduce((s, r) => s + r.proj, 0);
+    const totalPrice = rows.reduce((s, r) => s + r.price, 0);
+    const rate = totalProj / totalPrice; // league market rate: pts per $
+    rows.forEach((r) => {
+      r.fair = r.price * rate;             // what $price should buy at the league rate
+      r.value = r.proj - r.fair;           // surplus (+) or shortfall (−)
+      r.ppd = r.proj / Math.max(1, r.price);
+    });
+    rows.sort((a, b) => b.value - a.value);
+
+    const anyPlayed = MATCHES.some(hasResult);
+    root.appendChild(el("p", "muted",
+      `Was each team worth what its manager paid? "Proj" is the team's expected FINAL fantasy points from the daily simulation` +
+      (anyPlayed ? " (conditioned on results so far)" : "") +
+      `; at the league's market rate of ${rate.toFixed(2)} pts/$, a team's value is its projection minus what its price should buy. ` +
+      `Updates daily as results come in.`));
+
+    // steals & busts podium
+    const pod = el("div", "value-podium");
+    const chip = (r, cls) =>
+      `<span class="value-chip ${cls}">${esc(r.team)} <span class="muted">$${r.price} · ${esc(r.owner)}</span> <b>${r.value > 0 ? "+" : ""}${r.value.toFixed(0)}</b></span>`;
+    pod.innerHTML =
+      `<div class="value-col"><h3 class="proj-h">Steals</h3>${rows.slice(0, 5).map((r) => chip(r, "steal")).join("")}</div>` +
+      `<div class="value-col"><h3 class="proj-h">Busts</h3>${rows.slice(-5).reverse().map((r) => chip(r, "bust")).join("")}</div>`;
+    root.appendChild(pod);
+
+    // manager draft efficiency
+    const spent = {}, mgrProj = {};
+    rows.forEach((r) => (spent[r.owner] = (spent[r.owner] || 0) + r.price));
+    (P.managers || []).forEach((m) => (mgrProj[m.name] = m.mean));
+    const mgrs = Object.keys(DRAFT)
+      .map((m) => ({
+        name: m, spent: spent[m] || 0,
+        actual: DRAFT[m].reduce((s, t) => s + (actual[t] || 0), 0),
+        proj: mgrProj[m],
+      }))
+      .filter((m) => m.proj != null && m.spent > 0)
+      .map((m) => ({ ...m, ppd: m.proj / m.spent }))
+      .sort((a, b) => b.ppd - a.ppd);
+    root.appendChild(el("h3", "proj-h", "Manager draft efficiency"));
+    const mt = el("table", "full");
+    mt.innerHTML = `<thead><tr><th>Manager</th><th class="num">Spent</th><th class="num">Pts so far</th><th class="num">Proj final</th><th class="num">Proj pts/$</th></tr></thead>`;
+    const mtb = el("tbody");
+    mgrs.forEach((m) => {
+      const tr = el("tr");
+      tr.innerHTML = `<td>${esc(m.name)}</td><td class="num">$${m.spent}</td><td class="num">${m.actual}</td>` +
+        `<td class="num">${m.proj}</td><td class="num"><b>${m.ppd.toFixed(2)}</b></td>`;
+      mtb.appendChild(tr);
+    });
+    mt.appendChild(mtb);
+    root.appendChild(mt);
+
+    // full team table
+    root.appendChild(el("h3", "proj-h", "All teams by value"));
+    const tbl = el("table", "full");
+    tbl.innerHTML = `<thead><tr>
+      <th>Team</th><th>Manager</th><th class="num">$</th><th class="num">Pts so far</th>
+      <th class="num">Proj final</th><th class="num">Proj pts/$</th><th class="num">Value</th>
+    </tr></thead>`;
+    const tb = el("tbody");
+    rows.forEach((r) => {
+      const tr = el("tr");
+      const v = r.value;
+      tr.innerHTML =
+        `<td>${esc(r.team)}</td><td class="muted">${esc(r.owner)}</td><td class="num">$${r.price}</td>` +
+        `<td class="num">${r.gp ? r.actual : '<span class="muted">—</span>'}</td>` +
+        `<td class="num">${r.proj}</td><td class="num">${r.ppd.toFixed(2)}</td>` +
+        `<td class="num"><b class="${v >= 0 ? "value-pos" : "value-neg"}">${v > 0 ? "+" : ""}${v.toFixed(0)}</b></td>`;
+      tb.appendChild(tr);
+    });
+    tbl.appendChild(tb);
+    root.appendChild(tbl);
+    return root;
+  }
+
   /* ---------- auto-update countdown ---------- */
 
   function nextRun(now) {
@@ -813,6 +959,7 @@
     standings:   { label: "Standings", render: renderStandings },
     projections: { label: "Projections", render: renderProjections },
     teams:       { label: "Teams", render: renderTeams },
+    value:     { label: "Draft Value", render: renderValue },
     results:   { label: "Results", render: renderResults },
     points:    { label: "Game Points", render: renderGamePoints },
     rules:     { label: "Rules", render: renderRules },

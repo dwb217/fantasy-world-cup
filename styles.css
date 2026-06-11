@@ -179,6 +179,24 @@ table.full th, table.full td { padding: 11px 14px; }
 .results-wrap.editing .ko-cell .check { display: inline-flex; }
 .results-wrap.editing .ko-cell .ro-ko { display: none; }
 
+/* title odds over time (projections tab) */
+.odds-legend { display: flex; flex-wrap: wrap; gap: 6px 16px; margin: 4px 0 10px; font-size: .82rem; color: var(--muted); }
+.odds-key { display: inline-flex; align-items: center; gap: 6px; }
+.odds-swatch { width: 12px; height: 12px; border-radius: 3px; display: inline-block; }
+.odds-chart { margin-bottom: 18px; }
+
+/* draft value tab */
+.value-podium { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 8px; }
+@media (max-width: 640px) { .value-podium { grid-template-columns: 1fr; } }
+.value-col .value-chip { display: flex; align-items: center; justify-content: space-between; gap: 8px;
+  background: var(--panel); border: 1px solid var(--border); border-radius: 8px;
+  padding: 7px 10px; margin-bottom: 6px; font-size: .88rem; }
+.value-chip.steal b { color: var(--green); }
+.value-chip.bust b { color: #f85149; }
+.value-pos { color: var(--green); }
+.value-neg { color: #f85149; }
+.value table { margin-bottom: 22px; }
+
 /* per-manager points in the results table */
 .results-table .pts-cell { white-space: nowrap; }
 .results-table .pts-owner { display: inline-flex; align-items: center; gap: 4px;

@@ -41,8 +41,8 @@ jobs:
         run: |
           git config user.name "scores-bot"
           git config user.email "actions@github.com"
-          if [[ -n "$(git status --porcelain data/matches.js data/projections.js)" ]]; then
-            git add data/matches.js data/projections.js
+          if [[ -n "$(git status --porcelain data/matches.js data/projections.js data/odds_history.js)" ]]; then
+            git add data/matches.js data/projections.js data/odds_history.js
             git commit -m "Update projections ($(date -u +'%Y-%m-%d %H:%M UTC'))"
             git pull --rebase
             git push
