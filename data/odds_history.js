@@ -4,22 +4,22 @@ window.ODDS_HISTORY = [
   "date": "2026-06-11",
   "playedMatches": 0,
   "titleOdds": {
-   "MIKE": 0.3729,
-   "GREGORY": 0.2929,
-   "BRETT": 0.1202,
-   "PANZAR": 0.0743,
-   "BENDER": 0.0672,
-   "KYLE": 0.0617,
-   "IAN": 0.0109
+   "MIKE": 0.3699,
+   "GREGORY": 0.2909,
+   "BRETT": 0.1227,
+   "PANZAR": 0.0746,
+   "BENDER": 0.0746,
+   "KYLE": 0.0557,
+   "IAN": 0.0116
   },
   "meanPts": {
-   "MIKE": 142.67,
-   "GREGORY": 136.36,
-   "BRETT": 118.51,
-   "PANZAR": 111.56,
-   "BENDER": 111,
-   "KYLE": 108.55,
-   "IAN": 93.53
+   "MIKE": 142.65,
+   "GREGORY": 136.33,
+   "BRETT": 118.56,
+   "PANZAR": 111.59,
+   "BENDER": 111.3,
+   "KYLE": 108.43,
+   "IAN": 93.27
   }
  }
 ];
