@@ -80,6 +80,17 @@ async function discoverRounds() {
   return found;
 }
 
+/* UTC kickoff as an ISO string, from whichever time field the API filled in.
+   scripts/should_fetch.js uses this to poll only when a game may have just
+   ended. */
+function kickoffISO(ev) {
+  const ts = (ev.strTimestamp || "").trim();
+  if (ts) return ts.replace(" ", "T").replace(/Z?$/, "Z");
+  const d = (ev.dateEvent || "").trim(), t = (ev.strTime || "").trim();
+  if (d && t) return /[+Z]$/.test(t) ? `${d}T${t}` : `${d}T${t}Z`;
+  return null;
+}
+
 // Knockout label from the official 2026 calendar (round numbers are unreliable).
 function knockoutLabelByDate(date) {
   for (const w of CONFIG.knockoutWindows || []) {
@@ -152,6 +163,7 @@ async function main() {
         eventId: String(ev.idEvent),
         source: "thesportsdb",
         date: ev.dateEvent || "",
+        kickoff: kickoffISO(ev),
         stage,
         round: r,
         roundLabel,

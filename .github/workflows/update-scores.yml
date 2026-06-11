@@ -1,12 +1,16 @@
 name: Update scores
 
-# Pulls the latest results from TheSportsDB every 4 hours and commits the
-# regenerated data/matches.js. If the repo serves the site via GitHub Pages,
-# the commit triggers a redeploy, so standings update automatically.
+# Imports results from TheSportsDB as soon as possible after full time. The
+# job wakes every 10 minutes, but scripts/should_fetch.js only lets it call
+# the API when an unscored match kicked off ~1¾–7 hours ago (i.e. a result
+# could have just landed). One ungated daily run keeps the fixture list and
+# kickoff times fresh. Commits to data/matches.js only happen when match data
+# actually changed, which triggers a redeploy of the site.
 
 on:
   schedule:
-    - cron: "0 */4 * * *" # every 4 hours (UTC)
+    - cron: "*/10 * * * *" # gated by scripts/should_fetch.js
+    - cron: "23 6 * * *" # daily full refresh (always fetches)
   workflow_dispatch: {} # lets you trigger a run manually from the Actions tab
 
 permissions:
@@ -26,7 +30,20 @@ jobs:
         with:
           node-version: "24"
 
+      - name: Decide whether to call the API
+        id: gate
+        run: |
+          # Manual runs and the daily refresh always fetch; the 10-minute cron
+          # only fetches when a match may have just finished.
+          if [[ "${{ github.event_name }}" != "schedule" || "${{ github.event.schedule }}" == "23 6 * * *" ]]; then
+            echo "Forced run (manual trigger or daily refresh)."
+            echo "run=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "run=$(node scripts/should_fetch.js)" >> "$GITHUB_OUTPUT"
+          fi
+
       - name: Fetch latest results
+        if: steps.gate.outputs.run == 'true'
         env:
           # Optional: add a repository secret named SPORTSDB_KEY to use a
           # premium key. Falls back to the free "123" key if unset.
@@ -35,6 +52,7 @@ jobs:
         run: node scripts/fetch_scores.js
 
       - name: Commit changes if any
+        if: steps.gate.outputs.run == 'true'
         run: |
           git config user.name "scores-bot"
           git config user.email "actions@github.com"
