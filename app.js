@@ -200,19 +200,52 @@
     return { pts, gp };
   }
 
+  let teamsSort = { key: "pts", dir: -1 }; // persists across re-renders; dir 1=asc, -1=desc
+
   function renderTeams() {
     const root = el("div");
     const { pts, gp } = teamActuals();
-    const sorted = ALL_TEAMS.slice().sort((a, b) => pts[b] - pts[a] || a.localeCompare(b));
-    const tbl = el("table", "full");
-    tbl.innerHTML = `<thead><tr><th>Team</th><th>Manager</th><th class="num">GP</th><th class="num">Pts</th></tr></thead>`;
-    const tb = el("tbody");
-    sorted.forEach((t) => {
-      const tr = el("tr");
-      tr.innerHTML = `<td>${esc(t)}</td><td class="muted">${esc(TEAM_OWNER[t])}</td><td class="num">${gp[t]}</td><td class="num">${pts[t]}</td>`;
-      tb.appendChild(tr);
-    });
-    tbl.appendChild(tb); root.appendChild(tbl);
+    const cols = [
+      { key: "team",    label: "Team",    num: false, get: (t) => t },
+      { key: "manager", label: "Manager", num: false, get: (t) => TEAM_OWNER[t] || "" },
+      { key: "gp",      label: "GP",      num: true,  get: (t) => gp[t] },
+      { key: "pts",     label: "Pts",     num: true,  get: (t) => pts[t] },
+    ];
+
+    function draw() {
+      const col = cols.find((c) => c.key === teamsSort.key) || cols[3];
+      const dir = teamsSort.dir;
+      const rows = ALL_TEAMS.slice().sort((a, b) => {
+        const va = col.get(a), vb = col.get(b);
+        let cmp = col.num ? va - vb : String(va).localeCompare(String(vb));
+        if (cmp === 0) cmp = a.localeCompare(b); // stable tiebreak by team name
+        return cmp * dir;
+      });
+
+      const arrow = (c) => (c.key === teamsSort.key ? (dir === 1 ? " ▲" : " ▼") : "");
+      const tbl = el("table", "full");
+      tbl.innerHTML = `<thead><tr>${cols
+        .map((c) => `<th class="sortable${c.num ? " num" : ""}${c.key === teamsSort.key ? " sorted" : ""}" data-key="${c.key}">${c.label}${arrow(c)}</th>`)
+        .join("")}</tr></thead>`;
+      const tb = el("tbody");
+      rows.forEach((t) => {
+        const tr = el("tr");
+        tr.innerHTML = `<td>${esc(t)}</td><td class="muted">${esc(TEAM_OWNER[t])}</td><td class="num">${gp[t]}</td><td class="num">${pts[t]}</td>`;
+        tb.appendChild(tr);
+      });
+      tbl.appendChild(tb);
+      tbl.querySelector("thead").addEventListener("click", (e) => {
+        const th = e.target.closest("th.sortable");
+        if (!th) return;
+        const key = th.dataset.key;
+        if (teamsSort.key === key) teamsSort.dir *= -1;       // re-click flips direction
+        else teamsSort = { key, dir: cols.find((c) => c.key === key).num ? -1 : 1 }; // numbers default high→low, text A→Z
+        draw();
+      });
+      root.replaceChildren(tbl);
+    }
+
+    draw();
     return root;
   }
 
