@@ -5,11 +5,11 @@ window.COMMENTARY = {
   "entries": [
     {
       "date": "2026-06-13",
-      "generatedAt": "2026-06-13T20:25:57.125Z",
+      "generatedAt": "2026-06-13T20:36:10.062Z",
       "model": "gemma4:12b-mlx",
       "playedMatches": 4,
-      "headline": "Mike’s Massive USA Surge Leaves the Field in the Dust",
-      "text": "The fireworks started early today as the Stars and Stripes absolutely dismantled Paraguay with a crushing 4-1 victory. This massive win catapulted MIKE into the spotlight, pushing his title odds from 36% up to a commanding 40%. It is clear that the American dream is becoming a reality for MIKE while leaving everyone else scrambling to keep pace.\n\nMeanwhile, poor KYLE is feeling the burn after his Paraguay squad got dismantled. It is a rough day at the office for him, especially considering he was juggling his own internal civil war between Mexico and South Africa earlier this week. While KYLE watches his odds slide down to 5%, GREGORY saw a slight dip in his standing as well, dropping just a hair to 29% after his successful Korea-Czechia double header.\n\nThe rest of the pack is currently stuck in the middle of the pack, with BRETT and PANZAR holding steady in the teens and low single digits respectively. BENDER managed a draw against his own Bosnia squad earlier, but he is still trailing significantly behind the frontrunners. If this trend continues, MIKE might just cruise to the trophy while IAN watches from the very bottom of the barrel with a measly 1% chance."
+      "headline": "MIKE CLIMBS THE PEAK AS THE STARS AND STRIPES SHINE BRIGHT",
+      "text": "The leaderboard has a new king of the hill today. After the USA dismantled Paraguay 4-1, MIKE saw his championship odds skyrocket from 36% to a commanding 40%. It was a massive haul that puts him well ahead of GREGORY, who finds himself slipping slightly in the standings with a 29% chance at the title.\n\nKYLE is having a rougher outing than expected. While he managed to navigate his own internal conflict between Mexico and South Africa earlier this week, getting crushed by MIKE's USA squad was the ultimate blow. He’s currently sitting at a measly 5% chance of winning, which is basically saying thanks for playing at this point.\n\nMeanwhile, the rest of the pack is still grinding it out in the shadows. BRETT and PANZAR are holding steady in the middle of the pack, while BENDER and IAN are looking like long shots who might need a miracle to break into the top tier. It's anyone's game, but right now, MIKE is the man to beat."
     }
   ]
 };
