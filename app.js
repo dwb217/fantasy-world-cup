@@ -524,6 +524,33 @@
     return root;
   }
 
+  /* ---------- AI commentary ---------- *
+     Generated offline by scripts/build_commentary.js (local Ollama) into
+     data/commentary.js, then committed. Renders window.COMMENTARY.text. */
+  function renderCommentary() {
+    const root = el("div", "commentary");
+    const C = window.COMMENTARY;
+    const entries = (C && C.entries) || [];
+    if (!entries.length) {
+      root.appendChild(el("p", "muted",
+        "No commentary yet — run `node scripts/build_commentary.js` (with Ollama running) and push the result."));
+      return root;
+    }
+    entries.forEach((e) => {
+      const post = el("article", "post");
+      if (e.headline) post.appendChild(el("h3", "post-headline", esc(e.headline)));
+      const meta = [e.date ? fmtDate(e.date) : "", e.model ? "written by " + e.model : "",
+        e.playedMatches ? "after " + e.playedMatches + " matches" : ""].filter(Boolean).join(" · ");
+      if (meta) post.appendChild(el("p", "muted post-meta", esc(meta)));
+      (e.text || "").split(/\n\s*\n/).forEach((para) => {
+        const t = para.trim();
+        if (t) post.appendChild(el("p", null, esc(t)));
+      });
+      root.appendChild(post);
+    });
+    return root;
+  }
+
   /* ---------- per-game fantasy points ---------- */
 
   function koSuffix(m) {
@@ -1009,6 +1036,7 @@
     value:     { label: "Draft Value", render: renderValue },
     results:   { label: "Results", render: renderResults },
     points:    { label: "Game Points", render: renderGamePoints },
+    commentary:{ label: "Commentary", render: renderCommentary },
     rules:     { label: "Rules", render: renderRules },
   };
   function showTab(key) {
