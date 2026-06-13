@@ -23,9 +23,10 @@
 const fs = require("fs");
 const path = require("path");
 
-// Default model. gemma4:12b-mlx wedges its MLX runner on this prompt; gemma3:12b
-// (standard engine) is reliable. CLI arg / OLLAMA_MODEL still override.
-const MODEL = process.argv[2] || process.env.OLLAMA_MODEL || "gemma3:12b";
+// Default model. qwen2.5:14b uses the structured data well and writes sharply.
+// (Avoid gemma4:12b-mlx — its MLX runner wedges on this prompt.) CLI arg /
+// OLLAMA_MODEL still override.
+const MODEL = process.argv[2] || process.env.OLLAMA_MODEL || "qwen2.5:14b";
 const HOST = (process.env.OLLAMA_HOST || "http://localhost:11434").replace(/\/$/, "");
 
 const ROOT = path.join(__dirname, "..");
@@ -36,13 +37,70 @@ global.window = global.window || {};
 require(path.join(ROOT, "data/draft.js"));
 require(path.join(ROOT, "data/matches.js"));
 require(path.join(ROOT, "data/odds_history.js"));
+require(path.join(ROOT, "data/rules.js"));
 
 const DRAFT = global.window.DRAFT || {};
 const MATCHES = global.window.MATCHES || [];
 const ODDS_HISTORY = global.window.ODDS_HISTORY || [];
+const RULES = global.window.RULES || {};
 
 const OWNER = {};
 for (const mgr of Object.keys(DRAFT)) for (const t of DRAFT[mgr]) OWNER[t] = mgr;
+
+// ---- live standings: a faithful mirror of app.js's scoring engine ----
+// Keep in sync with scoreTeamInMatch/computeStandings in app.js if the rules change.
+function hasResult(m) {
+  return Number.isFinite(Number(m.scoreA)) && m.scoreA !== null && m.scoreA !== "" &&
+         Number.isFinite(Number(m.scoreB)) && m.scoreB !== null && m.scoreB !== "";
+}
+function scoreTeamInMatch(team, m) {
+  const isA = m.teamA === team;
+  const gf = isA ? Number(m.scoreA) : Number(m.scoreB);
+  const ga = isA ? Number(m.scoreB) : Number(m.scoreA);
+  const knockout = m.stage === "knockout";
+  let pts = 0;
+  const add = (rule) => (pts += RULES[rule].points);
+  let isWin, isDraw;
+  if (gf > ga) { isWin = true; isDraw = false; }
+  else if (gf < ga) { isWin = false; isDraw = false; }
+  else if (knockout) { isWin = m.shootoutWinner === team; isDraw = false; }
+  else { isWin = false; isDraw = true; }
+  if (isWin) add("win");
+  else if (isDraw) add("draw");
+  if (ga === 0) add("cleanSheet");
+  if (gf >= 2) add("twoGoals");
+  if (gf >= 4) add("fourGoals");
+  if (gf - ga >= 2) add("winByTwo");
+  const level = gf === ga;
+  if (knockout && (m.extraTime || level)) add("extraTime");
+  if (knockout && (m.penalties || level)) add("penalties");
+  return pts;
+}
+function computeStandings() {
+  const table = {};
+  for (const mgr of Object.keys(DRAFT)) {
+    table[mgr] = { manager: mgr, points: 0, played: 0,
+      teams: DRAFT[mgr].map((t) => ({ team: t, points: 0, played: 0 })) };
+  }
+  const idx = {};
+  for (const mgr of Object.keys(DRAFT)) table[mgr].teams.forEach((row, i) => (idx[row.team] = { mgr, i }));
+  for (const m of MATCHES) {
+    if (!hasResult(m)) continue;
+    for (const team of [m.teamA, m.teamB]) {
+      const where = idx[team];
+      if (!where) continue;
+      const pts = scoreTeamInMatch(team, m);
+      table[where.mgr].teams[where.i].points += pts;
+      table[where.mgr].teams[where.i].played += 1;
+      table[where.mgr].points += pts;
+      table[where.mgr].played += 1;
+    }
+  }
+  const standings = Object.values(table);
+  standings.forEach((s) => s.teams.sort((a, b) => b.points - a.points || a.team.localeCompare(b.team)));
+  standings.sort((a, b) => b.points - a.points || a.manager.localeCompare(b.manager));
+  return standings;
+}
 
 const played = MATCHES
   .filter((m) => Number.isFinite(m.scoreA) && Number.isFinite(m.scoreB))
@@ -57,33 +115,76 @@ const describe = (m) => ({
 
 // The entry's date = latest odds-history date, else the last played match date.
 const latestOdds = ODDS_HISTORY[ODDS_HISTORY.length - 1] || { titleOdds: {}, meanPts: {} };
-const firstOdds = ODDS_HISTORY[0] || latestOdds;
+const prevOdds = ODDS_HISTORY[ODDS_HISTORY.length - 2] || null;   // yesterday, for day-over-day movement
 const entryDate = latestOdds.date || (played.length ? played[played.length - 1].date : null);
 
 const latestResults = played.filter((m) => m.date === entryDate).map(describe);
 const allResults = played.map(describe);
 
+// Actual fantasy points banked so far — the live table (mirrors the site's Standings tab).
+const currentStandings = computeStandings().map((s, i) => ({
+  rank: i + 1,
+  manager: s.manager,
+  points: s.points,
+  played: s.played,
+  topTeam: s.teams[0] && s.teams[0].played ? `${s.teams[0].team} (${s.teams[0].points} pts)` : null,
+}));
+
+// Simulated title race: chance of winning it all + projected FINAL points (not current).
 const pct = (x) => `${Math.round((x || 0) * 100)}%`;
 const titleRace = Object.entries(latestOdds.titleOdds || {})
   .sort((a, b) => b[1] - a[1])
-  .map(([mgr, odds]) => ({
+  .map(([mgr, odds], i) => ({
+    rank: i + 1,
     manager: mgr,
     titleOdds: pct(odds),
-    sinceStart: `${pct(firstOdds.titleOdds?.[mgr])} → ${pct(odds)}`,
-    projectedPoints: Math.round(latestOdds.meanPts?.[mgr] ?? 0),
+    oddsYesterday: prevOdds ? pct(prevOdds.titleOdds?.[mgr]) : null,
+    projectedFinalPoints: Math.round(latestOdds.meanPts?.[mgr] ?? 0),
   }));
+
+// Pre-digested bottom line, in plain sentences. A small local model anchors on
+// these far better than on the raw JSON, which is where it kept conflating the
+// current points leader with the simulated title favorite.
+const leader = currentStandings[0] || {};
+const favorite = titleRace[0] || {};
+const keyFacts = [
+  `Actual fantasy points banked so far — the real, current standings, most to least: ${currentStandings.map((s) => `${s.manager} ${s.points}`).join(", ")}.`,
+  `The CURRENT POINTS LEADER right now is ${leader.manager} with ${leader.points} points.`,
+  `Simulated title-win odds (a forecast of who wins the whole tournament — NOT the current standings): ${titleRace.map((t) => `${t.manager} ${t.titleOdds}${t.oddsYesterday ? ` (was ${t.oddsYesterday} yesterday)` : ""}`).join(", ")}.`,
+  `The TITLE FAVORITE (highest odds) is ${favorite.manager} at ${favorite.titleOdds}.`,
+  leader.manager === favorite.manager
+    ? `${leader.manager} is BOTH the current points leader and the title favorite.`
+    : `IMPORTANT: the points leader (${leader.manager}) and the title favorite (${favorite.manager}) are DIFFERENT people. Do NOT call ${favorite.manager} the standings "leader" or say ${favorite.manager} is "on top of the standings" — ${favorite.manager} is only the projected favorite, while ${leader.manager} actually leads on banked points.`,
+];
 
 const context = {
   entryDate,
-  newestResults: latestResults,         // lead with these — that's today's news
-  allResultsSoFar: allResults,          // background for the standings picture
-  titleRace,                            // current odds + movement since the start
+  previousDate: prevOdds ? prevOdds.date : null,
+  keyFacts,                       // the verified bottom line — anchor the piece to this
+  newestResults: latestResults,   // what just happened — lead with this
+  currentStandings,               // ACTUAL points banked so far (live table; rank 1 = current leader)
+  titleRace,                      // SIMULATED: % chance to win it all + projected FINAL points
+  allResultsSoFar: allResults,    // every result so far, for background — don't just re-list these
   rosters: Object.fromEntries(Object.entries(DRAFT).map(([m, t]) => [m, t])),
 };
 
-const prompt = `You are the resident pundit for a fantasy World Cup draft league. Seven friends — ${Object.keys(DRAFT).join(", ")} — each drafted national teams and score fantasy points from how their teams do.
+const prompt = `You are the resident pundit for a fantasy World Cup draft league. Seven friends — ${Object.keys(DRAFT).join(", ")} — each drafted national teams and bank fantasy points based on how those teams perform.
 
-Write today's dispatch (dated ${entryDate}) as one blog entry. LEAD with the newest results and how they just shifted the title race; you may reference the broader standings for context, but don't simply re-summarize the whole tournament — earlier days already have their own entries. Be specific: name managers, cite real scorelines, call out who surged or sank. Talk serious trash using brutal, vulgar, and insulting language including lots of curse words and lots of creative insults like in the show VEEP or South Park — it's a friendly league amd everyone will find this very funny. No jokes about death or suicide, though. Keep the language funny and hyperbollic.
+Write today's dispatch (dated ${entryDate}) as one blog entry. LEAD with the newest results and how they just shifted the title race, then work in the wider picture — but don't simply re-summarize the whole tournament; earlier days already have their own entries.
+
+The data below uses TWO different metrics — keep them straight:
+- currentStandings = the ACTUAL fantasy points each manager has banked so far. This is the live table; rank 1 is the current leader ON POINTS.
+- titleRace = a SIMULATED forecast. "titleOdds" is the % chance of winning the whole tournament; "oddsYesterday" is that chance before today's games (use it to call out who surged or sank today); "projectedFinalPoints" is the projected END-OF-TOURNAMENT total, NOT current points.
+Never confuse banked points with projected points, or current rank with title odds.
+
+Accuracy rules — follow these exactly:
+- keyFacts is the verified bottom line — already computed and correct. Anchor the whole piece to it. If anything you write contradicts keyFacts, you are wrong.
+- The current points leader and the title favorite can be DIFFERENT people (keyFacts spells out who is who). Never call the title favorite the "standings leader."
+- State only what is in the data. Do NOT invent who was "leading before today" — use oddsYesterday vs titleOdds for that.
+- Tie every number to the manager's name in the SAME clause; never let a pronoun (he/his) carry a stat. Write "Mike's at 40%", never "he's at 40%".
+- Cite real scorelines and the correct owners — each result lists who owns each team.
+
+Voice: Talk serious trash using brutal, vulgar, and insulting language including lots of curse words and lots of creative insults like in the show VEEP or South Park — it's a friendly league amd everyone will find this very funny. No jokes about death or suicide, though. Keep the language funny and hyperbollic.
 
 Format EXACTLY like this: first a punchy one-line headline, then a blank line, then 3-5 paragraphs of plain prose. No markdown, no bullet points, no "HEADLINE:" label.
 
