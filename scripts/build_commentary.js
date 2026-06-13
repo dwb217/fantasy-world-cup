@@ -23,7 +23,9 @@
 const fs = require("fs");
 const path = require("path");
 
-const MODEL = process.argv[2] || process.env.OLLAMA_MODEL || "gemma4:12b-mlx";
+// Default model. gemma4:12b-mlx wedges its MLX runner on this prompt; gemma3:12b
+// (standard engine) is reliable. CLI arg / OLLAMA_MODEL still override.
+const MODEL = process.argv[2] || process.env.OLLAMA_MODEL || "gemma3:12b";
 const HOST = (process.env.OLLAMA_HOST || "http://localhost:11434").replace(/\/$/, "");
 
 const ROOT = path.join(__dirname, "..");
@@ -81,9 +83,9 @@ const context = {
 
 const prompt = `You are the resident pundit for a fantasy World Cup draft league. Seven friends — ${Object.keys(DRAFT).join(", ")} — each drafted national teams and score fantasy points from how their teams do.
 
-Write today's dispatch (dated ${entryDate}) as one blog entry. LEAD with the newest results and how they just shifted the title race; you may reference the broader standings for context, but don't simply re-summarize the whole tournament — earlier days already have their own entries. Be specific: name managers, cite real scorelines, call out who surged or sank. Talk a little trash — it's a friendly league.
+Write today's dispatch (dated ${entryDate}) as one blog entry. LEAD with the newest results and how they just shifted the title race; you may reference the broader standings for context, but don't simply re-summarize the whole tournament — earlier days already have their own entries. Be specific: name managers, cite real scorelines, call out who surged or sank. Talk serious trash using brutal, vulgar, and insulting language including lots of curse words and lots of creative insults like in the show VEEP or South Park — it's a friendly league amd everyone will find this very funny. No jokes about death or suicide, though. Keep the language funny and hyperbollic.
 
-Format EXACTLY like this: first a punchy one-line headline, then a blank line, then 3-4 short paragraphs of plain prose. No markdown, no bullet points, no "HEADLINE:" label.
+Format EXACTLY like this: first a punchy one-line headline, then a blank line, then 3-5 paragraphs of plain prose. No markdown, no bullet points, no "HEADLINE:" label.
 
 Data (JSON):
 ${JSON.stringify(context, null, 2)}
