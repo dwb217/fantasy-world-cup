@@ -13,12 +13,34 @@
 set -euo pipefail
 
 REPO="/Users/dwb/Code/fantasy_world_cup"
-MODEL="${1:-${OLLAMA_MODEL:-gemma4:12b-mlx}}"
+MARKER="$HOME/.fwc_commentary_last_run"   # records the last UTC date we generated for
 export PATH="/opt/homebrew/bin:/usr/local/bin:/usr/bin:/bin"  # cron/launchd has a bare PATH
+
+# `--force` (or FORCE=1) bypasses the UTC gate for manual testing.
+FORCE="${FORCE:-0}"
+if [ "${1:-}" = "--force" ]; then FORCE=1; shift; fi
+MODEL="${1:-${OLLAMA_MODEL:-gemma4:12b-mlx}}"
 
 cd "$REPO"
 
 log() { echo "[$(date -u +'%Y-%m-%dT%H:%M:%SZ')] $*"; }
+
+# 0. UTC gate: run at most once per UTC day, only at/after 12:00 UTC. launchd
+# polls every 10 min (see the plist), so the real work fires at the first poll
+# at/after noon UTC — and if the Mac was asleep/off then, at the first poll
+# after it wakes. Pure-UTC, so it's immune to daylight-saving shifts. The marker
+# is written only after a successful generation, so a transient failure (e.g.
+# Ollama down at noon) just retries on the next poll instead of being skipped.
+TODAY_UTC="$(date -u +%Y-%m-%d)"
+HOUR_UTC=$((10#$(date -u +%H)))   # 10# forces base-10 so "08"/"09" don't error
+if [ "$FORCE" != "1" ]; then
+  if [ "$(cat "$MARKER" 2>/dev/null || true)" = "$TODAY_UTC" ]; then
+    exit 0   # already generated today
+  fi
+  if [ "$HOUR_UTC" -lt 12 ]; then
+    exit 0   # before noon UTC — wait for a later poll
+  fi
+fi
 
 # 1. Make sure Ollama is up before we bother pulling.
 if ! curl -sf http://localhost:11434/api/tags >/dev/null; then
@@ -43,3 +65,7 @@ if [[ -n "$(git status --porcelain data/commentary.js)" ]]; then
 else
   log "No commentary change — nothing to push."
 fi
+
+# Mark this UTC day done so later polls don't regenerate.
+echo "$TODAY_UTC" > "$MARKER"
+log "Done for $TODAY_UTC."

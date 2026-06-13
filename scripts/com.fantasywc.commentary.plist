@@ -1,18 +1,17 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <!--
-  Daily commentary sync. Install with:
+  Daily commentary sync, gated to noon UTC. Install with:
 
     cp scripts/com.fantasywc.commentary.plist ~/Library/LaunchAgents/
     launchctl load ~/Library/LaunchAgents/com.fantasywc.commentary.plist
 
-  Runs scripts/sync_commentary.sh every day at 09:00 LOCAL time. If the Mac is
-  asleep/off at 09:00, launchd runs it at the next wake. Logs go to /tmp.
-  To change the time, edit Hour/Minute below, then:
-    launchctl unload ~/Library/LaunchAgents/com.fantasywc.commentary.plist
-    cp scripts/com.fantasywc.commentary.plist ~/Library/LaunchAgents/
-    launchctl load  ~/Library/LaunchAgents/com.fantasywc.commentary.plist
-  To stop it entirely: launchctl unload ~/Library/LaunchAgents/com.fantasywc.commentary.plist
+  launchd has no UTC scheduling, so instead of firing at one local clock time
+  this polls every 10 minutes (and once on wake / at load). scripts/sync_commentary.sh
+  itself enforces "once per UTC day, at or after 12:00 UTC" — so the real work
+  runs at the first poll at/after noon UTC, and if the Mac was asleep/off then,
+  at the first poll after it wakes. This is DST-proof (the gate is pure UTC).
+  To stop it: launchctl unload ~/Library/LaunchAgents/com.fantasywc.commentary.plist
 -->
 <plist version="1.0">
 <dict>
@@ -25,16 +24,14 @@
     <string>/Users/dwb/Code/fantasy_world_cup/scripts/sync_commentary.sh</string>
   </array>
 
-  <key>StartCalendarInterval</key>
-  <dict>
-    <key>Hour</key>
-    <integer>9</integer>
-    <key>Minute</key>
-    <integer>0</integer>
-  </dict>
+  <!-- Poll every 10 min; the script's UTC gate decides when to actually run.
+       launchd also fires a missed interval once when the Mac wakes. -->
+  <key>StartInterval</key>
+  <integer>600</integer>
 
+  <!-- Also check immediately when the agent loads (boot/login). -->
   <key>RunAtLoad</key>
-  <false/>
+  <true/>
 
   <key>StandardOutPath</key>
   <string>/tmp/fwc-commentary.log</string>
