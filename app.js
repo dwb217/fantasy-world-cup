@@ -844,10 +844,13 @@
 
     const anyPlayed = MATCHES.some(hasResult);
     root.appendChild(el("p", "muted",
-      `Was each team worth what its manager paid? "Proj" is the team's expected FINAL fantasy points from the daily simulation` +
-      (anyPlayed ? " (conditioned on results so far)" : "") +
-      `; at the league's market rate of ${rate.toFixed(2)} pts/$, a team's value is its projection minus what its price should buy. ` +
-      `Updates daily as results come in.`));
+      `Was each team worth what its manager paid? The whole field cost $${totalPrice} for ${Math.round(totalProj)} projected points — ` +
+      `a league-average rate of ${rate.toFixed(2)} pts per $. A team's "fair" return is its price × ${rate.toFixed(2)}, ` +
+      `and its Value (last column) is projected final points minus that fair return: ` +
+      `+N means it's projected to beat its price tag by N points (a steal), −N means it falls short (a bust). ` +
+      `"Proj" is each team's expected FINAL fantasy points from the daily simulation` +
+      (anyPlayed ? ", conditioned on results so far" : "") +
+      `; "Proj pts/$" is just that projection divided by price. Updates daily as results come in.`));
 
     // steals & busts podium
     const pod = el("div", "value-podium");
