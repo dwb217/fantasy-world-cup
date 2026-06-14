@@ -23,10 +23,9 @@
 const fs = require("fs");
 const path = require("path");
 
-// Default model. qwen2.5:14b uses the structured data well and writes sharply.
-// (Avoid gemma4:12b-mlx — its MLX runner wedges on this prompt.) CLI arg /
-// OLLAMA_MODEL still override.
-const MODEL = process.argv[2] || process.env.OLLAMA_MODEL || "qwen2.5:14b";
+// Default model. (Avoid gemma4:12b-mlx — its MLX runner wedges on this prompt.)
+// CLI arg / OLLAMA_MODEL still override.
+const MODEL = process.argv[2] || process.env.OLLAMA_MODEL || "qwen3.6:27b";
 const HOST = (process.env.OLLAMA_HOST || "http://localhost:11434").replace(/\/$/, "");
 
 const ROOT = path.join(__dirname, "..");
@@ -228,7 +227,9 @@ async function main() {
     res = await fetch(`${HOST}/api/generate`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ model: MODEL, prompt, stream: false, options: { temperature: 0.8 } }),
+      // num_ctx caps the KV cache: the prompt is only a few thousand tokens, so the
+      // default 32K window just wastes RAM (and on a big model can OOM the runner).
+      body: JSON.stringify({ model: MODEL, prompt, stream: false, options: { temperature: 0.8, num_ctx: 8192 } }),
     });
   } catch (e) {
     console.error(`\nCould not reach Ollama at ${HOST}. Is it running? Try: ollama serve`);
