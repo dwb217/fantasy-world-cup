@@ -23,9 +23,10 @@
 const fs = require("fs");
 const path = require("path");
 
-// Default model. (Avoid gemma4:12b-mlx — its MLX runner wedges on this prompt.)
-// CLI arg / OLLAMA_MODEL still override.
-const MODEL = process.argv[2] || process.env.OLLAMA_MODEL || "qwen3.6:27b";
+// Default model. qwen2.5:14b uses the structured data well and fits comfortably
+// in RAM. (qwen3.6:27b is too memory-heavy on a 32GB Mac — it fails the real
+// generation; gemma4:12b-mlx wedges its MLX runner.) CLI arg / OLLAMA_MODEL override.
+const MODEL = process.argv[2] || process.env.OLLAMA_MODEL || "qwen2.5:14b";
 const HOST = (process.env.OLLAMA_HOST || "http://localhost:11434").replace(/\/$/, "");
 
 const ROOT = path.join(__dirname, "..");

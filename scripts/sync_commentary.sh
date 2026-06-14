@@ -19,7 +19,7 @@ export PATH="/opt/homebrew/bin:/usr/local/bin:/usr/bin:/bin"  # cron/launchd has
 # `--force` (or FORCE=1) bypasses the UTC gate for manual testing.
 FORCE="${FORCE:-0}"
 if [ "${1:-}" = "--force" ]; then FORCE=1; shift; fi
-MODEL="${1:-${OLLAMA_MODEL:-qwen3.6:27b}}"   # avoid gemma4:12b-mlx (its MLX runner wedges)
+MODEL="${1:-${OLLAMA_MODEL:-qwen2.5:14b}}"   # fits in RAM & accurate; qwen3.6:27b OOMs, gemma4:12b-mlx wedges
 
 cd "$REPO"
 
