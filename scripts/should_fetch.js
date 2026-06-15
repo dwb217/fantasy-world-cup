@@ -14,26 +14,33 @@ global.window = global.window || {};
 require(path.join(ROOT, "data/matches.js"));
 const MATCHES = global.window.MATCHES || [];
 
-const EARLIEST_FT_MIN = 120; // start polling 2h after kickoff (the workflow then
-                             // retries every 20 min until the final score lands)
-const GIVE_UP_HOURS = 7;     // past this, leave the game to the daily refresh
+const EARLIEST_FT_MIN = 120; // a match needs ~2h from kickoff to reach full time;
+                             // start polling then, and the cron retries every 20 min.
 
 const now = Date.now();
 const today = new Date(now).toISOString().slice(0, 10);
 const yesterday = new Date(now - 24 * 3600 * 1000).toISOString().slice(0, 10);
 
+// Keep chasing a result for any unscored match dated TODAY or YESTERDAY (UTC).
+// Bounding by date instead of "hours since kickoff" is what fixes the midnight
+// bug: a game that kicks off late and finishes after 00:00 UTC used to fall out
+// of a fixed post-game window while its first hours passed overnight (when the
+// scheduled polls are least reliable). Tying eligibility to the match date keeps
+// it pollable through the whole next UTC day, so the daytime polls catch it.
+// Anything older is left to the daily refresh / manual entry.
 const reasons = [];
 for (const m of MATCHES) {
   const hasResult = Number.isFinite(m.scoreA) && Number.isFinite(m.scoreB);
   if (hasResult) continue;
+  if (m.date !== today && m.date !== yesterday) continue;
 
   const ko = m.kickoff ? Date.parse(m.kickoff) : NaN;
   if (Number.isFinite(ko)) {
     const minsAgo = (now - ko) / 60000;
-    if (minsAgo >= EARLIEST_FT_MIN && minsAgo <= GIVE_UP_HOURS * 60) {
-      reasons.push(`${m.teamA}–${m.teamB} kicked off ${Math.round(minsAgo)} min ago`);
+    if (minsAgo >= EARLIEST_FT_MIN) {
+      reasons.push(`${m.teamA}–${m.teamB} kicked off ${Math.round(minsAgo)} min ago, still unscored`);
     }
-  } else if (m.date === today || m.date === yesterday) {
+  } else {
     // No kickoff time on record (data predating the kickoff field, or a manual
     // entry): poll for the whole match day rather than risk missing the result.
     reasons.push(`${m.teamA}–${m.teamB} (${m.date}) has no kickoff time on record`);
