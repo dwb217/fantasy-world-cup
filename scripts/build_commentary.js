@@ -123,7 +123,6 @@ const prevOdds = ODDS_HISTORY[ODDS_HISTORY.length - 2] || null;   // yesterday, 
 const entryDate = latestOdds.date || (played.length ? played[played.length - 1].date : null);
 
 const latestResults = played.filter((m) => m.date === entryDate).map(describe);
-const allResults = played.map(describe);
 
 // Today's fixtures that haven't kicked off yet. This dispatch is generated in
 // the MORNING (the 10:30 UTC cron) — before the day's games — so feed the model
@@ -193,18 +192,23 @@ const context = {
   newestResults: latestResults,   // what just happened — lead with this
   currentStandings,               // ACTUAL points banked so far (live table; rank 1 = current leader)
   titleRace,                      // SIMULATED: % chance to win it all + projected FINAL points
-  allResultsSoFar: allResults,    // every result so far, for background — don't just re-list these
   upcomingToday,                  // today's fixtures NOT yet played — this runs in the morning, before kickoff
   rosters: Object.fromEntries(Object.entries(DRAFT).map(([m, t]) => [m, t])),
 };
 
 const prompt = `You are the foul mouthed pundit for a fantasy World Cup draft league. Seven friends — ${Object.keys(DRAFT).join(", ")} — each drafted national teams and bank fantasy points based on how those teams perform.
 
-Write today's dispatch (dated ${entryDate}) as one blog entry. This dispatch is written in the MORNING, BEFORE today's matches kick off — so today has no results yet; that is expected, NOT a slow news day.
-- If "upcomingToday" is non-empty, LEAD by previewing today's slate: name the fixtures (who plays whom), call out which managers have teams in action and what's at stake for the title race, and talk shit about how it'll go. Do NOT say "no games today" — the games are coming, later today.
-- Cover any "newestResults" (games already finished) too, and how they moved the race.
-- If BOTH are empty, it is genuinely a rest day — lean on the standings and title race.
-Then work in the wider picture — but don't simply re-summarize the whole tournament; earlier days already have their own entries. Never invent or predict a SCORE for an upcoming game — preview the matchup, don't fabricate results.
+Write today's dispatch (dated ${entryDate}) as one blog entry. This is NOT a news recap or a results roundup — it is savage, funny commentary that ROASTS the seven managers as people: their egos, their dumbass draft picks, their delusional overconfidence, their thin skin. The fantasy data is your AMMUNITION, not your subject. Mock the managers; do not report the games.
+
+How to use the data — this is the most important rule:
+- Pick only a FEW facts (a scoreline or two, a point total, an odds swing) and use each as the SETUP or PUNCHLINE for a joke at a specific manager's expense. One vivid, specific jab lands harder than a paragraph of stats.
+- Do NOT walk through every result. Do NOT go manager-by-manager listing everyone's points. Do NOT write a "how we got here" recap. If a sentence is just reporting what happened with no joke attached, cut it and write an insult instead.
+- Name specific managers and tear into them; vary who gets it and how — don't give everyone the same treatment.
+
+Timing: this dispatch is written in the MORNING, before today's matches kick off, so today has no results yet — that is expected, not a slow news day.
+- If "upcomingToday" is non-empty, use today's matchups as fuel for shit-talk about the managers whose teams are playing and what's at stake — not as a fixture list to read out.
+- Use "newestResults" as fresh material to mock. Never invent or predict a SCORE for an upcoming game.
+- If there are no results and no upcoming games, it's a rest day — roast them on the standings and the odds alone.
 
 The data below uses TWO different metrics — keep them straight:
 - currentStandings = the ACTUAL fantasy points each manager has banked so far. This is the live table; rank 1 is the current leader ON POINTS.
@@ -228,7 +232,7 @@ Voice/tone: The tone is vicious, profane, immature, politically incorrect, relen
 
 Output ONLY a JSON object with exactly two string fields and nothing else:
 - "headline": ONE short, punchy title — a single sentence, no more than 12 words. It is a title, not the opening line: do NOT put results, scores, or stats in it.
-- "body": exactly 5 paragraphs of plain prose, separated by blank lines (\\n\\n). This is where all the results, numbers, and trash talk go. No markdown, no bullet points.
+- "body": exactly 5 short, punchy paragraphs of plain prose, separated by blank lines (\\n\\n) — jokes and roasting first, with only a few facts woven in as ammunition. NOT a recap. No markdown, no bullet points.
 
 Data (JSON):
 ${JSON.stringify(context, null, 2)}
