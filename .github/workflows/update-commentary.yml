@@ -1,14 +1,17 @@
 name: Update commentary
 
-# Daily blog dispatch (10:30 UTC — just after the 10:00 update-projections
-# refresh, so today's odds-history point already exists). Generates one new
+# Daily blog dispatch at 10:00 UTC = 6:00am EDT (the 2026 World Cup runs entirely
+# in US daylight-saving, so 10:00 UTC is 6am Eastern for the whole tournament).
+# Runs just after the 09:30 update-projections refresh, so today's odds-history
+# point already exists — that's what dates the dispatch to today and drives the
+# morning preview of fixtures that haven't kicked off yet. Generates one new
 # Commentary entry with an Ollama Cloud model and commits data/commentary.js.
 # Fully server-side: no local Ollama, runs even when the Mac is off. This
 # replaces the local launchd agent (com.fantasywc.commentary).
 
 on:
   schedule:
-    - cron: "30 10 * * *" # daily at 10:30 UTC, after update-projections
+    - cron: "0 10 * * *" # daily at 10:00 UTC = 6:00am EDT, after update-projections (09:30)
   workflow_dispatch: {} # lets you trigger a run manually from the Actions tab
 
 permissions:

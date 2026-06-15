@@ -1,15 +1,16 @@
 name: Update projections
 
-# Daily full refresh (10:00 UTC — after the last games of the previous day in
+# Daily full refresh (09:30 UTC — after the last games of the previous day in
 # North America have finished): re-fetches the fixture list and kickoff times,
 # re-runs the Monte-Carlo projections, and guarantees a daily odds-history
-# point even on days without games. Prompt post-game updates are handled by
-# the update-scores workflow, which rebuilds projections whenever a new
-# result comes in.
+# point even on days without games. Runs 30 min before update-commentary
+# (10:00 UTC = 6am EDT) so today's odds point exists when the dispatch is
+# written. Prompt post-game updates are handled by the update-scores workflow,
+# which rebuilds projections whenever a new result comes in.
 
 on:
   schedule:
-    - cron: "0 10 * * *" # daily at 10:00 UTC
+    - cron: "30 9 * * *" # daily at 09:30 UTC, before update-commentary (10:00)
   workflow_dispatch: {} # lets you trigger a run manually from the Actions tab
 
 permissions:
