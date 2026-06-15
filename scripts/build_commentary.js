@@ -200,16 +200,14 @@ Rules:
 * Favor comparisons to famous disasters, failed states, military catastrophes, corrupt organizations, and World Cup meltdowns.
 * Be creative and specific. Use the type of complex insults like in the shows VEEP or South Park.
 
-Format EXACTLY like this, in this order:
-1. A headline: ONE short, punchy line — a single sentence, no more than 12 words, on its own line. Do NOT begin the actual dispatch here, and do NOT cram results or stats into the headline; it is a title, not the first paragraph.
-2. A blank line.
-3. Exactly 5 paragraphs of plain prose, each separated by a blank line.
-No markdown, no bullet points, no "HEADLINE:" label. Everything before the first blank line is taken as the headline, so keep that to the single short line.
+Output ONLY a JSON object with exactly two string fields and nothing else:
+- "headline": ONE short, punchy title — a single sentence, no more than 12 words. It is a title, not the opening line: do NOT put results, scores, or stats in it.
+- "body": exactly 5 paragraphs of plain prose, separated by blank lines (\\n\\n). This is where all the results, numbers, and trash talk go. No markdown, no bullet points.
 
 Data (JSON):
 ${JSON.stringify(context, null, 2)}
 
-Dispatch:`;
+JSON:`;
 
 function loadExistingEntries() {
   if (!fs.existsSync(OUT)) return [];
@@ -234,6 +232,19 @@ function splitHeadline(text) {
   return { headline, body };
 }
 
+// We now ask the model for a JSON object {headline, body} (format:"json"), which
+// keeps the title from bleeding into the prose. If parsing ever fails — bad
+// model, format ignored — fall back to the old blank-line split.
+function parseDispatch(raw) {
+  try {
+    const obj = JSON.parse(raw);
+    const headline = String(obj.headline ?? "").trim();
+    const body = String(obj.body ?? "").trim();
+    if (body) return { headline, body };
+  } catch (_) { /* not JSON — fall through */ }
+  return splitHeadline(raw);
+}
+
 async function main() {
   if (!played.length) {
     console.error("No played matches yet — nothing to recap.");
@@ -249,7 +260,10 @@ async function main() {
         "Content-Type": "application/json",
         ...(API_KEY ? { Authorization: `Bearer ${API_KEY}` } : {}),
       },
-      body: JSON.stringify({ model: MODEL, prompt, stream: false, options: { temperature: 0.8 } }),
+      // format:"json" constrains the model to a parseable object so the
+      // headline and body can't bleed into each other (instruction-only
+      // separation was unreliable). parseDispatch falls back if it ever slips.
+      body: JSON.stringify({ model: MODEL, prompt, stream: false, format: "json", options: { temperature: 0.8 } }),
     });
   } catch (e) {
     console.error(`\nCould not reach Ollama at ${HOST}.${API_KEY ? " Check OLLAMA_API_KEY / network." : " Is it running? Try: ollama serve"}`);
@@ -265,7 +279,7 @@ async function main() {
     console.error("Model returned empty text.");
     process.exit(1);
   }
-  const { headline, body } = splitHeadline(raw);
+  const { headline, body } = parseDispatch(raw);
 
   // This script runs locally (not in a build), so the system clock is fine.
   const entry = {
