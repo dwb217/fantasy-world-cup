@@ -125,6 +125,20 @@ const entryDate = latestOdds.date || (played.length ? played[played.length - 1].
 const latestResults = played.filter((m) => m.date === entryDate).map(describe);
 const allResults = played.map(describe);
 
+// Today's fixtures that haven't kicked off yet. This dispatch is generated in
+// the MORNING (the 10:30 UTC cron) — before the day's games — so feed the model
+// the upcoming slate (who plays whom, which managers have skin in it). Without
+// it the model sees no results for today and wrongly declares "no games today."
+const upcomingToday = MATCHES
+  .filter((m) => m.date === entryDate && !hasResult(m))
+  .sort((a, b) => String(a.kickoff || "").localeCompare(String(b.kickoff || "")) || (a.round || 0) - (b.round || 0))
+  .map((m) => ({
+    date: m.date,
+    kickoff: m.kickoff || null,
+    round: m.roundLabel || (m.stage === "knockout" ? "Knockout" : "Group"),
+    matchup: `${m.teamA} (${OWNER[m.teamA] || "undrafted"}) vs ${m.teamB} (${OWNER[m.teamB] || "undrafted"})`,
+  }));
+
 // Actual fantasy points banked so far — the live table (mirrors the site's Standings tab).
 const currentStandings = computeStandings().map((s, i) => ({
   rank: i + 1,
@@ -169,12 +183,17 @@ const context = {
   currentStandings,               // ACTUAL points banked so far (live table; rank 1 = current leader)
   titleRace,                      // SIMULATED: % chance to win it all + projected FINAL points
   allResultsSoFar: allResults,    // every result so far, for background — don't just re-list these
+  upcomingToday,                  // today's fixtures NOT yet played — this runs in the morning, before kickoff
   rosters: Object.fromEntries(Object.entries(DRAFT).map(([m, t]) => [m, t])),
 };
 
 const prompt = `You are the foul mouthed pundit for a fantasy World Cup draft league. Seven friends — ${Object.keys(DRAFT).join(", ")} — each drafted national teams and bank fantasy points based on how those teams perform.
 
-Write today's dispatch (dated ${entryDate}) as one blog entry. LEAD with the newest results and how they just shifted the title race, then work in the wider picture — but don't simply re-summarize the whole tournament; earlier days already have their own entries.
+Write today's dispatch (dated ${entryDate}) as one blog entry. This dispatch is written in the MORNING, BEFORE today's matches kick off — so today has no results yet; that is expected, NOT a slow news day.
+- If "upcomingToday" is non-empty, LEAD by previewing today's slate: name the fixtures (who plays whom), call out which managers have teams in action and what's at stake for the title race, and talk shit about how it'll go. Do NOT say "no games today" — the games are coming, later today.
+- Cover any "newestResults" (games already finished) too, and how they moved the race.
+- If BOTH are empty, it is genuinely a rest day — lean on the standings and title race.
+Then work in the wider picture — but don't simply re-summarize the whole tournament; earlier days already have their own entries. Never invent or predict a SCORE for an upcoming game — preview the matchup, don't fabricate results.
 
 The data below uses TWO different metrics — keep them straight:
 - currentStandings = the ACTUAL fantasy points each manager has banked so far. This is the live table; rank 1 is the current leader ON POINTS.
@@ -186,6 +205,7 @@ Accuracy rules — follow these exactly:
 - The current points leader and the title favorite can be DIFFERENT people (keyFacts spells out who is who). Never call the title favorite the "standings leader."
 - State only what is in the data. Do NOT invent who was "leading before today" — use oddsYesterday vs titleOdds for that.
 - Cite real scorelines and the correct owners — each result lists who owns each team.
+- upcomingToday = fixtures scheduled for LATER TODAY that have NOT been played yet. Preview them by matchup and owner; never invent a score or claim one already happened.
 
 Voice/tone: The tone is vicious, profane, immature, politically incorrect, relentlessly mocking, and filled with curse words and assorted profanity.
 
