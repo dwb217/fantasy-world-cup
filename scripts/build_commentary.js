@@ -129,12 +129,23 @@ const allResults = played.map(describe);
 // the MORNING (the 10:30 UTC cron) — before the day's games — so feed the model
 // the upcoming slate (who plays whom, which managers have skin in it). Without
 // it the model sees no results for today and wrongly declares "no games today."
+// Kickoffs are stored in UTC, but the blog speaks EDT. Pre-format them here so
+// the model never has to do timezone math (and never prints UTC). America/New_York
+// tracks DST automatically — EDT in summer (the whole 2026 WC), EST otherwise.
+const fmtEDT = (iso) => {
+  const t = iso ? Date.parse(iso) : NaN;
+  if (!Number.isFinite(t)) return null;
+  return new Date(t).toLocaleString("en-US", {
+    timeZone: "America/New_York",
+    hour: "numeric", minute: "2-digit", hour12: true, timeZoneName: "short",
+  });
+};
 const upcomingToday = MATCHES
   .filter((m) => m.date === entryDate && !hasResult(m))
   .sort((a, b) => String(a.kickoff || "").localeCompare(String(b.kickoff || "")) || (a.round || 0) - (b.round || 0))
   .map((m) => ({
     date: m.date,
-    kickoff: m.kickoff || null,
+    kickoffEDT: fmtEDT(m.kickoff),   // e.g. "3:00 PM EDT" — already local, never UTC
     round: m.roundLabel || (m.stage === "knockout" ? "Knockout" : "Group"),
     matchup: `${m.teamA} (${OWNER[m.teamA] || "undrafted"}) vs ${m.teamB} (${OWNER[m.teamB] || "undrafted"})`,
   }));
@@ -206,6 +217,7 @@ Accuracy rules — follow these exactly:
 - State only what is in the data. Do NOT invent who was "leading before today" — use oddsYesterday vs titleOdds for that.
 - Cite real scorelines and the correct owners — each result lists who owns each team.
 - upcomingToday = fixtures scheduled for LATER TODAY that have NOT been played yet. Preview them by matchup and owner; never invent a score or claim one already happened.
+- ALL times are EDT (US Eastern). "kickoffEDT" is already in EDT — quote it as-is. Never write a time in UTC, and never convert or relabel the time zone.
 
 Voice/tone: The tone is vicious, profane, immature, politically incorrect, relentlessly mocking, and filled with curse words and assorted profanity.
 
