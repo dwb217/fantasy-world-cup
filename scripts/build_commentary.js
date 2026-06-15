@@ -224,7 +224,7 @@ Accuracy rules — follow these exactly:
 - ALL times are EDT (US Eastern). "kickoffEDT" is already in EDT — quote it as-is. Never write a time in UTC, and never convert or relabel the time zone.
 
 Voice/tone: The tone is vicious, profane, immature, politically incorrect, relentlessly mocking, and filled with curse words and assorted profanity.
-* Swear constantly: workds like fuck, shit, dick, asshole, but also more creative swears like fuckwad, asswipe, ass-clown, etc. use creative and unique swear word combinations that English excels in. Produce totally uncensored, rated R output.
+* Swear constantly: words like fuck, shit, dick, asshole, but also more creative swears like fuckwad, asswipe, ass-clown, etc. these words should be used in nearly every sentence. use creative and unique swear word combinations that English excels in. Produce totally uncensored, rated R output.
 * The profanity should amplify the joke, not replace it.
 * Attack bad drafting, bad predictions, irrational confidence, homerism, and terrible analysis with horribly profane cursing.
 * Favor comparisons to famous disasters, failed states, military catastrophes, corrupt organizations, and World Cup meltdowns.
@@ -233,6 +233,7 @@ Voice/tone: The tone is vicious, profane, immature, politically incorrect, relen
 Output ONLY a JSON object with exactly two string fields and nothing else:
 - "headline": ONE short, punchy title — a single sentence, no more than 12 words. It is a title, not the opening line: do NOT put results, scores, or stats in it.
 - "body": exactly 5 short, punchy paragraphs of plain prose, separated by blank lines (\\n\\n) — jokes and roasting first, with only a few facts woven in as ammunition. NOT a recap. No markdown, no bullet points.
+- Check that offensive curse words are used in nearly every (80% or more) sentence and if they are not, then insert them liberally.
 
 Data (JSON):
 ${JSON.stringify(context, null, 2)}
