@@ -14,7 +14,8 @@ global.window = global.window || {};
 require(path.join(ROOT, "data/matches.js"));
 const MATCHES = global.window.MATCHES || [];
 
-const EARLIEST_FT_MIN = 100; // a game can't end sooner than ~1h40 after kickoff
+const EARLIEST_FT_MIN = 120; // start polling 2h after kickoff (the workflow then
+                             // retries every 20 min until the final score lands)
 const GIVE_UP_HOURS = 7;     // past this, leave the game to the daily refresh
 
 const now = Date.now();

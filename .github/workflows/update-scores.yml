@@ -1,16 +1,18 @@
 name: Update scores
 
 # Imports results from TheSportsDB as soon as possible after full time. The
-# job wakes every 10 minutes, but scripts/should_fetch.js only lets it call
-# the API when an unscored match kicked off ~1¾–7 hours ago (i.e. a result
-# could have just landed). When a fetch brings in a new result, the
-# Monte-Carlo projections are rebuilt in the same run so odds update with the
-# scores. The daily update-projections workflow handles the full refresh
-# (fixture list, kickoff times, daily odds-history point).
+# job wakes every 20 minutes, but scripts/should_fetch.js only lets it call
+# the API when an unscored match kicked off 2–7 hours ago — i.e. polling starts
+# 2h after kickoff and retries every 20 min until the final score lands. When a
+# fetch brings in a new result, the Monte-Carlo projections are rebuilt in the
+# same run so odds update with the scores, and the commit triggers a Vercel
+# deploy so the whole app refreshes automatically. The daily update-projections
+# workflow handles the full refresh (fixture list, kickoff times, daily
+# odds-history point).
 
 on:
   schedule:
-    - cron: "*/10 * * * *" # gated by scripts/should_fetch.js
+    - cron: "*/20 * * * *" # gated by scripts/should_fetch.js
   workflow_dispatch: {} # lets you trigger a run manually from the Actions tab
 
 permissions:
