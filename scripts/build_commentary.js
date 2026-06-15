@@ -200,7 +200,11 @@ Rules:
 * Favor comparisons to famous disasters, failed states, military catastrophes, corrupt organizations, and World Cup meltdowns.
 * Be creative and specific. Use the type of complex insults like in the shows VEEP or South Park.
 
-Format EXACTLY like this: first a punchy one-line headline, then a blank line, then 5 paragraphs of plain prose. No markdown, no bullet points, no "HEADLINE:" label.
+Format EXACTLY like this, in this order:
+1. A headline: ONE short, punchy line — a single sentence, no more than 12 words, on its own line. Do NOT begin the actual dispatch here, and do NOT cram results or stats into the headline; it is a title, not the first paragraph.
+2. A blank line.
+3. Exactly 5 paragraphs of plain prose, each separated by a blank line.
+No markdown, no bullet points, no "HEADLINE:" label. Everything before the first blank line is taken as the headline, so keep that to the single short line.
 
 Data (JSON):
 ${JSON.stringify(context, null, 2)}
