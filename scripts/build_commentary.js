@@ -23,11 +23,15 @@
 const fs = require("fs");
 const path = require("path");
 
-// Default model. qwen2.5:14b uses the structured data well and fits comfortably
-// in RAM. (qwen3.6:27b is too memory-heavy on a 32GB Mac — it fails the real
-// generation; gemma4:12b-mlx wedges its MLX runner.) CLI arg / OLLAMA_MODEL override.
+// Default model. qwen2.5:14b uses the structured data well and writes sharply.
+// (Avoid gemma4:12b-mlx — its MLX runner wedges on this prompt.) CLI arg /
+// OLLAMA_MODEL still override.
 const MODEL = process.argv[2] || process.env.OLLAMA_MODEL || "qwen2.5:14b";
-const HOST = (process.env.OLLAMA_HOST || "http://localhost:11434").replace(/\/$/, "");
+// OLLAMA_API_KEY (set in CI) switches us to Ollama Cloud: same /api/generate
+// endpoint at ollama.com, plus a Bearer header. Locally the key is unset, so we
+// keep talking to the local daemon. OLLAMA_HOST still overrides either default.
+const API_KEY = process.env.OLLAMA_API_KEY || "";
+const HOST = (process.env.OLLAMA_HOST || (API_KEY ? "https://ollama.com" : "http://localhost:11434")).replace(/\/$/, "");
 
 const ROOT = path.join(__dirname, "..");
 const OUT = path.join(ROOT, "data", "commentary.js");
@@ -168,7 +172,7 @@ const context = {
   rosters: Object.fromEntries(Object.entries(DRAFT).map(([m, t]) => [m, t])),
 };
 
-const prompt = `You are the resident pundit for a fantasy World Cup draft league. Seven friends — ${Object.keys(DRAFT).join(", ")} — each drafted national teams and bank fantasy points based on how those teams perform.
+const prompt = `You are the very spicy pundit for a fantasy World Cup draft league. Seven friends — ${Object.keys(DRAFT).join(", ")} — each drafted national teams and bank fantasy points based on how those teams perform.
 
 Write today's dispatch (dated ${entryDate}) as one blog entry. LEAD with the newest results and how they just shifted the title race, then work in the wider picture — but don't simply re-summarize the whole tournament; earlier days already have their own entries.
 
@@ -181,12 +185,22 @@ Accuracy rules — follow these exactly:
 - keyFacts is the verified bottom line — already computed and correct. Anchor the whole piece to it. If anything you write contradicts keyFacts, you are wrong.
 - The current points leader and the title favorite can be DIFFERENT people (keyFacts spells out who is who). Never call the title favorite the "standings leader."
 - State only what is in the data. Do NOT invent who was "leading before today" — use oddsYesterday vs titleOdds for that.
-- Tie every number to the manager's name in the SAME clause; never let a pronoun (he/his) carry a stat. Write "Mike's at 40%", never "he's at 40%".
 - Cite real scorelines and the correct owners — each result lists who owns each team.
 
-Voice: Talk serious trash using brutal, vulgar, and insulting language including lots of curse words and lots of creative insults like in the show VEEP or South Park — it's a friendly league amd everyone will find this very funny. No jokes about death or suicide, though. Keep the language funny and hyperbollic.
+Voice/tone: The tone is vicious, profane, immature, politically incorrect, relentlessly mocking, and filled with curse words and assorted profanity.
 
-Format EXACTLY like this: first a punchy one-line headline, then a blank line, then 3-5 paragraphs of plain prose. No markdown, no bullet points, no "HEADLINE:" label.
+Use frequent swearing, crude metaphors, and personal ridicule. 
+
+Rules:
+
+* Swearing is encouraged.
+* The profanity should amplify the joke, not replace it.
+* Attack bad drafting, bad predictions, irrational confidence, homerism, and terrible analysis.
+* Assume every fantasy manager is arrogant, thin-skinned, and wildly overestimates their expertise.
+* Favor comparisons to famous disasters, failed states, military catastrophes, corrupt organizations, and World Cup meltdowns.
+* Be creative and specific.
+
+Format EXACTLY like this: first a punchy one-line headline, then a blank line, then 5 paragraphs of plain prose. No markdown, no bullet points, no "HEADLINE:" label.
 
 Data (JSON):
 ${JSON.stringify(context, null, 2)}
@@ -227,13 +241,14 @@ async function main() {
   try {
     res = await fetch(`${HOST}/api/generate`, {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
-      // num_ctx caps the KV cache: the prompt is only a few thousand tokens, so the
-      // default 32K window just wastes RAM (and on a big model can OOM the runner).
-      body: JSON.stringify({ model: MODEL, prompt, stream: false, options: { temperature: 0.8, num_ctx: 8192 } }),
+      headers: {
+        "Content-Type": "application/json",
+        ...(API_KEY ? { Authorization: `Bearer ${API_KEY}` } : {}),
+      },
+      body: JSON.stringify({ model: MODEL, prompt, stream: false, options: { temperature: 0.8 } }),
     });
   } catch (e) {
-    console.error(`\nCould not reach Ollama at ${HOST}. Is it running? Try: ollama serve`);
+    console.error(`\nCould not reach Ollama at ${HOST}.${API_KEY ? " Check OLLAMA_API_KEY / network." : " Is it running? Try: ollama serve"}`);
     process.exit(1);
   }
   if (!res.ok) {

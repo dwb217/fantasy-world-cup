@@ -1,0 +1,51 @@
+name: Update commentary
+
+# Daily blog dispatch (10:30 UTC — just after the 10:00 update-projections
+# refresh, so today's odds-history point already exists). Generates one new
+# Commentary entry with an Ollama Cloud model and commits data/commentary.js.
+# Fully server-side: no local Ollama, runs even when the Mac is off. This
+# replaces the local launchd agent (com.fantasywc.commentary).
+
+on:
+  schedule:
+    - cron: "30 10 * * *" # daily at 10:30 UTC, after update-projections
+  workflow_dispatch: {} # lets you trigger a run manually from the Actions tab
+
+permissions:
+  contents: write
+
+# Shares the queue with update-scores / update-projections so the three never
+# push at once.
+concurrency:
+  group: update-scores
+  cancel-in-progress: false
+
+jobs:
+  commentary:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+
+      - uses: actions/setup-node@v5
+        with:
+          node-version: "24"
+
+      - name: Generate commentary (Ollama Cloud)
+        env:
+          OLLAMA_API_KEY: ${{ secrets.OLLAMA_API_KEY }}
+          OLLAMA_HOST: https://ollama.com
+          OLLAMA_MODEL: gpt-oss:120b
+        run: node scripts/build_commentary.js
+
+      - name: Commit changes if any
+        run: |
+          git config user.name "commentary-bot"
+          git config user.email "actions@github.com"
+          if [[ -n "$(git status --porcelain data/commentary.js)" ]]; then
+            git add data/commentary.js
+            git commit -m "Update commentary ($(date -u +'%Y-%m-%d %H:%M UTC'))"
+            git pull --rebase
+            git push
+          else
+            echo "No changes."
+          fi
