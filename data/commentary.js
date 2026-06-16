@@ -4,6 +4,14 @@
 window.COMMENTARY = {
   "entries": [
     {
+      "date": "2026-06-16",
+      "generatedAt": "2026-06-16T12:28:56.478Z",
+      "model": "gpt-oss:120b",
+      "playedMatches": 16,
+      "headline": "Mike’s Cocky Ego Survives Even His Odds Crash",
+      "text": "Mike's sitting on 24 points like a smug motherfucker, still the title favorite, but his odds fell from a smug 40% to a miserable 33% because his own teams are about to fight each other like two hungover assholes. The only thing more pathetic than his ego is his forecast, which now looks like a steaming pile of fucking shit.\n\nPanzar struts around with his Germany pick thinking he's the next big thing, yet he's stuck at 21 points and a pathetic 6% chance, the exact same sorry odds he had yesterday, you delusional dickhead. He's a walking, talking fantasy turkey, flapping his useless clipboard while the rest of us roll our eyes at his pathetic bullshit.\n\nBrett's roster reads like a half‑assed travel brochure – Netherlands, Belgium, Croatia, Japan, Australia, Panama – and he only scraped 17 points, proving his draft was as useful as a condom in a tornado, you clueless fuckwit. He's the kind of manager who would pick a team based on the flag's colors and then cry like a baby when it sucks.\n\nGregory somehow nudged his title odds up to 26%, but his 13 points are still a joke, like a kid bringing a water pistol to a goddamn gunfight, you sorry sack of shit. Bender's 11 points and 10% odds make him the league's resident asshole, clinging to his Senegal fantasy like it's a life raft in a sea of his own incompetence, you miserable motherfucker. Kyle's 12 points and 5% odds are about as impressive as a wet fart in a hurricane, you pathetic dickhead.\n\nIan's the league's walking disaster, barely dragging 6 points and watching his Iran crawl to a 2‑2 draw like a bored hamster on a dull drug trip, you absolute fuck‑up. Now he's got his France taking on Bender's Senegal at 3 PM, which will probably end in another boring draw, because that's all his brain can conjure – a sad, useless, fuck‑filled mess."
+    },
+    {
       "date": "2026-06-15",
       "generatedAt": "2026-06-15T13:32:04.502Z",
       "model": "gpt-oss:120b",
