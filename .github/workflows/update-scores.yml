@@ -1,32 +1,47 @@
 name: Update scores
 
-# Imports results from TheSportsDB as soon as possible after full time. The
-# job wakes every 20 minutes, but scripts/should_fetch.js only lets it call the
-# API when there's an unscored match dated today/yesterday (UTC) that kicked off
-# 2+ hours ago — i.e. polling starts 2h after kickoff and retries every 20 min
-# until the final score lands, INCLUDING games that finish after midnight (their
-# eligibility is bounded by date, not a fixed post-game window, so an overnight
-# game stays pollable through the next UTC day). When a fetch brings in a new
-# result, the Monte-Carlo projections are rebuilt in the same run so odds update
-# with the scores, and the commit triggers a Vercel deploy so the whole app
-# refreshes automatically. The daily update-projections workflow handles the
-# full refresh (fixture list, kickoff times, daily odds-history point).
+# Imports results from TheSportsDB as soon as possible after full time, WITHOUT
+# depending on GitHub's scheduler firing on time (it doesn't — a "*/20" cron in
+# practice fires every 1-6 hours because GitHub throttles/drops frequent
+# schedules). So instead of trusting the cron cadence, the job provides its own:
+#
+#   * Every trigger does one fetch immediately — that's the "every few hours,
+#     make sure nothing's missed" safety sweep.
+#   * If scripts/should_fetch.js reports a game in its window (an unscored match
+#     dated today/yesterday UTC that kicked off 2+ hours ago), the job then LOOPS
+#     IN PLACE — fetch, sleep 20 min, fetch — until the final score lands or it
+#     nears GitHub's 6h job limit. The 20-minute cadence comes from the job's own
+#     `sleep`, not from the scheduler, so it's reliable.
+#
+# Because the gate keeps a game eligible through the next UTC day, GitHub's flaky
+# schedule only has to fire ONCE while the game is in window to start the tight
+# loop. When a fetch brings in a new result the Monte-Carlo projections are
+# rebuilt in the same iteration and pushed, which triggers a Vercel deploy so the
+# whole app refreshes automatically. The daily update-projections workflow still
+# handles the full refresh (fixture list, kickoff times, daily odds-history point).
 
 on:
   schedule:
-    - cron: "*/20 * * * *" # gated by scripts/should_fetch.js
+    # Best-effort: GitHub won't honor 20-min spacing, but the more often we ask,
+    # the sooner a run lands inside a game's window and hands off to the in-job
+    # polling loop below. We rely on this firing SOMETIME in the window, not on
+    # its cadence.
+    - cron: "*/20 * * * *"
   workflow_dispatch: {} # lets you trigger a run manually from the Actions tab
 
 permissions:
   contents: write
 
 concurrency:
+  # Keep a single, freshest poller alive. A new trigger replaces a stale loop
+  # rather than queueing behind it (which would stack up runs during a game).
   group: update-scores
-  cancel-in-progress: false
+  cancel-in-progress: true
 
 jobs:
   update:
     runs-on: ubuntu-latest
+    timeout-minutes: 330 # hard stop comfortably under GitHub's 6h job cap
     steps:
       - uses: actions/checkout@v5
 
@@ -34,54 +49,48 @@ jobs:
         with:
           node-version: "24"
 
-      - name: Decide whether to call the API
-        id: gate
-        run: |
-          # Manual runs always fetch; the 10-minute cron only fetches when a
-          # match may have just finished.
-          if [[ "${{ github.event_name }}" != "schedule" ]]; then
-            echo "Forced run (manual trigger)."
-            echo "run=true" >> "$GITHUB_OUTPUT"
-          else
-            echo "run=$(node scripts/should_fetch.js)" >> "$GITHUB_OUTPUT"
-          fi
-
-      - name: Fetch latest results
-        if: steps.gate.outputs.run == 'true'
+      - name: Fetch results, then poll every 20 min while a game is in its window
         env:
-          # Optional: add a repository secret named SPORTSDB_KEY to use a
-          # premium key. Falls back to the free "123" key if unset.
+          # Optional: add a repository secret named SPORTSDB_KEY to use a premium
+          # key. Falls back to the free "123" key if unset.
           SPORTSDB_KEY: ${{ secrets.SPORTSDB_KEY }}
           WC_SEASON: "2026"
-        run: node scripts/fetch_scores.js
-
-      - name: Check whether results changed
-        id: diff
-        if: steps.gate.outputs.run == 'true'
         run: |
-          if [[ -n "$(git status --porcelain data/matches.js)" ]]; then
-            echo "changed=true" >> "$GITHUB_OUTPUT"
-          else
-            echo "changed=false" >> "$GITHUB_OUTPUT"
-            echo "No score changes."
-          fi
+          set -uo pipefail   # NOT -e: a transient fetch/push failure must not
+                             # abort the loop — it just retries on the next poll.
 
-      # Only when a result actually came in — an unconditional rebuild would
-      # commit Monte-Carlo noise on every gated run.
-      - name: Rebuild projections on new results
-        if: steps.diff.outputs.changed == 'true'
-        run: node scripts/build_projections.js 20000
-
-      - name: Commit changes if any
-        if: steps.gate.outputs.run == 'true'
-        run: |
           git config user.name "scores-bot"
           git config user.email "actions@github.com"
-          if [[ -n "$(git status --porcelain data/matches.js data/projections.js data/odds_history.js)" ]]; then
-            git add data/matches.js data/projections.js data/odds_history.js
-            git commit -m "Update scores ($(date -u +'%Y-%m-%d %H:%M UTC'))"
-            git pull --rebase
-            git push
-          else
-            echo "Nothing to commit."
-          fi
+
+          POLL_SECONDS=1200                          # 20 minutes between polls
+          DEADLINE=$(( $(date +%s) + 300 * 60 ))     # stop looping after ~5h
+
+          fetch_once() {
+            node scripts/fetch_scores.js || { echo "fetch failed; will retry next poll"; return; }
+            if [[ -n "$(git status --porcelain data/matches.js)" ]]; then
+              echo "New result(s) — rebuilding projections and committing."
+              node scripts/build_projections.js 20000
+              git add data/matches.js data/projections.js data/odds_history.js
+              git commit -m "Update scores ($(date -u +'%Y-%m-%d %H:%M UTC'))"
+              git pull --rebase --autostash && git push || echo "push failed; will retry next poll"
+            else
+              echo "No score changes this poll."
+            fi
+          }
+
+          # 1) Always fetch once when triggered — the periodic safety sweep.
+          fetch_once
+
+          # 2) While a game is within its post-kickoff window without a final,
+          #    keep polling every 20 min until the result lands (or we hit ~5h).
+          while [[ "$(node scripts/should_fetch.js)" == "true" ]]; do
+            if [[ $(date +%s) -ge $DEADLINE ]]; then
+              echo "Reached max run duration; the next trigger picks up where this left off."
+              break
+            fi
+            echo "Game still in window without a final — sleeping ${POLL_SECONDS}s, then re-checking."
+            sleep "$POLL_SECONDS"
+            fetch_once
+          done
+
+          echo "No game in its post-kickoff window — nothing more to poll."
