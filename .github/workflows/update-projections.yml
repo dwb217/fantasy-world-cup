@@ -1,24 +1,31 @@
 name: Update projections
 
-# Daily full refresh (09:30 UTC — after the last games of the previous day in
-# North America have finished): re-fetches the fixture list and kickoff times,
-# re-runs the Monte-Carlo projections, and guarantees a daily odds-history
-# point even on days without games. Runs 30 min before update-commentary
-# (10:00 UTC = 6am EDT) so today's odds point exists when the dispatch is
-# written. Prompt post-game updates are handled by the update-scores workflow,
-# which rebuilds projections whenever a new result comes in.
+# Daily full refresh (07:47 UTC = 3:47am EDT — after the last games of the
+# previous day in North America have finished): re-fetches the fixture list and
+# kickoff times, re-runs the Monte-Carlo projections, and guarantees a daily
+# odds-history point even on days without games. Runs ~26 min before
+# update-commentary (08:13 UTC = 4:13am EDT) so today's odds point exists when
+# the dispatch is written (commentary dates its entry from the latest
+# odds-history point). Off-the-hour, early-morning slots dodge GitHub's heavy
+# top-of-hour cron contention. Prompt post-game updates are handled by the
+# update-scores workflow, which rebuilds projections whenever a new result
+# comes in.
 
 on:
   schedule:
-    - cron: "30 9 * * *" # daily at 09:30 UTC, before update-commentary (10:00)
+    - cron: "47 7 * * *" # 07:47 UTC = 3:47am EDT, ~26 min before update-commentary (08:13)
   workflow_dispatch: {} # lets you trigger a run manually from the Actions tab
 
 permissions:
   contents: write
 
-# Shares a queue with the update-scores workflow so the two never push at once.
+# Shares a queue ONLY with update-commentary (the two daily-refresh jobs) so they
+# never push at once. NOT grouped with update-scores anymore: that workflow now
+# holds its runner for hours while polling, which would otherwise block or cancel
+# this job. Cross-job push races with the scores poller are handled by the
+# pull-rebase retry on push below.
 concurrency:
-  group: update-scores
+  group: daily-refresh
   cancel-in-progress: false
 
 jobs:
@@ -47,8 +54,7 @@ jobs:
           if [[ -n "$(git status --porcelain data/matches.js data/projections.js data/odds_history.js)" ]]; then
             git add data/matches.js data/projections.js data/odds_history.js
             git commit -m "Update projections ($(date -u +'%Y-%m-%d %H:%M UTC'))"
-            git pull --rebase
-            git push
+            for i in 1 2 3; do git pull --rebase --autostash && git push && break || sleep 5; done
           else
             echo "No changes."
           fi

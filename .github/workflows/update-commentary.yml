@@ -1,26 +1,31 @@
 name: Update commentary
 
-# Daily blog dispatch at 10:00 UTC = 6:00am EDT (the 2026 World Cup runs entirely
-# in US daylight-saving, so 10:00 UTC is 6am Eastern for the whole tournament).
-# Runs just after the 09:30 update-projections refresh, so today's odds-history
-# point already exists — that's what dates the dispatch to today and drives the
-# morning preview of fixtures that haven't kicked off yet. Generates one new
-# Commentary entry with an Ollama Cloud model and commits data/commentary.js.
-# Fully server-side: no local Ollama, runs even when the Mac is off. This
-# replaces the local launchd agent (com.fantasywc.commentary).
+# Daily blog dispatch at 08:13 UTC = 4:13am EDT (the 2026 World Cup runs entirely
+# in US daylight-saving, so the UTC offset is a fixed -4 for the whole
+# tournament). An off-the-hour, early-morning slot deliberately dodges GitHub's
+# heavy top-of-hour cron contention, which was delaying/dropping the old 10:00
+# UTC run. Runs ~26 min after the 07:47 update-projections refresh, so today's
+# odds-history point already exists — that's what dates the dispatch to today and
+# drives the morning preview of fixtures that haven't kicked off yet. Generates
+# one new Commentary entry with an Ollama Cloud model and commits
+# data/commentary.js. Fully server-side: no local Ollama, runs even when the Mac
+# is off. This replaces the local launchd agent (com.fantasywc.commentary).
 
 on:
   schedule:
-    - cron: "0 10 * * *" # daily at 10:00 UTC = 6:00am EDT, after update-projections (09:30)
+    - cron: "13 8 * * *" # 08:13 UTC = 4:13am EDT, ~26 min after update-projections (07:47)
   workflow_dispatch: {} # lets you trigger a run manually from the Actions tab
 
 permissions:
   contents: write
 
-# Shares the queue with update-scores / update-projections so the three never
-# push at once.
+# Shares a queue ONLY with update-projections (the two daily-refresh jobs) so they
+# never push at once. NOT grouped with update-scores anymore: that workflow now
+# holds its runner for hours while polling, which would otherwise block or cancel
+# this job. Cross-job push races with the scores poller are handled by the
+# pull-rebase retry on push below.
 concurrency:
-  group: update-scores
+  group: daily-refresh
   cancel-in-progress: false
 
 jobs:
@@ -47,8 +52,7 @@ jobs:
           if [[ -n "$(git status --porcelain data/commentary.js)" ]]; then
             git add data/commentary.js
             git commit -m "Update commentary ($(date -u +'%Y-%m-%d %H:%M UTC'))"
-            git pull --rebase
-            git push
+            for i in 1 2 3; do git pull --rebase --autostash && git push && break || sleep 5; done
           else
             echo "No changes."
           fi
