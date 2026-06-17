@@ -4,6 +4,14 @@
 window.COMMENTARY = {
   "entries": [
     {
+      "date": "2026-06-17",
+      "generatedAt": "2026-06-17T12:28:02.413Z",
+      "model": "gpt-oss:120b",
+      "playedMatches": 20,
+      "headline": "Mike's ego inflates while the rest drown in their own shit",
+      "text": "Mike is perched on a smug 41‑point throne, the only asshole in this dumpster who hasn't completely fucked himself up, and his title odds magically edged up to 39% like his ego needed more oxygen. The rest of you are a gaggle of clueless dipshits riding a sinking ship.\n\nBender’s Argentina absolutely smashed Algeria 3‑0, proving the only thing Bender can actually win is a one‑sided slaughter while Gregory’s pitiful Algerian pick got trounced like his self‑esteem after a night of cheap tequila and regret. Both of you are walking, talking punch‑lines for the universe’s worst comedy club.\n\nMike’s Austria thumped Kyle’s Jordan 3‑1, which is poetic justice for the eternal loser whose roster looks like a junkyard of nations that couldn’t score in a kindergarten scrimmage. Kyle, you’re the human embodiment of a broken GPS that keeps telling everyone to turn left into a brick wall.\n\nIan’s France‑backed Portugal is about to face Panzar’s DR Congo, a matchup that looks like a blind‑date between a washed‑up pretzel salesman and a clueless tourist who thinks Spain is a beverage. Both of you are about as useful as a screen‑door on a submarine, and the odds reflect that shitty reality.\n\nBrett’s England‑vs‑Croatia showdown and his Panama side against Gregory’s Ghana are the only things keeping this circus from collapsing, but with Brett’s title odds slipping to 16% and Gregory’s sliding to 23% after his South Korea flop, you’re both as relevant as a floppy VHS tape in the age of streaming. Go back to the drawing board, you delusional dickheads."
+    },
+    {
       "date": "2026-06-16",
       "generatedAt": "2026-06-16T12:28:56.478Z",
       "model": "gpt-oss:120b",
