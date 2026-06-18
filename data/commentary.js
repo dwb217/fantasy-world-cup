@@ -4,6 +4,14 @@
 window.COMMENTARY = {
   "entries": [
     {
+      "date": "2026-06-18",
+      "generatedAt": "2026-06-18T11:57:59.815Z",
+      "model": "gpt-oss:120b",
+      "playedMatches": 24,
+      "headline": "Mike’s Ego Is Bigger Than His Title Odds, and Everyone’s a Dick",
+      "text": "Mike struts around like a cocky motherfucking goddamn king because his fantasy stash sits at 41 points and the simulation still thinks he’s got a 40% chance to actually win – a tiny dip from 41%, but his ego didn’t notice a single fucking thing. He’s already salivating over Switzerland vs Bosnia, convinced a 9‑point Swiss side will melt the Bosnian minnows, while his roster of USA, Uruguay and Norway looks as stale as week‑old sushi, you clueless asshole.\n\nGregory’s squeaky‑clean odds jumped to 29% after his Colombia thrashed Kyle’s Uzbekistan 3‑1, but that’s about as impressive as a drunk raccoon stealing your trash, you pathetic piece‑of‑shit. His roster is a dumpster fire of Brazil, Czechia, Qatar and a dozen other nations he grabbed because the alphabet mattered, and he still clings to a measly 28 points, which is basically a participation trophy for a kid who can’t even tie his own shoes, you sorry fuck.\n\nKyle’s England‑led squad may have a 9‑point hero, but his Uzbekistan got ripped 1‑3 by Gregory’s Colombia, proving Kyle’s fantasy acumen is about as useful as a chocolate teapot, you dumbass. Now he’s forced to face Gregory’s Czechia at noon, and the only thing he’ll be serving up is a side of regret with a garnish of his own stupidity, you worthless piece of shit.\n\nBrett’s Dutch‑Belgian‑Croatian mash‑up is so clueless it dropped from 14% to 11% odds, yet he still clings to his 18 points like a toddler clutching a broken toy, you miserable fuck. Panzar’s Germany‑Spain‑Turkey circus is stuck at 6% odds, which is about the same chance of him ever figuring out that picking ‘Sweden’ because it sounds cool won’t win him a title, you clueless asshole. Bender’s Argentina‑Morocco‑Senegal combo hasn’t moved an inch at 9%, proving his management skills are as stagnant as a pond full of dead fish, you pathetic dickhead.\n\nIan’s sorry excuse for a lineup – France, Portugal, Iran and New Zealand – is so weak it barely registers on the radar, and his 1% title odds are a comforting reminder that at least he’s not the only one failing miserably, you worthless piece of shit. May the rest of you keep screwing up so I can keep watching this circus of idiots, you bunch of brain‑dead assholes."
+    },
+    {
       "date": "2026-06-17",
       "generatedAt": "2026-06-17T12:28:02.413Z",
       "model": "gpt-oss:120b",
