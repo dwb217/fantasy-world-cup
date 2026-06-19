@@ -4,6 +4,14 @@
 window.COMMENTARY = {
   "entries": [
     {
+      "date": "2026-06-19",
+      "generatedAt": "2026-06-19T12:17:33.401Z",
+      "model": "gpt-oss:120b",
+      "playedMatches": 28,
+      "headline": "Mike's Still King, The Rest Are Utter Douches",
+      "text": "Mike strutted into the leaderboard with a smug 60‑point haul, acting like the World Cup’s own god‑damn emperor while his title odds rocketed from 48% to a cocky 59%—the only guy who can actually pull his head out of his ass.\n\nGregory, meanwhile, watched his precious Colombian picks sputter as his odds plunged from 24% to a pathetic 15%—the same dude who let South Korea get shut out 1‑0 by Mexico, proving his analysis is about as useful as a screen door on a submarine, fuck.\n\nBrett, the self‑proclaimed Dutch guru, is still stuck at a miserable 18 points and his title odds slipped to 10%—he’s about to send the USA into a 3 PM demolition against his own sorry Australian lot, a matchup so lopsided it makes his roster look like a thrift‑store shitshow.\n\nBender’s fantasy empire of Argentina and Morocco is crumbling faster than his odds, now down to a measly 6% after a week of whining, and he’s forced to watch his Morocco squad get trampled by Mike’s Scotland at 6 PM—good luck, you over‑rated, half‑baked wannabe, fuck.\n\nKyle may have finally scraped a 1‑0 win for Mexico over Gregory’s South Korea, but his 30‑point total still leaves him at a laughable 4% chance, while Panzar clings to a stagnant 6% with a Germany pick that’s about as exciting as watching paint dry, and Ian’s pathetic French‑only flop sits at a lonely 1%—all of you are the fantasy league’s collective pile of dead‑beat, oversized assholes."
+    },
+    {
       "date": "2026-06-18",
       "generatedAt": "2026-06-18T11:57:59.815Z",
       "model": "gpt-oss:120b",
