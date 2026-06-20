@@ -4,6 +4,14 @@
 window.COMMENTARY = {
   "entries": [
     {
+      "date": "2026-06-20",
+      "generatedAt": "2026-06-20T10:41:02.411Z",
+      "model": "gpt-oss:120b",
+      "playedMatches": 32,
+      "headline": "Mike’s Crown Is the Only Thing Not Shit",
+      "text": "Mike struttin’ around like a cocky cockroach, thinkin’ his 69‑point lead makes him a god‑damn deity, but the only thing he's actually good at is hogging the spotlight while the rest of you dickheads suck at drafting. He’s so full of himself he probably believes the trophy will melt into his ego like cheap plastic, a total shitshow of self‑importance.\n\nGregory tried to double‑dip his way to glory by owning both Brazil and Haiti, then whined like a whiny toddler when Haiti got trounced 3‑0. If you wanted a win, you should've drafted a decent team instead of the Caribbean’s version of a dumpster fire, you clueless piece‑of‑shit.\n\nPanzar, you absolute turkey‑loving fuckwad, watched your Turkey get shut out 1‑0 by Kyle’s Paraguay while you were busy bragging about your ‘Spain’ hype. Now you’ve got a 1 PM showdown with Brett’s Netherlands that’ll probably end in a 0‑0 bore, followed by a 4 PM nightmare against Germany where you’ll finally realize your roster is a glorified punch‑bag for Bender’s Ivory Coast, you sorry-ass clown.\n\nBrett, the walking dead of this league, is still clinging to a measly 18 points while his odds creep up a pathetic 1% like a snail on a tranquilizer, you miserable dickhead. Your Netherlands squad is about as exciting as watching paint dry, and you’re about as likely to win as a Kardashian getting a Nobel Prize, total shit.\n\nKyle, you smug Mexican‑loving prick, finally got your odds up to 6%—congrats on the tiny miracle, enjoy your fleeting spotlight before reality smacks you in the face, you overconfident fucker. Bender, you half‑hearted Argentine fan, are stuck at 27 points and a stagnant 6% chance, basically a glorified benchwarmer, you pathetic ass‑clown. And Ian, you sad‑ass French‑obsessed loser with 16 points, your 1% title chance is about as useful as a condom at a fire drill, you worthless piece of shit."
+    },
+    {
       "date": "2026-06-19",
       "generatedAt": "2026-06-19T12:17:33.401Z",
       "model": "gpt-oss:120b",
