@@ -4,6 +4,14 @@
 window.COMMENTARY = {
   "entries": [
     {
+      "date": "2026-06-21",
+      "generatedAt": "2026-06-21T11:24:57.778Z",
+      "model": "gpt-oss:120b",
+      "playedMatches": 36,
+      "headline": "Mike's Mastery Leaves Everyone Else a Fucking Shitshow",
+      "text": "Mike’s fantasy points are so goddamn massive he could drown a continent in his own ego, and the rest of you are just a bunch of crying toddlers who think a 12‑point lead is a fucking miracle. While everyone else is busy whining, he’s already the title favorite with a 63% chance, which makes his smug grin look like a permanent birthmark on his fucking face.\n\nKyle’s double‑draw with his own Ecuador‑Curacao snoozefest was the most thrilling thing about his pathetic life this week, and his odds slipped to a measly 4%—about as useful as a wet fart in a hurricane, you clueless fuck. The only thing more dead than his fantasy hopes is his brain, which apparently stopped working when he drafted two teams from the same damn continent.\n\nGregory’s Tunisia got thumped 0‑4 by Brett’s Japan, proving his draft was as clueless as a blindfolded chimp doing taxes, you fucking idiot. He’s still clinging to that sorry excuse of a roster like a desperate junkie to a busted needle, you shithead.\n\nBrett finally scraped a 12% title chance after his odds jumped from 9%, but that’s about as credible as his Belgium‑Iran matchup, which will probably end in a 0‑0 because his squad is a mismatched junkyard of wannabe‑legends, you pathetic fuck. He’s got more hype than a busted vape, and just as much payoff, you dumbass.\n\nPanzar’s Spain‑Saudi showdown is just another excuse for his ego‑inflated fantasy to implode, Bender’s Argentina‑Morocco combo is about as threatening as a cup of lukewarm tea, and Ian’s pathetic French‑Iran duo still drags him with a single‑digit title chance—so good luck, you sorry sack‑of‑shit. All of you are a circus of incompetent assholes, and the only thing you’ll be winning is a permanent spot in the fantasy hall of shame."
+    },
+    {
       "date": "2026-06-20",
       "generatedAt": "2026-06-20T10:41:02.411Z",
       "model": "gpt-oss:120b",
