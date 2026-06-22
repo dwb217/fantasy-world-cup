@@ -4,6 +4,14 @@
 window.COMMENTARY = {
   "entries": [
     {
+      "date": "2026-06-22",
+      "generatedAt": "2026-06-22T13:43:55.071Z",
+      "model": "gpt-oss:120b",
+      "playedMatches": 40,
+      "headline": "Mike's Ego Gets Smacked While the Rest Are Worthless Shit",
+      "text": "Mike's smug ass thinks he's the king of this fantasy circus with his 80‑point pile, but his title odds slipped from 64% to 56% like a drunken clown falling off a unicycle, fuck.\n\nFucking delusional dickhead pretends the world is his, yet the universe just gave him a middle‑finger.\n\nGregory’s little‑brain gamble nudged his odds up to 14%—the only thing growing faster than his ego is his collection of pointless Brazilian stickers, fuck.\n\nBrett strutted his Dutch‑Belgian‑Croatian‑Japan‑Australia‑Panama circus and only managed a measly 40 points, while his odds crept to 13% like a snail on a sloth’s back, shit.\n\nBender’s six‑point bump to 7% is about as impressive as a toddler learning to crawl, and Kyle’s five‑point rise to 5% is the fantasy equivalent of a damp sock, fuck.\n\nPanzar’s four‑point surge to 4% barely covers the cost of his cheap beer, and Ian clings to a pathetic 1% chance like a dead rat on a hook, shit.\n\nEgypt 3‑1 New Zealand gave Mike a nice little dick‑sized boost while Ian’s Kiwis got trounced like a busted-up piñata at a toddler’s birthday, fuck.\n\nIan’s 19 points now look like a sad finger‑paint masterpiece done by a drunk preschooler, shit.\n\nAt 1 PM, Bender’s Argentina will get steamrolled by Mike’s Austria, which is about as surprising as a fart in a lift—except Bender will actually feel it, fuck.\n\nThe poor schmuck’s 27 points are about to get shredded like cheap toilet paper, shit.\n\nLater at 5 PM, Ian’s precious France will face Mike’s Iraq, and it’ll be a slaughter so brutal even his 1% title odds will vomit, fuck.\n\nIan’s fantasy career is a steaming pile of garbage that even the sewers refuse to take, shit."
+    },
+    {
       "date": "2026-06-21",
       "generatedAt": "2026-06-21T11:24:57.778Z",
       "model": "gpt-oss:120b",
