@@ -315,7 +315,7 @@ window.PROJECTIONS = {
       ]
     },
     {
-      "name": "BENDER",
+      "name": "DAVID",
       "teams": [
         "Argentina",
         "Morocco",
@@ -500,7 +500,7 @@ window.PROJECTIONS = {
       ]
     },
     {
-      "name": "PANZAR",
+      "name": "JOHN",
       "teams": [
         "Spain",
         "Germany",
@@ -685,7 +685,7 @@ window.PROJECTIONS = {
   "teams": [
     {
       "team": "Argentina",
-      "owner": "BENDER",
+      "owner": "DAVID",
       "rating": 2065,
       "mean": 45.1,
       "std": 14.59,
@@ -857,7 +857,7 @@ window.PROJECTIONS = {
     },
     {
       "team": "Spain",
-      "owner": "PANZAR",
+      "owner": "JOHN",
       "rating": 2075,
       "mean": 37.87,
       "std": 15.25,
@@ -967,7 +967,7 @@ window.PROJECTIONS = {
     },
     {
       "team": "Germany",
-      "owner": "PANZAR",
+      "owner": "JOHN",
       "rating": 1990,
       "mean": 34.69,
       "std": 13.05,
@@ -1189,7 +1189,7 @@ window.PROJECTIONS = {
     },
     {
       "team": "Morocco",
-      "owner": "BENDER",
+      "owner": "DAVID",
       "rating": 1925,
       "mean": 27.25,
       "std": 10.74,
@@ -1680,7 +1680,7 @@ window.PROJECTIONS = {
     },
     {
       "team": "Ivory Coast",
-      "owner": "BENDER",
+      "owner": "DAVID",
       "rating": 1790,
       "mean": 18.84,
       "std": 7.37,
@@ -1892,7 +1892,7 @@ window.PROJECTIONS = {
     },
     {
       "team": "Sweden",
-      "owner": "PANZAR",
+      "owner": "JOHN",
       "rating": 1790,
       "mean": 16.34,
       "std": 7.41,
@@ -1998,7 +1998,7 @@ window.PROJECTIONS = {
     },
     {
       "team": "Senegal",
-      "owner": "BENDER",
+      "owner": "DAVID",
       "rating": 1855,
       "mean": 15.4,
       "std": 10.19,
@@ -2370,7 +2370,7 @@ window.PROJECTIONS = {
     },
     {
       "team": "DR Congo",
-      "owner": "PANZAR",
+      "owner": "JOHN",
       "rating": 1730,
       "mean": 10.43,
       "std": 7.26,
@@ -2473,7 +2473,7 @@ window.PROJECTIONS = {
     },
     {
       "team": "Bosnia & Herz",
-      "owner": "BENDER",
+      "owner": "DAVID",
       "rating": 1740,
       "mean": 8.04,
       "std": 6.51,
@@ -2780,7 +2780,7 @@ window.PROJECTIONS = {
     },
     {
       "team": "Turkey",
-      "owner": "PANZAR",
+      "owner": "JOHN",
       "rating": 1830,
       "mean": 4.12,
       "std": 5.77,

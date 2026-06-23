@@ -7,8 +7,8 @@ window.ODDS_HISTORY = [
    "MIKE": 0.3629,
    "GREGORY": 0.3007,
    "BRETT": 0.1206,
-   "PANZAR": 0.0726,
-   "BENDER": 0.0673,
+   "JOHN": 0.0726,
+   "DAVID": 0.0673,
    "KYLE": 0.0627,
    "IAN": 0.0132
   },
@@ -16,8 +16,8 @@ window.ODDS_HISTORY = [
    "MIKE": 142.42,
    "GREGORY": 136.63,
    "BRETT": 118.26,
-   "PANZAR": 111.25,
-   "BENDER": 111.19,
+   "JOHN": 111.25,
+   "DAVID": 111.19,
    "KYLE": 110.35,
    "IAN": 93.63
   }
@@ -29,18 +29,18 @@ window.ODDS_HISTORY = [
    "MIKE": 0.3487,
    "GREGORY": 0.3112,
    "BRETT": 0.1217,
-   "PANZAR": 0.0759,
+   "JOHN": 0.0759,
    "KYLE": 0.0659,
-   "BENDER": 0.0654,
+   "DAVID": 0.0654,
    "IAN": 0.0112
   },
   "meanPts": {
    "MIKE": 140.55,
    "GREGORY": 136.67,
    "BRETT": 118.21,
-   "PANZAR": 111.4,
+   "JOHN": 111.4,
    "KYLE": 110.7,
-   "BENDER": 109.85,
+   "DAVID": 109.85,
    "IAN": 93.1
   }
  },
@@ -51,8 +51,8 @@ window.ODDS_HISTORY = [
    "MIKE": 0.3543,
    "GREGORY": 0.3141,
    "BRETT": 0.1273,
-   "PANZAR": 0.0756,
-   "BENDER": 0.0648,
+   "JOHN": 0.0756,
+   "DAVID": 0.0648,
    "KYLE": 0.051,
    "IAN": 0.0129
   },
@@ -60,8 +60,8 @@ window.ODDS_HISTORY = [
    "MIKE": 141.4,
    "GREGORY": 137.05,
    "BRETT": 118.8,
-   "PANZAR": 111.59,
-   "BENDER": 109.78,
+   "JOHN": 111.59,
+   "DAVID": 109.78,
    "KYLE": 107.14,
    "IAN": 93.19
   }
@@ -73,18 +73,18 @@ window.ODDS_HISTORY = [
    "MIKE": 0.3711,
    "GREGORY": 0.2632,
    "BRETT": 0.1813,
-   "BENDER": 0.0646,
+   "DAVID": 0.0646,
    "KYLE": 0.051,
-   "PANZAR": 0.055,
+   "JOHN": 0.055,
    "IAN": 0.0138
   },
   "meanPts": {
    "MIKE": 141.82,
    "GREGORY": 132.75,
    "BRETT": 125.21,
-   "BENDER": 109.64,
+   "DAVID": 109.64,
    "KYLE": 106.73,
-   "PANZAR": 105.83,
+   "JOHN": 105.83,
    "IAN": 93.39
   }
  },
@@ -95,8 +95,8 @@ window.ODDS_HISTORY = [
    "MIKE": 0.3969,
    "GREGORY": 0.2316,
    "BRETT": 0.1582,
-   "BENDER": 0.0911,
-   "PANZAR": 0.0585,
+   "DAVID": 0.0911,
+   "JOHN": 0.0585,
    "KYLE": 0.047,
    "IAN": 0.0167
   },
@@ -104,8 +104,8 @@ window.ODDS_HISTORY = [
    "MIKE": 142.2,
    "GREGORY": 128.86,
    "BRETT": 121.4,
-   "BENDER": 114.35,
-   "PANZAR": 105.79,
+   "DAVID": 114.35,
+   "JOHN": 105.79,
    "KYLE": 105.01,
    "IAN": 93.32
   }
@@ -117,8 +117,8 @@ window.ODDS_HISTORY = [
    "MIKE": 0.337,
    "GREGORY": 0.2698,
    "BRETT": 0.1743,
-   "BENDER": 0.0885,
-   "PANZAR": 0.0629,
+   "DAVID": 0.0885,
+   "JOHN": 0.0629,
    "KYLE": 0.0518,
    "IAN": 0.0158
   },
@@ -126,8 +126,8 @@ window.ODDS_HISTORY = [
    "MIKE": 137.36,
    "GREGORY": 130.59,
    "BRETT": 122.11,
-   "BENDER": 112.27,
-   "PANZAR": 106.28,
+   "DAVID": 112.27,
+   "JOHN": 106.28,
    "KYLE": 105.12,
    "IAN": 92.28
   }
@@ -139,18 +139,18 @@ window.ODDS_HISTORY = [
    "MIKE": 0.4063,
    "GREGORY": 0.2319,
    "BRETT": 0.1436,
-   "BENDER": 0.0937,
+   "DAVID": 0.0937,
    "KYLE": 0.052,
-   "PANZAR": 0.0642,
+   "JOHN": 0.0642,
    "IAN": 0.0083
   },
   "meanPts": {
    "MIKE": 142.58,
    "GREGORY": 128.76,
    "BRETT": 119.73,
-   "BENDER": 114.88,
+   "DAVID": 114.88,
    "KYLE": 107.64,
-   "PANZAR": 107.24,
+   "JOHN": 107.24,
    "IAN": 87.22
   }
  },
@@ -161,8 +161,8 @@ window.ODDS_HISTORY = [
    "MIKE": 0.4799,
    "GREGORY": 0.2402,
    "BRETT": 0.1071,
-   "BENDER": 0.0693,
-   "PANZAR": 0.0597,
+   "DAVID": 0.0693,
+   "JOHN": 0.0597,
    "KYLE": 0.0372,
    "IAN": 0.0066
   },
@@ -170,8 +170,8 @@ window.ODDS_HISTORY = [
    "MIKE": 147.61,
    "GREGORY": 131.58,
    "BRETT": 116.2,
-   "BENDER": 111.86,
-   "PANZAR": 107.16,
+   "DAVID": 111.86,
+   "JOHN": 107.16,
    "KYLE": 104.92,
    "IAN": 87.24
   }
@@ -183,18 +183,18 @@ window.ODDS_HISTORY = [
    "MIKE": 0.6503,
    "GREGORY": 0.1337,
    "BRETT": 0.0709,
-   "BENDER": 0.0585,
+   "DAVID": 0.0585,
    "KYLE": 0.0354,
-   "PANZAR": 0.0456,
+   "JOHN": 0.0456,
    "IAN": 0.0055
   },
   "meanPts": {
    "MIKE": 158.32,
    "GREGORY": 124.4,
    "BRETT": 113.48,
-   "BENDER": 111.68,
+   "DAVID": 111.68,
    "KYLE": 108.5,
-   "PANZAR": 107.33,
+   "JOHN": 107.33,
    "IAN": 87.36
   }
  },
@@ -206,8 +206,8 @@ window.ODDS_HISTORY = [
    "GREGORY": 0.1426,
    "BRETT": 0.09,
    "KYLE": 0.0572,
-   "BENDER": 0.0549,
-   "PANZAR": 0.0256,
+   "DAVID": 0.0549,
+   "JOHN": 0.0256,
    "IAN": 0.0057
   },
   "meanPts": {
@@ -215,8 +215,8 @@ window.ODDS_HISTORY = [
    "GREGORY": 124.66,
    "BRETT": 117.17,
    "KYLE": 114.41,
-   "BENDER": 111.7,
-   "PANZAR": 100.02,
+   "DAVID": 111.7,
+   "JOHN": 100.02,
    "IAN": 87.12
   }
  },
@@ -227,18 +227,18 @@ window.ODDS_HISTORY = [
    "MIKE": 0.6421,
    "GREGORY": 0.1212,
    "BRETT": 0.1081,
-   "BENDER": 0.0554,
+   "DAVID": 0.0554,
    "KYLE": 0.0356,
-   "PANZAR": 0.0312,
+   "JOHN": 0.0312,
    "IAN": 0.0065
   },
   "meanPts": {
    "MIKE": 156.67,
    "GREGORY": 121.92,
    "BRETT": 121.04,
-   "BENDER": 111.82,
+   "DAVID": 111.82,
    "KYLE": 108.85,
-   "PANZAR": 103.03,
+   "JOHN": 103.03,
    "IAN": 88.83
   }
  },
@@ -249,18 +249,18 @@ window.ODDS_HISTORY = [
    "MIKE": 0.5388,
    "GREGORY": 0.1514,
    "BRETT": 0.1368,
-   "BENDER": 0.0769,
+   "DAVID": 0.0769,
    "KYLE": 0.0526,
-   "PANZAR": 0.0372,
+   "JOHN": 0.0372,
    "IAN": 0.0065
   },
   "meanPts": {
    "MIKE": 149.88,
    "GREGORY": 122.52,
    "BRETT": 121.74,
-   "BENDER": 114.64,
+   "DAVID": 114.64,
    "KYLE": 111.69,
-   "PANZAR": 103.45,
+   "JOHN": 103.45,
    "IAN": 87.69
   }
  }

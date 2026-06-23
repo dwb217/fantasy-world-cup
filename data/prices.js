@@ -5,9 +5,9 @@
 window.PRICES = {
   // IAN ($100)
   France: 50, Portugal: 37, Iran: 9, "New Zealand": 4,
-  // PANZAR ($98)
+  // JOHN ($98)
   Spain: 43, Germany: 28, Turkey: 14, Sweden: 9, "DR Congo": 4,
-  // BENDER ($100)
+  // DAVID ($100)
   Argentina: 40, Morocco: 35, Senegal: 15, "Ivory Coast": 7, "Bosnia & Herz": 3,
   // KYLE ($93)
   England: 38, Mexico: 18, Ecuador: 15, Paraguay: 6, Uzbekistan: 2,
