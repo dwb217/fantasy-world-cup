@@ -4,6 +4,14 @@
 window.COMMENTARY = {
   "entries": [
     {
+      "date": "2026-06-23",
+      "generatedAt": "2026-06-23T11:30:35.902Z",
+      "model": "gpt-oss:120b",
+      "playedMatches": 44,
+      "headline": "Mike’s Ego Is a Bigger Disaster Than the World Cup",
+      "text": "Mike’s cocky goddamn ass thinks he’s the fantasy goddamn Zeus because his 87‑point stash and 59% title odds—up from a measly 54% after Norway’s 3‑2‑Senegal slap‑in‑the‑face—have him swaggering like a testosterone‑fueled bull in a china shop. He’s already bragging about his USA‑18‑point monster while the rest of us are stuck watching his ego explode like a fucking fireworks factory in a hurricane.\n\nGregory’s sad little fantasy career is stuck at a pathetic 46 points, and his Brazil‑11‑point flash is about as useful as a screen door on a submarine, you miserable fuck. His odds sit stubbornly at 15%—unchanged from yesterday—so he can keep whining about Algeria’s 2‑1‑Jordan triumph while his roster looks like a dumpster fire curated by a blindfolded intern, you clueless dickhead.\n\nKyle’s roster is a dumpster of half‑baked hopes, having just watched his Jordan get ripped 1‑2 by Gregory’s Algeria, and now he’s forced to face Uzbekistan at 1 PM and England at 4 PM like a clueless jack‑ass on a blind date with disaster, you fucking moron. Every time he thinks he’s got a chance, his midfield collapses faster than a cheap inflatable pool in a hurricane, proving he’s the fantasy equivalent of a busted condom—full of hot air and zero payoff, you worthless piece of shit.\n\nBrett decided to play himself against himself at 7 PM, fielding Panama versus Croatia like a clueless ass‑clown who can’t tell the difference between a win and a loss, and his title odds slipped to 13% after he realized he actually drafted two of the weakest teams on the planet, you dumbfuck. His roster reads like a sadistic joke: Netherlands, Belgium, Croatia, Japan, Australia, Panama—basically every nation that would lose to a kindergarten team, which is exactly the kind of pathetic strategy a delusional dipshit like Brett would champion.\n\nJohn’s stuck at 40 points, whining about his Germany‑16‑point gem while his fantasy future looks as bleak as a morgue on a Sunday, you pathetic fuck. David’s odds have nosedived to 5% after his Argentina‑18‑point heroics couldn’t even save his sorry ass from the bottom half, you sorry piece of shit. Ian, the league’s eternal loser with a single‑digit 1% chance, is about to get his ass handed to him by Kyle’s England at 4 PM, proving once again that his fantasy career is the living embodiment of a dumpster fire run by a blind‑folded idiot, you absolute fuckwad."
+    },
+    {
       "date": "2026-06-22",
       "generatedAt": "2026-06-22T13:43:55.071Z",
       "model": "gpt-oss:120b",
