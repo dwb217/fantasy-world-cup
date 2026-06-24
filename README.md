@@ -38,7 +38,8 @@ score at the end of extra time.
 ## The tabs
 
 - **Standings** — managers ranked by total points; click a manager to expand the per-team breakdown.
-- **Projections** — Monte-Carlo simulation of the rest of the tournament: each manager's title-win odds and projected final points, plus a **"title odds over time"** chart. Conditioned on reality — played matches are locked at their actual scores, only the remaining games are simulated.
+- **Projections** — Monte-Carlo simulation of the rest of the tournament: each manager's title-win odds and projected final points, plus a **"title odds over time"** chart. Conditioned on reality — played matches are locked at their actual scores, only the remaining games are simulated. Full methodology: [`docs/projections-methodology.md`](docs/projections-methodology.md).
+- **What If** — an interactive title-path explorer. Simulates the rest of the group stage plus FIFA's **real 2026 knockout bracket** (Round of 32 → final + third-place) thousands of times for the selected manager: your title odds, where you finish, your most leveraged games, who to root for elsewhere, and a **worst→best scenario dial** that shows the bracket and your projected total points for each outcome (from your teams losing out to winning every game).
 - **Teams** — every team, its owner, and its points.
 - **Draft Value** — auction prices (`data/prices.js`) vs. projected value: biggest steals and busts, and each manager's points-per-dollar efficiency.
 - **Results** — the full match list, with an **✎ Edit** mode for corrections (see below).
@@ -66,7 +67,7 @@ possible after full time, then everything downstream updates in the same run.
   (`scripts/build_projections.js`) and commits `matches.js` + `projections.js` +
   `odds_history.js` together, so the odds move with the scores. The commit triggers a Vercel
   deploy and the whole app refreshes on its own.
-- **`.github/workflows/update-projections.yml`** does a full daily refresh at **09:30 UTC**
+- **`.github/workflows/update-projections.yml`** does a full daily refresh at **07:47 UTC**
   (re-fetches fixtures/kickoffs, re-runs projections, guarantees one odds-history point per
   day even on gameless days).
 - Run the importer yourself any time: `node scripts/fetch_scores.js` (Node 18+, no npm install).
@@ -97,13 +98,14 @@ on every run — **your edits survive the automatic refreshes** instead of being
 
 A vulgar, VEEP/South-Park-style pundit roasts the seven managers every morning.
 
-- **`.github/workflows/update-commentary.yml`** runs daily at **10:00 UTC = 6:00am EDT**
-  (just after the projections refresh, so the day's odds point exists). It generates one new
-  dated entry and commits `data/commentary.js`.
+- **`.github/workflows/update-commentary.yml`** runs daily at **08:13 UTC = 4:13am EDT**
+  (~26 min after the 07:47 projections refresh, so the day's odds point exists). It generates
+  one new dated entry and commits `data/commentary.js`.
 - Generation uses **[Ollama Cloud](https://ollama.com)** (model `gpt-oss:120b`). The script
   reads the live standings, day-over-day title odds, and today's not-yet-played fixtures, and
   the model uses them as ammunition for jokes (it previews the day's slate rather than reciting
-  scores). Requires an `OLLAMA_API_KEY` repository secret.
+  scores). It's also fed the **last few dispatches** so each entry follows on and doesn't recycle
+  jokes. Requires an `OLLAMA_API_KEY` repository secret.
 - Run it locally instead with a local Ollama daemon: `node scripts/build_commentary.js`
   (no `OLLAMA_API_KEY` → talks to `localhost:11434`; pass a model tag or set `OLLAMA_MODEL`
   to override).
@@ -153,7 +155,8 @@ scripts/build_commentary.js      LLM commentary generator (Ollama Cloud or local
 scripts/config.js                league id, season, rounds, status codes, knockout windows
 scripts/team_aliases.js          API team name -> draft name map
 .github/workflows/update-scores.yml        event-driven score import (+ projections rebuild)
-.github/workflows/update-projections.yml   daily 09:30 UTC projections refresh
-.github/workflows/update-commentary.yml    daily 06:00 EDT commentary via Ollama Cloud
+.github/workflows/update-projections.yml   daily 07:47 UTC projections refresh
+.github/workflows/update-commentary.yml    daily 08:13 UTC (4:13am EDT) commentary via Ollama Cloud
+docs/projections-methodology.md  plain-English write-up of how the projections work
 .env.example                     the env vars the serverless function needs
 ```
