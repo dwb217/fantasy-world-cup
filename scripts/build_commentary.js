@@ -185,6 +185,19 @@ const keyFacts = [
     : `IMPORTANT: the points leader (${leader.manager}) and the title favorite (${favorite.manager}) are DIFFERENT people. Do NOT call ${favorite.manager} the standings "leader" or say ${favorite.manager} is "on top of the standings" — ${favorite.manager} is only the projected favorite, while ${leader.manager} actually leads on banked points.`,
 ];
 
+// Recent dispatches (newest first), excluding any existing entry for today's
+// date since we're regenerating that one. Feed these to the model so each day's
+// piece follows on naturally and doesn't recycle the same jokes, insults, and
+// comparisons. loadExistingEntries is a hoisted function declaration, so it's
+// safe to call here (it's reused by main() below — no double read needed).
+const PREV_FOR_CONTEXT = 3;
+const priorEntries = loadExistingEntries();
+const recentDispatches = priorEntries
+  .filter((e) => e.date !== entryDate)
+  .sort((a, b) => String(b.date).localeCompare(String(a.date)))
+  .slice(0, PREV_FOR_CONTEXT)
+  .map((e) => ({ date: e.date, headline: e.headline || "", text: e.text || "" }));
+
 const context = {
   entryDate,
   previousDate: prevOdds ? prevOdds.date : null,
@@ -193,6 +206,7 @@ const context = {
   currentStandings,               // ACTUAL points banked so far (live table; rank 1 = current leader)
   titleRace,                      // SIMULATED: % chance to win it all + projected FINAL points
   upcomingToday,                  // today's fixtures NOT yet played — this runs in the morning, before kickoff
+  recentDispatches,               // your last few entries — for continuity; do NOT repeat their jokes
   rosters: Object.fromEntries(Object.entries(DRAFT).map(([m, t]) => [m, t])),
 };
 
@@ -209,6 +223,12 @@ Timing: this dispatch is written in the MORNING, before today's matches kick off
 - If "upcomingToday" is non-empty, use today's matchups as fuel for shit-talk about the managers whose teams are playing and what's at stake — not as a fixture list to read out.
 - Use "newestResults" as fresh material to mock. Never invent or predict a SCORE for an upcoming game.
 - If there are no results and no upcoming games, it's a rest day — roast them on the standings and the odds alone.
+
+Continuity with your previous dispatches:
+- "recentDispatches" holds your last few entries (newest first, with their headlines and text). Read them so today reads like the next chapter of the same running blog, not a cold start.
+- Do NOT recycle. Do not reuse the jokes, insults, nicknames, metaphors, running bits, or comparisons (e.g. the same "failed state" or "military disaster" gag) that already appear in recentDispatches — find fresh angles and fresh targets. Repeating yourself is lazy hack work and the whole point of seeing these is to AVOID it.
+- The headline must be different from every headline in recentDispatches.
+- You MAY carry forward genuine storylines — an ongoing collapse, a brewing rivalry, a manager's earlier trash talk coming back to bite them — but advance them with NEW material and call back to the prior beat only when it sharpens the joke.
 
 The data below uses TWO different metrics — keep them straight:
 - currentStandings = the ACTUAL fantasy points each manager has banked so far. This is the live table; rank 1 is the current leader ON POINTS.
@@ -323,7 +343,8 @@ async function main() {
   };
 
   // Replace any existing entry for the same date, then sort newest-first.
-  const entries = loadExistingEntries().filter((e) => e.date !== entryDate);
+  // Reuse priorEntries (already loaded above for the prompt) — no second read.
+  const entries = priorEntries.filter((e) => e.date !== entryDate);
   entries.push(entry);
   entries.sort((a, b) => String(b.date).localeCompare(String(a.date)));
 
