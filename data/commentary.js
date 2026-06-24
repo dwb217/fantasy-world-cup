@@ -4,6 +4,14 @@
 window.COMMENTARY = {
   "entries": [
     {
+      "date": "2026-06-24",
+      "generatedAt": "2026-06-24T11:16:22.791Z",
+      "model": "gpt-oss:120b",
+      "playedMatches": 48,
+      "headline": "Mike's Self‑Destruct Draft Makes the Rest Look Like Clueless Dorks",
+      "text": "Mike struts into the day with 87 points and a smug grin, but his title odds slipped a teeny‑tweeny percent, proving his ego is about as stable as a house of cards in a hurricane, you massive dickhead. To make his self‑inflicted misery even juicier, he’s got Switzerland and Canada—both his own toys—kicking each other's asses at 3 PM, and later Scotland will slug Brazil, also his baby, meaning he’ll literally beat himself while the rest of us watch his cocky ass implode, you absolute fuckwad.\n\nGregory finally managed to scrape a 1‑0 win over John’s sorry DR Congo, but that’s about as impressive as a fart in a wind tunnel, you wankstain. His odds nudged up to 18% while he lines up Qatar against Bosnia and Haiti against Morocco—two of the league’s most laughable squads—so he’ll spend the afternoon watching his own trash heap get trampled, you clueless asshole.\n\nKyle’s odds tanked to 2% after yesterday’s slip, and with a pointless 49 points he looks like a busted firecracker that never even sparked, you pathetic dickhead. No match for his dumpster of a roster is on today, so he’ll sit there stewing like a stale beer left out in the sun, wondering why his fantasy career smells worse than a gym locker, you sorry wanker.\n\nBrett clings to a stale 12% chance like a leech on a dead whale, and his 47 points prove he’s the league’s resident glorified paper‑clip, you dumbass. His roster of Netherlands, Belgium, Croatia, Japan, Australia and Panama reads like a random grocery list from a bored intern, so when his teams finally show up they’ll probably lose by a score you could write in crayon, you miserable fuck.\n\nJohn’s stuck at a laughable 3% with 40 points, which makes his fantasy life look like a hamster on a wheel—lots of motion, zero progress, you spineless prick. David limps along with a 5% shot and 37 points, his Argentina‑Morocco combo about as threatening as a kitten with a squeaky toy, while Ian’s 1% chance is the league’s ultimate punchline—he’s basically a fantasy ghost haunting a graveyard of losers, you sorry piece of shit."
+    },
+    {
       "date": "2026-06-23",
       "generatedAt": "2026-06-23T11:30:35.902Z",
       "model": "gpt-oss:120b",
