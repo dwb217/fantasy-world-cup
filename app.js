@@ -1027,11 +1027,680 @@
     setInterval(tick, 30000);
   }
 
+  /* ====================================================================
+     What If  (EXPERIMENTAL)
+     --------------------------------------------------------------------
+     Interactive title-path explorer. Full-tournament Monte-Carlo:
+       1) Monte-Carlo the unplayed group games with the same Elo/Poisson
+          model as scripts/build_projections.js, then play FIFA's real 2026
+          knockout bracket (R32 → final + third-place) to the end, scored
+          with the live rules, to get each manager's P(finish 1st).
+       2) Let you PIN any of your teams' remaining games to Win/Draw/Loss
+          and re-simulate the rest, to see how your odds and the required
+          results move.
+       3) A worst→best scenario dial shows the bracket and your projected
+          total points across percentile outcomes (and forced win/lose-out).
+     Conditional odds ("what each team needs") are read straight off the
+     baseline run: bucket the sims by each fixture's outcome and measure
+     how often you end up 1st in each bucket — no extra sims per row.
+     ==================================================================== */
+
+  // --- model port (keep in sync with scripts/build_projections.js) ---
+  const WC_RATING = {
+    France:2080, Spain:2075, Argentina:2065, Brazil:2050, England:2045,
+    Portugal:2010, Netherlands:2000, Germany:1990, Belgium:1955, Croatia:1930,
+    Uruguay:1930, Morocco:1925, Colombia:1910, Japan:1875, Switzerland:1865,
+    USA:1860, Senegal:1855, Mexico:1840, Ecuador:1830, Turkey:1830,
+    Austria:1820, Norway:1820, "South Korea":1810, Iran:1800, Egypt:1790,
+    Sweden:1790, "Ivory Coast":1790, Algeria:1780, Canada:1770, Czechia:1760,
+    Australia:1750, Paraguay:1750, Ghana:1740, Scotland:1740, "Bosnia & Herz":1740,
+    "DR Congo":1730, Tunisia:1720, "South Africa":1710, Panama:1700, Qatar:1700,
+    "Saudi Arabia":1700, Uzbekistan:1690, Iraq:1660, Jordan:1650, "Cape Verde":1630,
+    "New Zealand":1620, Curacao:1580, Haiti:1560,
+  };
+  const WC_DROP = {
+    Haiti:-110, Curacao:-110, "New Zealand":-80, "Cape Verde":-70, Jordan:-60,
+    Iraq:-50, Uzbekistan:-40, "Saudi Arabia":-30, Qatar:-30, Panama:-30,
+  };
+  for (const t in WC_DROP) if (WC_RATING[t] != null) WC_RATING[t] += WC_DROP[t];
+  const WC_MU = 1.2, WC_K = 0.9;
+  const wcLam = (a, b) => WC_MU * Math.exp(WC_K * (WC_RATING[a] - WC_RATING[b]) / 400);
+  function wcPois(l) { const L = Math.exp(-l); let k = 0, p = 1; do { k++; p *= Math.random(); } while (p > L); return k - 1; }
+  function wcGroupPts(gf, ga) { let p = 0; if (gf > ga) p += 6; else if (gf === ga) p += 2; if (ga === 0) p += 1; if (gf >= 2) p += 1; if (gf >= 4) p += 1; if (gf - ga >= 2) p += 1; return p; }
+  // Sample a scoreline, optionally conditioned on a pinned result for teamA's
+  // perspective: 'A' (A wins), 'B' (B wins), 'D' (draw), or null (free).
+  function wcSampleScore(a, b, pin) {
+    for (let t = 0; t < 60; t++) {
+      const ga = wcPois(wcLam(a, b)), gb = wcPois(wcLam(b, a));
+      if (!pin) return [ga, gb];
+      if (pin === "A" && ga > gb) return [ga, gb];
+      if (pin === "B" && gb > ga) return [ga, gb];
+      if (pin === "D" && ga === gb) return [ga, gb];
+    }
+    return pin === "A" ? [1, 0] : pin === "B" ? [0, 1] : [0, 0];
+  }
+
+  // --- official 2026 group draw (verified team-for-team against the fixture
+  //     list) so we can apply FIFA's real bracket template by group letter ---
+  const WC_GROUP = {
+    Mexico:"A", "South Africa":"A", "South Korea":"A", Czechia:"A",
+    Canada:"B", "Bosnia & Herz":"B", Qatar:"B", Switzerland:"B",
+    Brazil:"C", Morocco:"C", Haiti:"C", Scotland:"C",
+    USA:"D", Paraguay:"D", Australia:"D", Turkey:"D",
+    Germany:"E", Curacao:"E", "Ivory Coast":"E", Ecuador:"E",
+    Netherlands:"F", Japan:"F", Sweden:"F", Tunisia:"F",
+    Belgium:"G", Egypt:"G", Iran:"G", "New Zealand":"G",
+    Spain:"H", "Cape Verde":"H", "Saudi Arabia":"H", Uruguay:"H",
+    France:"I", Senegal:"I", Iraq:"I", Norway:"I",
+    Argentina:"J", Algeria:"J", Austria:"J", Jordan:"J",
+    Portugal:"K", "DR Congo":"K", Uzbekistan:"K", Colombia:"K",
+    England:"L", Croatia:"L", Ghana:"L", Panama:"L",
+  };
+  const WC_ET = 0.33; // extra-time goal-rate multiplier (matches build_projections)
+
+  function wcKoPts(gf, ga, advanced, et, pk) {
+    let p = 0;
+    if (advanced) p += 6;
+    if (ga === 0) p += 1;
+    if (gf >= 2) p += 1;
+    if (gf >= 4) p += 1;
+    if (gf - ga >= 2) p += 1;
+    if (et) p += 1;
+    if (pk) p += 1;
+    return p;
+  }
+
+  // FIFA's Round-of-32 third-place slots and which groups are eligible for each
+  // (from the official 2026 bracket). Given the 8 group letters whose third-
+  // placed team qualifies, assign each slot a distinct eligible letter.
+  const WF_THIRD_SLOTS = {
+    M74:["A","B","C","D","F"], M77:["C","D","F","G","H"], M79:["C","E","F","H","I"],
+    M80:["E","H","I","J","K"], M81:["B","E","F","I","J"], M82:["A","E","H","I","J"],
+    M85:["E","F","G","I","J"], M87:["D","E","I","J","L"],
+  };
+  function wfMatchThirds(qualLetters) {
+    const slots = Object.keys(WF_THIRD_SLOTS);
+    const qual = new Set(qualLetters);
+    const used = new Set();
+    const assign = {};
+    // hardest slots (fewest qualifying options) first, then backtrack
+    const order = slots.slice().sort((a, b) =>
+      WF_THIRD_SLOTS[a].filter((g) => qual.has(g)).length -
+      WF_THIRD_SLOTS[b].filter((g) => qual.has(g)).length);
+    const bt = (k) => {
+      if (k === order.length) return true;
+      const s = order[k];
+      for (const g of WF_THIRD_SLOTS[s]) {
+        if (qual.has(g) && !used.has(g)) {
+          assign[s] = g; used.add(g);
+          if (bt(k + 1)) return true;
+          used.delete(g); delete assign[s];
+        }
+      }
+      return false;
+    };
+    bt(0);
+    return assign; // { M74: <letter>, ... }
+  }
+
+  const WF = { manager: null, pins: {}, sims: 5000, bracketMode: "avg" };
+  const wfId = (m) => String(m.id || m.eventId || keyOf(m));
+
+  function wfFixtures() {
+    return MATCHES
+      .filter((m) => !hasResult(m) && TEAM_OWNER[m.teamA] && TEAM_OWNER[m.teamB] &&
+                     WC_RATING[m.teamA] != null && WC_RATING[m.teamB] != null && (m.kickoff || m.date))
+      .slice()
+      .sort((a, b) => String(a.kickoff || a.date).localeCompare(String(b.kickoff || b.date)));
+  }
+  function wfBase() { const b = {}; for (const s of computeStandings()) b[s.manager] = s.points; return b; }
+
+  // Full-tournament Monte-Carlo run to the FINAL via FIFA's real bracket.
+  // Each sim: finish the remaining group games (honoring pins) → real group
+  // standings → 1st/2nd per group + 8 best thirds → seed the official Round-of-32
+  // template → play R32→R16→QF→SF→Final (+ 3rd-place game), scoring every match
+  // with the live rules → rank managers. Returns P(1st), the finish-position
+  // distribution, and per-group-fixture conditional buckets for the explorer.
+  function wfRun(manager, pins, N) {
+    const fx = wfFixtures();
+    const base = wfBase();
+    const managers = Object.keys(DRAFT);
+    const meta = fx.map((f) => {
+      const side = (TEAM_OWNER[f.teamB] === manager && TEAM_OWNER[f.teamA] !== manager) ? "B" : "A";
+      return { f, side, mine: TEAM_OWNER[f.teamA] === manager || TEAM_OWNER[f.teamB] === manager };
+    });
+    const newB = () => ({ n: 0, first: 0, margin: 0, by2: 0 });
+    const buckets = fx.map(() => ({ win: newB(), draw: newB(), loss: newB() }));
+
+    // football record (3/1/0, GD, GF) from PLAYED group games — the base each
+    // sim extends with simulated remaining group results to rank the groups.
+    const fbBase = {};
+    for (const t of ALL_TEAMS) if (WC_GROUP[t] != null) fbBase[t] = { pts: 0, gd: 0, gf: 0 };
+    for (const m of MATCHES) {
+      if (m.stage !== "group" || !hasResult(m) || WC_GROUP[m.teamA] == null || WC_GROUP[m.teamB] == null) continue;
+      const a = Number(m.scoreA), b = Number(m.scoreB);
+      fbBase[m.teamA].gf += a; fbBase[m.teamA].gd += a - b;
+      fbBase[m.teamB].gf += b; fbBase[m.teamB].gd += b - a;
+      if (a > b) fbBase[m.teamA].pts += 3; else if (b > a) fbBase[m.teamB].pts += 3;
+      else { fbBase[m.teamA].pts += 1; fbBase[m.teamB].pts += 1; }
+    }
+    const teamsByLetter = {};
+    for (const t of ALL_TEAMS) if (WC_GROUP[t] != null) (teamsByLetter[WC_GROUP[t]] = teamsByLetter[WC_GROUP[t]] || []).push(t);
+
+    let firstTotal = 0;
+    const finish = new Array(managers.length).fill(0);
+
+    for (let s = 0; s < N; s++) {
+      const tot = {}; for (const m of managers) tot[m] = base[m];
+      const gr = {}; for (const t in fbBase) gr[t] = { pts: fbBase[t].pts, gd: fbBase[t].gd, gf: fbBase[t].gf };
+      const oc = new Array(fx.length);
+
+      // ---- remaining group games ----
+      for (let i = 0; i < fx.length; i++) {
+        const f = fx[i];
+        const [ga, gb] = wcSampleScore(f.teamA, f.teamB, pins[wfId(f)] || null);
+        tot[TEAM_OWNER[f.teamA]] += wcGroupPts(ga, gb);
+        tot[TEAM_OWNER[f.teamB]] += wcGroupPts(gb, ga);
+        gr[f.teamA].gf += ga; gr[f.teamA].gd += ga - gb;
+        gr[f.teamB].gf += gb; gr[f.teamB].gd += gb - ga;
+        if (ga > gb) gr[f.teamA].pts += 3; else if (gb > ga) gr[f.teamB].pts += 3;
+        else { gr[f.teamA].pts += 1; gr[f.teamB].pts += 1; }
+        const gf = meta[i].side === "A" ? ga : gb, gAg = meta[i].side === "A" ? gb : ga;
+        const o = gf > gAg ? "win" : gf === gAg ? "draw" : "loss";
+        oc[i] = o;
+        const bk = buckets[i][o]; bk.n++; bk.margin += gf - gAg; if (gf - gAg >= 2) bk.by2++;
+      }
+
+      // ---- group standings → seeds ----
+      const cmp = (x, y) => gr[y].pts - gr[x].pts || gr[y].gd - gr[x].gd || gr[y].gf - gr[x].gf || WC_RATING[y] - WC_RATING[x];
+      const p1 = {}, p2 = {}, thirds = [];
+      for (const L in teamsByLetter) {
+        const g = teamsByLetter[L].slice().sort(cmp);
+        p1[L] = g[0]; p2[L] = g[1]; thirds.push({ L, team: g[2] });
+      }
+      thirds.sort((x, y) => cmp(x.team, y.team));
+      const qual = thirds.slice(0, 8);
+      const slotLetter = wfMatchThirds(qual.map((q) => q.L));
+      const thirdTeam = {}; qual.forEach((q) => (thirdTeam[q.L] = q.team));
+      const third = (slot) => thirdTeam[slotLetter[slot]];
+
+      // ---- knockout (scores both teams, returns the winner) ----
+      const simKo = (a, b) => {
+        let ga = wcPois(wcLam(a, b)), gb = wcPois(wcLam(b, a)), et = false, pk = false;
+        if (ga === gb) { et = true; const ea = wcPois(wcLam(a, b) * WC_ET), eb = wcPois(wcLam(b, a) * WC_ET); ga += ea; gb += eb; if (ga === gb) pk = true; }
+        let w; if (ga > gb) w = a; else if (gb > ga) w = b;
+        else { const pa = 1 / (1 + Math.pow(10, (WC_RATING[b] - WC_RATING[a]) / 400)); w = Math.random() < pa ? a : b; }
+        const l = w === a ? b : a;
+        const wgf = w === a ? ga : gb, wga = w === a ? gb : ga, lgf = l === a ? ga : gb, lga = l === a ? gb : ga;
+        tot[TEAM_OWNER[w]] += wcKoPts(wgf, wga, true, et, pk);
+        tot[TEAM_OWNER[l]] += wcKoPts(lgf, lga, false, et, pk);
+        return w;
+      };
+
+      const W = {}, Lz = {};
+      const r32 = [
+        [73, p2.A, p2.B], [74, p1.E, third("M74")], [75, p1.F, p2.C], [76, p1.C, p2.F],
+        [77, p1.I, third("M77")], [78, p2.E, p2.I], [79, p1.A, third("M79")], [80, p1.L, third("M80")],
+        [81, p1.D, third("M81")], [82, p1.G, third("M82")], [83, p2.K, p2.L], [84, p1.H, p2.J],
+        [85, p1.B, third("M85")], [86, p1.J, p2.H], [87, p1.K, third("M87")], [88, p2.D, p2.G],
+      ];
+      for (const [n, a, b] of r32) { W[n] = simKo(a, b); }
+      const pair = (n, x, y) => { W[n] = simKo(W[x], W[y]); Lz[n] = W[n] === W[x] ? W[y] : W[x]; };
+      [[89,74,77],[90,73,75],[91,76,78],[92,79,80],[93,83,84],[94,81,82],[95,86,88],[96,85,87]].forEach(([n,x,y]) => pair(n,x,y));
+      [[97,89,90],[98,93,94],[99,91,92],[100,95,96]].forEach(([n,x,y]) => pair(n,x,y));
+      pair(101, 97, 98); pair(102, 99, 100);
+      simKo(W[101], W[102]);   // final
+      simKo(Lz[101], Lz[102]); // third-place game (a real scoring match)
+
+      // ---- rank ----
+      const order = managers.slice().sort((a, b) => tot[b] - tot[a] || a.localeCompare(b));
+      const pos = order.indexOf(manager);
+      finish[pos]++;
+      if (pos === 0) { firstTotal++; for (let i = 0; i < fx.length; i++) buckets[i][oc[i]].first++; }
+    }
+    return {
+      managers, fx, meta, base, N,
+      p1st: firstTotal / N,
+      finish: finish.map((c) => c / N),
+      buckets,
+    };
+  }
+
+  // One bracket for the visual. mode = "mc" (random sample), "best" (the selected
+  // manager's teams win every remaining game and go as deep as the bracket allows),
+  // or "worst" (their teams lose out). Non-selected games resolve by seeding/rating
+  // in best/worst so the rest of the bracket still fills in deterministically.
+  function wfSampleBracket(manager, mode, basePts) {
+    const fx = wfFixtures();
+    const mineT = (t) => TEAM_OWNER[t] === manager;
+    let myPts = basePts != null ? basePts : (wfBase()[manager] || 0); // manager's total points this sim
+    // a deterministic scoreline by rating, optionally forcing a winner
+    // big=true → the forced winner takes a 4-0 result (the point-maximizing
+    // scoreline: win + clean sheet + 2/4 goals + win-by-2 all bonus), used for
+    // the selected manager's own games in best/worst so the numbers show the
+    // ideal max (4-0) / min (0-4) outcome.
+    const detScore = (a, b, forced, big) => {
+      if (big && forced) return forced === a ? [4, 0] : [0, 4];
+      let ga = Math.max(0, Math.round(wcLam(a, b))), gb = Math.max(0, Math.round(wcLam(b, a)));
+      const w = forced || (ga > gb ? a : gb > ga ? b : (WC_RATING[a] >= WC_RATING[b] ? a : b));
+      if (w === a && ga <= gb) ga = gb + 1;
+      if (w === b && gb <= ga) gb = ga + 1;
+      return [ga, gb];
+    };
+    const groupScore = (f) => {
+      if (mode === "mc") return wcSampleScore(f.teamA, f.teamB, null);
+      // both teams are yours → maximise YOUR combined points. Groups can't go to
+      // penalties, so the ceiling is a 6-4 win: winner banks win+2-goal+4-goal+
+      // win-by-2 (9), loser banks 2-goal+4-goal (2) = 11 total.
+      if (mode === "best" && mineT(f.teamA) && mineT(f.teamB))
+        return WC_RATING[f.teamA] >= WC_RATING[f.teamB] ? [6, 4] : [4, 6];
+      let forced = null;
+      if (mineT(f.teamA) !== mineT(f.teamB)) {
+        const winSide = mode === "best" ? (mineT(f.teamA) ? f.teamA : f.teamB)
+                                        : (mineT(f.teamA) ? f.teamB : f.teamA);
+        forced = winSide;
+      }
+      return detScore(f.teamA, f.teamB, forced, true);
+    };
+
+    const gr = {};
+    for (const t of ALL_TEAMS) if (WC_GROUP[t] != null) gr[t] = { pts: 0, gd: 0, gf: 0 };
+    for (const m of MATCHES) {
+      if (m.stage !== "group" || !hasResult(m) || WC_GROUP[m.teamA] == null || WC_GROUP[m.teamB] == null) continue;
+      const a = Number(m.scoreA), b = Number(m.scoreB);
+      gr[m.teamA].gf += a; gr[m.teamA].gd += a - b; gr[m.teamB].gf += b; gr[m.teamB].gd += b - a;
+      if (a > b) gr[m.teamA].pts += 3; else if (b > a) gr[m.teamB].pts += 3; else { gr[m.teamA].pts += 1; gr[m.teamB].pts += 1; }
+    }
+    for (const f of fx) {
+      const [ga, gb] = groupScore(f);
+      gr[f.teamA].gf += ga; gr[f.teamA].gd += ga - gb; gr[f.teamB].gf += gb; gr[f.teamB].gd += gb - ga;
+      if (ga > gb) gr[f.teamA].pts += 3; else if (gb > ga) gr[f.teamB].pts += 3; else { gr[f.teamA].pts += 1; gr[f.teamB].pts += 1; }
+      if (TEAM_OWNER[f.teamA] === manager) myPts += wcGroupPts(ga, gb);
+      if (TEAM_OWNER[f.teamB] === manager) myPts += wcGroupPts(gb, ga);
+    }
+    const byL = {}; for (const t of ALL_TEAMS) if (WC_GROUP[t] != null) (byL[WC_GROUP[t]] = byL[WC_GROUP[t]] || []).push(t);
+    const cmp = (x, y) => gr[y].pts - gr[x].pts || gr[y].gd - gr[x].gd || gr[y].gf - gr[x].gf || WC_RATING[y] - WC_RATING[x];
+    const p1 = {}, p2 = {}, thirds = [];
+    for (const L in byL) { const g = byL[L].slice().sort(cmp); p1[L] = g[0]; p2[L] = g[1]; thirds.push({ L, team: g[2] }); }
+    thirds.sort((x, y) => cmp(x.team, y.team));
+    const qual = thirds.slice(0, 8), slot = wfMatchThirds(qual.map((q) => q.L)), tt = {};
+    qual.forEach((q) => (tt[q.L] = q.team));
+    const third = (s) => tt[slot[s]];
+
+    const match = {};
+    const simKo = (n, a, b) => {
+      let ga, gb, et = false, pk = false, w, big = false;
+      if (mode !== "mc") {
+        // best/worst: force my team's result; non-mine games by rating
+        if (mode === "best" && mineT(a) && mineT(b)) {
+          // both teams are yours → maximise YOUR combined points: a 4-4 draw won
+          // on penalties. Both bank 2-goal+4-goal+ET+PK; the winner also advances
+          // (10), the loser nets 4 → 14 total, the ceiling for an own-vs-own tie.
+          ga = 4; gb = 4; et = true; pk = true; big = true;
+          w = WC_RATING[a] >= WC_RATING[b] ? a : b;
+        } else {
+          let forced = null;
+          if (mineT(a) !== mineT(b)) forced = mode === "best" ? (mineT(a) ? a : b) : (mineT(a) ? b : a);
+          big = forced != null; // my own game → ideal 4-0 / 0-4 scoreline
+          [ga, gb] = detScore(a, b, forced, big);
+          w = ga > gb ? a : b;
+        }
+      } else {
+        ga = wcPois(wcLam(a, b)); gb = wcPois(wcLam(b, a));
+        if (ga === gb) { et = true; const ea = wcPois(wcLam(a, b) * WC_ET), eb = wcPois(wcLam(b, a) * WC_ET); ga += ea; gb += eb; if (ga === gb) pk = true; }
+        if (ga > gb) w = a; else if (gb > ga) w = b;
+        else { const pa = 1 / (1 + Math.pow(10, (WC_RATING[b] - WC_RATING[a]) / 400)); w = Math.random() < pa ? a : b; }
+      }
+      match[n] = { a, b, sa: ga, sb: gb, w, big, tag: pk ? "ET · PK" : et ? "ET" : "" };
+      const l = w === a ? b : a;
+      const wgf = w === a ? ga : gb, wga = w === a ? gb : ga, lgf = l === a ? ga : gb, lga = l === a ? gb : ga;
+      if (TEAM_OWNER[w] === manager) myPts += wcKoPts(wgf, wga, true, et, pk);
+      if (TEAM_OWNER[l] === manager) myPts += wcKoPts(lgf, lga, false, et, pk);
+      return w;
+    };
+    const r32 = [
+      [73, p2.A, p2.B], [74, p1.E, third("M74")], [75, p1.F, p2.C], [76, p1.C, p2.F],
+      [77, p1.I, third("M77")], [78, p2.E, p2.I], [79, p1.A, third("M79")], [80, p1.L, third("M80")],
+      [81, p1.D, third("M81")], [82, p1.G, third("M82")], [83, p2.K, p2.L], [84, p1.H, p2.J],
+      [85, p1.B, third("M85")], [86, p1.J, p2.H], [87, p1.K, third("M87")], [88, p2.D, p2.G],
+    ];
+    const W = {}; for (const [n, a, b] of r32) W[n] = simKo(n, a, b);
+    const pr = (n, x, y) => { W[n] = simKo(n, W[x], W[y]); };
+    [[89,74,77],[90,73,75],[91,76,78],[92,79,80],[93,83,84],[94,81,82],[95,86,88],[96,85,87]].forEach(([n,x,y]) => pr(n,x,y));
+    [[97,89,90],[98,93,94],[99,91,92],[100,95,96]].forEach(([n,x,y]) => pr(n,x,y));
+    pr(101, 97, 98); pr(102, 99, 100);
+    const champion = simKo(104, W[101], W[102]);
+    // third-place play-off — a real scoring match (kept consistent with wfRun
+    // and the live standings, which count every knockout game incl. this one)
+    const l101 = W[101] === W[97] ? W[98] : W[97];
+    const l102 = W[102] === W[99] ? W[100] : W[99];
+    simKo(103, l101, l102);
+    return { match, champion, score: myPts };
+  }
+
+  // Render a sampled bracket as an R32→Final tree. The match order per round is
+  // chosen so each later box sits between its two feeders (space-around aligns
+  // box j over feeders 2j,2j+1).
+  const WF_BRACKET_ORDER = [
+    ["Round of 32", [74,77,73,75,83,84,81,82,76,78,79,80,86,88,85,87]],
+    ["Round of 16", [89,90,93,94,91,92,95,96]],
+    ["Quarter-finals", [97,98,99,100]],
+    ["Semi-finals", [101,102]],
+    ["Final", [104]],
+  ];
+  function wfBracketDOM(S, manager) {
+    const wrap = el("div", "wf-bracket-wrap");
+    const br = el("div", "wf-bracket");
+    const teamRow = (team, score, win) => {
+      const mine = TEAM_OWNER[team] === manager;
+      const r = el("div", "wf-team" + (win ? " w" : "") + (mine ? " mine" : ""));
+      r.innerHTML = `<span class="wf-tn">${esc(team || "—")}</span><span>${score == null ? "" : score}</span>`;
+      return r;
+    };
+    for (const [label, nums] of WF_BRACKET_ORDER) {
+      const col = el("div", "wf-round");
+      col.appendChild(el("div", "wf-rtitle muted", label));
+      const mm = el("div", "wf-rmatches");
+      for (const n of nums) {
+        const m = S.match[n];
+        const box = el("div", "wf-match");
+        if (m) {
+          // ideal best/worst games show the maxed-out side as "4+" (4 goals caps the bonus)
+          const dsa = m.big && m.sa >= 4 ? "4+" : m.sa;
+          const dsb = m.big && m.sb >= 4 ? "4+" : m.sb;
+          box.appendChild(teamRow(m.a, dsa, m.w === m.a));
+          box.appendChild(teamRow(m.b, dsb, m.w === m.b));
+          if (m.tag) box.appendChild(el("div", "wf-tag muted", m.tag));
+        }
+        mm.appendChild(box);
+      }
+      col.appendChild(mm);
+      br.appendChild(col);
+    }
+    wrap.appendChild(br);
+    const mine = TEAM_OWNER[S.champion] === manager;
+    wrap.appendChild(el("div", "wf-champ",
+      `🏆 <b class="${mine ? "wf-mine" : ""}">${esc(S.champion)}</b> ` +
+      `<span class="muted">(${esc(TEAM_OWNER[S.champion])})${mine ? " — that's you!" : ""} · simulated champion</span>`));
+    const tp = S.match[103];
+    if (tp) {
+      const w3 = tp.w, m3 = TEAM_OWNER[w3] === manager;
+      wrap.appendChild(el("div", "wf-champ wf-third muted",
+        `🥉 <b class="${m3 ? "wf-mine" : ""}">${esc(w3)}</b> ` +
+        `beat ${esc(tp.w === tp.a ? tp.b : tp.a)} · third-place play-off (counts for points)`));
+    }
+    return wrap;
+  }
+
+  function ensureWhatIfStyles() {
+    if (document.getElementById("whatif-style")) return;
+    const s = el("style"); s.id = "whatif-style";
+    s.textContent =
+      ".wf-head{display:flex;align-items:center;gap:1rem;flex-wrap:wrap;margin:.5rem 0 1rem}" +
+      ".wf-select{font-size:1rem;padding:.35rem .5rem;border-radius:8px;background:#0d1117;color:inherit;border:1px solid #30363d}" +
+      ".wf-odds{font-size:2.4rem;font-weight:700;line-height:1}" +
+      ".wf-odds small{font-size:.9rem;font-weight:400;opacity:.7;margin-left:.4rem}" +
+      ".wf-floor{opacity:.75;font-size:.9rem}" +
+      ".wf-bars{display:grid;grid-template-columns:auto 1fr auto;gap:2px 8px;align-items:center;max-width:420px;margin:.5rem 0 1.2rem}" +
+      ".wf-bar{height:12px;background:rgba(47,129,247,.85);border-radius:3px;min-width:2px}" +
+      ".wf-bartrk{background:#161b22;border-radius:3px}" +
+      ".wf-fx{border:1px solid #30363d;border-radius:10px;padding:.6rem .75rem;margin:.5rem 0;background:#0d1117}" +
+      ".wf-fx-top{display:flex;align-items:center;gap:.6rem;flex-wrap:wrap;justify-content:space-between}" +
+      ".wf-pins{display:inline-flex;gap:4px}" +
+      ".wf-pin{padding:.25rem .6rem;border-radius:7px;border:1px solid #30363d;background:#161b22;color:inherit;cursor:pointer;font-size:.85rem}" +
+      ".wf-pin.active{background:#2f81f7;border-color:#2f81f7;color:#fff;font-weight:600}" +
+      ".wf-pin-pts{opacity:.7;font-weight:600;margin-left:.4em}" +
+      ".wf-pin.active .wf-pin-pts{opacity:.95}" +
+      ".wf-pts-readout{margin:.5rem 0 .9rem;font-size:1.05rem}" +
+      ".wf-pts-end{font-size:1.6rem;color:#2f81f7}" +
+      ".wf-cond{display:flex;gap:1rem;flex-wrap:wrap;margin-top:.4rem;font-size:.85rem}" +
+      ".wf-cond b{font-variant-numeric:tabular-nums}" +
+      ".wf-path li{margin:.25rem 0}" +
+      ".wf-mine{font-weight:600}" +
+      ".wf-bracket-wrap{overflow-x:auto;margin:.4rem 0 1rem;padding-bottom:6px}" +
+      ".wf-bracket{display:flex;gap:12px;min-width:920px;height:780px}" +
+      ".wf-round{display:flex;flex-direction:column;min-width:150px}" +
+      ".wf-rtitle{text-align:center;font-size:.75rem;margin-bottom:6px}" +
+      ".wf-rmatches{flex:1;display:flex;flex-direction:column;justify-content:space-around}" +
+      ".wf-match{border:1px solid #30363d;border-radius:6px;background:#0d1117;overflow:hidden}" +
+      ".wf-team{display:flex;justify-content:space-between;gap:6px;padding:2px 7px;font-size:.74rem}" +
+      ".wf-team .wf-tn{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}" +
+      ".wf-team.w{font-weight:700;background:rgba(47,129,247,.08)}" +
+      ".wf-team.mine .wf-tn{color:#2f81f7}" +
+      ".wf-team.w.mine{background:rgba(47,129,247,.18)}" +
+      ".wf-tag{font-size:.62rem;text-align:right;padding:0 7px 2px}" +
+      ".wf-champ{margin-top:.5rem;font-size:1rem}" +
+      ".wf-reroll{margin-left:.6rem}";
+    document.head.appendChild(s);
+  }
+
+  function renderWhatIf() {
+    ensureWhatIfStyles();
+    const root = el("div", "whatif");
+    const stand = computeStandings();
+    if (!WF.manager || !stand.some((s) => s.manager === WF.manager)) WF.manager = stand[0].manager;
+
+    root.appendChild(el("p", "muted",
+      "<b>Experimental.</b> Full-tournament title-path explorer: simulates the remaining group games, then plays " +
+      "FIFA's <b>real 2026 knockout bracket</b> (group winners / runners-up / 8 best thirds seeded into the official " +
+      "Round-of-32 template) all the way to the final, scoring every match with the live rules."));
+
+    const head = el("div", "wf-head");
+    const sel = el("select", "wf-select");
+    Object.keys(DRAFT).forEach((m) => {
+      const o = el("option"); o.value = m; o.textContent = m;
+      if (m === WF.manager) o.selected = true; sel.appendChild(o);
+    });
+    sel.onchange = () => { WF.manager = sel.value; rebuild(); };
+    head.appendChild(el("span", "muted", "Manager:"));
+    head.appendChild(sel);
+    root.appendChild(head);
+
+    const dyn = el("div");
+    root.appendChild(dyn);
+
+    function rebuild() {
+      dyn.innerHTML = "";
+      const fxAll = wfFixtures();
+      if (!fxAll.length) {
+        dyn.appendChild(el("p", "muted", "No remaining scheduled matches with rated teams — nothing to explore right now."));
+        return;
+      }
+      const sim = wfRun(WF.manager, WF.pins, WF.sims);
+
+      // ceiling / floor: all my remaining games won vs lost
+      const minePins = (res) => {
+        const p = {};
+        sim.fx.forEach((f, i) => { if (sim.meta[i].mine) p[wfId(f)] = sim.meta[i].side === res.win ? "A" : "B"; });
+        return p;
+      };
+      const ceil = wfRun(WF.manager, { ...WF.pins, ...minePins({ win: "A" }) }, WF.sims).p1st;
+      const floor = wfRun(WF.manager, { ...WF.pins, ...minePins({ win: "B" }) }, WF.sims).p1st;
+
+      const cur = stand.find((s) => s.manager === WF.manager);
+      const curRank = stand.findIndex((s) => s.manager === WF.manager) + 1;
+
+      // headline
+      const hcard = el("div");
+      hcard.innerHTML =
+        `<div class="wf-odds">${pctTxt(sim.p1st)}<small>chance ${esc(WF.manager)} finishes 1st</small></div>` +
+        `<div class="wf-floor">Currently ${curRank}${["st","nd","rd"][curRank-1]||"th"} with <b>${cur.points}</b> pts · ` +
+        `if your teams win out: <b>${pctTxt(ceil)}</b> · if they lose out: <b>${pctTxt(floor)}</b></div>`;
+      dyn.appendChild(hcard);
+
+      // finish-position distribution
+      dyn.appendChild(el("h3", "proj-h", "Where you finish"));
+      dyn.appendChild(el("p", "muted", "Your chance of ending the league in each final position across all simulations (1st = winning the league)."));
+      const bars = el("div", "wf-bars");
+      const maxP = Math.max(...sim.finish);
+      sim.finish.forEach((p, i) => {
+        bars.appendChild(el("div", "muted", `${i + 1}${["st","nd","rd"][i]||"th"}`));
+        const trk = el("div", "wf-bartrk");
+        const bar = el("div", "wf-bar"); bar.style.width = `${Math.round((p / (maxP || 1)) * 100)}%`;
+        if (i > 0) bar.style.background = "rgba(47,129,247,.45)";
+        trk.appendChild(bar); bars.appendChild(trk);
+        bars.appendChild(el("div", "muted", pctTxt(p)));
+      });
+      dyn.appendChild(bars);
+
+      // most likely path to first
+      const mineIdx = sim.fx.map((f, i) => i).filter((i) => sim.meta[i].mine);
+      const ranked = mineIdx
+        .map((i) => {
+          const bk = sim.buckets[i];
+          const w = bk.win.n ? bk.win.first / bk.win.n : 0;
+          const l = bk.loss.n ? bk.loss.first / bk.loss.n : 0;
+          return { i, swing: w - l, w, l };
+        })
+        .sort((a, b) => b.swing - a.swing)
+        .slice(0, 6);
+      if (ranked.length) {
+        dyn.appendChild(el("h3", "proj-h", "Your most leveraged games"));
+        dyn.appendChild(el("p", "muted",
+          "Your remaining group games ranked by how much they move your <b>title odds</b> — your chance of finishing " +
+          "1st overall (winning the league). Each line: title odds if your team wins vs if it loses."));
+        const ul = el("ul", "wf-path muted");
+        ranked.forEach((r) => {
+          const f = sim.fx[r.i], side = sim.meta[r.i].side;
+          const myTeam = side === "A" ? f.teamA : f.teamB, opp = side === "A" ? f.teamB : f.teamA;
+          const by2 = sim.buckets[r.i].win.by2 / Math.max(1, sim.buckets[r.i].win.n) > 0.5;
+          ul.appendChild(el("li", "",
+            `<span class="wf-mine">${esc(myTeam)}</span> beat ${esc(opp)}${by2 ? " by 2+" : ""} → ` +
+            `<b>${pctTxt(r.w)}</b> title odds <span class="muted">vs <b>${pctTxt(r.l)}</b> if they lose ` +
+            `(swing ${r.swing >= 0 ? "+" : ""}${Math.round(r.swing * 100)} pts)</span>`));
+        });
+        dyn.appendChild(ul);
+      }
+
+      // other swing matches (not yours) — who to root for
+      const others = sim.fx
+        .map((f, i) => i)
+        .filter((i) => !sim.meta[i].mine)
+        .map((i) => {
+          const bk = sim.buckets[i]; // side defaults to A here
+          const a = bk.win.n ? bk.win.first / bk.win.n : 0;   // teamA wins
+          const b = bk.loss.n ? bk.loss.first / bk.loss.n : 0; // teamA loses
+          return { i, spread: Math.abs(a - b), a, b };
+        })
+        .filter((r) => r.spread > 0.015)
+        .sort((x, y) => y.spread - x.spread)
+        .slice(0, 12);
+      if (others.length) {
+        dyn.appendChild(el("h3", "proj-h", "Who to root for elsewhere"));
+        dyn.appendChild(el("p", "muted",
+          "Games <b>not</b> involving your teams that most move your title odds (your chance of finishing 1st). " +
+          "Pull for the team on the left."));
+        const ul = el("ul", "wf-path muted");
+        others.forEach((r) => {
+          const f = sim.fx[r.i];
+          const helps = r.a >= r.b ? f.teamA : f.teamB;
+          const against = helps === f.teamA ? f.teamB : f.teamA;
+          const hi = Math.max(r.a, r.b), lo = Math.min(r.a, r.b);
+          ul.appendChild(el("li", "",
+            `Root for <b>${esc(helps)}</b> over ${esc(against)} → ` +
+            `<b>${pctTxt(hi)}</b> title odds if they win <span class="muted">vs <b>${pctTxt(lo)}</b> if they don't</span>`));
+        });
+        dyn.appendChild(ul);
+      }
+
+      // bracket visual: a 5-step scenario dial from worst to absolute-best
+      const brTop = el("div", "wf-fx-top");
+      brTop.appendChild(el("h3", "proj-h", "Bracket to the final"));
+      const modeBox = el("div", "wf-pins");
+      const reroll = el("button", "wf-pin wf-reroll", "↻ Re-roll");
+      brTop.appendChild(modeBox);
+      brTop.appendChild(reroll);
+      dyn.appendChild(brTop);
+      const brDesc = el("p", "muted");
+      dyn.appendChild(brDesc);
+      const brPts = el("div", "wf-pts-readout");
+      dyn.appendChild(brPts);
+      const brHolder = el("div");
+      dyn.appendChild(brHolder);
+
+      const myBase = sim.base[WF.manager] || 0;
+      const LEVELS = [
+        ["worst", "Worst", "Worst case: your teams lose every remaining game (often knocked out in the group, so they disappear from the bracket). Other games resolve by seeding."],
+        ["pess", "Pessimistic", "Pessimistic — a poor-but-plausible run for you (about the 15th-percentile Monte-Carlo tournament: you do better than this ~85% of the time)."],
+        ["avg", "Average", "Average — a typical run (the median Monte-Carlo tournament: you do better half the time, worse half the time)."],
+        ["opt", "Optimistic", "Optimistic — a strong-but-plausible run (about the 85th-percentile Monte-Carlo tournament: things go this well only ~15% of the time)."],
+        ["best", "Absolute best", "Absolute best: your teams win every remaining game and go as deep as the bracket allows. Other games resolve by seeding."],
+      ];
+      const PCTL = { pess: 0.15, avg: 0.5, opt: 0.85 };
+      const POOL_N = 5000; // Monte-Carlo tournaments sampled for the bracket percentiles
+      let pool = null;
+      const getPool = () => {
+        if (pool) return pool;
+        pool = [];
+        for (let i = 0; i < POOL_N; i++) pool.push(wfSampleBracket(WF.manager, "mc", myBase));
+        pool.sort((a, b) => a.score - b.score); // ascending by the manager's points → percentile = how well it went for them
+        return pool;
+      };
+      const drawBracket = () => {
+        const lvl = LEVELS.find((l) => l[0] === WF.bracketMode);
+        brDesc.textContent = lvl[2];
+        const isDet = WF.bracketMode === "best" || WF.bracketMode === "worst";
+        reroll.style.display = isDet ? "none" : "";
+        let S;
+        if (isDet) S = wfSampleBracket(WF.manager, WF.bracketMode, myBase);
+        else { const p = getPool(); S = p[Math.min(p.length - 1, Math.round(PCTL[WF.bracketMode] * (p.length - 1)))]; }
+        brPts.innerHTML =
+          `In the <b>${esc(lvl[1].toLowerCase())}</b> scenario you finish with ` +
+          `<b class="wf-pts-end">${Math.round(S.score)}</b> total points ` +
+          `<span class="muted">(${cur.points} now${S.score > cur.points ? " +" + (Math.round(S.score) - cur.points) : ""})</span>`;
+        brHolder.innerHTML = "";
+        brHolder.appendChild(wfBracketDOM(S, WF.manager));
+      };
+      // points the manager ends up with in each scenario (deterministic for
+      // best/worst, the matching percentile sample for pess/avg/opt)
+      const detScores = {};
+      const levelScore = (m) => {
+        if (m === "best" || m === "worst") {
+          if (detScores[m] == null) detScores[m] = wfSampleBracket(WF.manager, m, myBase).score;
+          return detScores[m];
+        }
+        const p = getPool();
+        return p[Math.min(p.length - 1, Math.round(PCTL[m] * (p.length - 1)))].score;
+      };
+      const btns = [];
+      const labelBtns = () => btns.forEach(({ m, lab, b }) => {
+        b.innerHTML = `${lab}<small class="wf-pin-pts">${Math.round(levelScore(m))} pts</small>`;
+      });
+      LEVELS.forEach(([m, lab]) => {
+        const b = el("button", "wf-pin" + (WF.bracketMode === m ? " active" : ""), lab);
+        b.onclick = () => {
+          WF.bracketMode = m;
+          modeBox.querySelectorAll(".wf-pin").forEach((x) => x.classList.remove("active"));
+          b.classList.add("active");
+          drawBracket();
+        };
+        modeBox.appendChild(b);
+        btns.push({ m, lab, b });
+      });
+      reroll.onclick = () => { pool = null; drawBracket(); labelBtns(); }; // fresh sample at the same percentile
+      drawBracket();
+      labelBtns();
+
+      const foot = el("p", "muted proj-foot");
+      foot.innerHTML = `<b>Model.</b> ${WF.sims.toLocaleString()} full-tournament simulations: the ${sim.fx.length} remaining group ` +
+        `match${sim.fx.length === 1 ? "" : "es"} plus the entire official knockout bracket to the final. Elo-style ratings → ` +
+        `Poisson goals (extra time at ${WC_ET}×, shootouts by rating), scored with the live rules. Group ties broken by points/GD/GF; ` +
+        `the 8 best third-placed teams are seeded into FIFA's real Round-of-32 slots. "Title odds" = your chance of finishing 1st overall; ` +
+        `the leverage/root-for odds are read off the baseline run. The bracket's pessimistic/average/optimistic views are the 15th/50th/85th ` +
+        `percentile of ${POOL_N.toLocaleString()} sampled tournaments (by your points); best/worst force your teams to win/lose out. Ties for 1st broken arbitrarily.`;
+      dyn.appendChild(foot);
+    }
+
+    rebuild();
+    return root;
+  }
+
   /* ---------- tabs ---------- */
 
   const TABS = {
     standings:   { label: "Standings", render: renderStandings },
     projections: { label: "Projections", render: renderProjections },
+    whatif:      { label: "What If", render: renderWhatIf },
     teams:       { label: "Teams", render: renderTeams },
     value:     { label: "Draft Value", render: renderValue },
     results:   { label: "Results", render: renderResults },
