@@ -4,6 +4,14 @@
 window.COMMENTARY = {
   "entries": [
     {
+      "date": "2026-06-25",
+      "generatedAt": "2026-06-25T11:07:15.380Z",
+      "model": "gpt-oss:120b",
+      "playedMatches": 54,
+      "headline": "Mike's Goddamn Ego Is the Only Thing Not Burning Down",
+      "text": "Mike struts around like a cocky goddamn peacock, clutching 94 points while his title odds sit smug at 59%—the only thing that hasn't moved is his massive ego, you oversized dickhead. He thinks his Swiss‑Swiss combo is a nuclear bomb, but it's just a glorified fireworks display for a toddler, you complete fuckwad.\n\nGregory's draft is a dumpster fire; his South Korea got steamrolled 1‑0 by South Africa while his Czechia was thrashed 3‑0 by Mexico, dropping his odds like a drunk clown off a ladder, you pathetic ass‑clown, shit. He still clings to Brazil like a scared baby to its blanket, but his fantasy prospects are about as promising as a broken compass in a sandstorm, you clueless fuck.\n\nKyle's odds magically leapt to 7%—probably because his brain finally realized it's a dumpster, not a strategy hub—yet his South Africa and Mexico flops prove he's a walking disaster, you worthless dickhead, fuck. Now he has to watch his Curacao crawl into the Ivory Coast and his Ecuador get trampled by Germany, which will be about as entertaining as watching paint dry on a tombstone, you sad‑ass fuck.\n\nBrett staggers around with a 12% chance, riding a death‑star of mediocrity that includes Japan and the Netherlands—two teams that score about as many points as a broken vending machine, you dumbass. When his Japan faces John's Sweden later, it'll be a clash of two sides that couldn't score even if the ball was on a leash, you absolute piece‑of‑shit.\n\nJohn clings to his 40 points like a scared kid holding a soggy teddy, his 3% title chance is a joke that even his own mother would laugh at, you spineless prick, fuck. Ian, the league's eternal basement dweller with 38 points, is basically a fantasy ghost haunting a graveyard of losers; his 1% odds are about as real as a unicorn on a leash, you miserable cunt."
+    },
+    {
       "date": "2026-06-24",
       "generatedAt": "2026-06-24T11:16:22.791Z",
       "model": "gpt-oss:120b",
