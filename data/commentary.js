@@ -4,6 +4,14 @@
 window.COMMENTARY = {
   "entries": [
     {
+      "date": "2026-06-26",
+      "generatedAt": "2026-06-26T11:14:42.903Z",
+      "model": "gpt-oss:120b",
+      "playedMatches": 60,
+      "headline": "Mike’s Ego Is a Burning Fuse of Pure Shit",
+      "text": "Mike strutted into the morning like a bloated cockroach, clutching 95 points and a 58% title chance, up from 55%, thinking the world owes him a standing ovation, you massive fucker. Then his USA got knifed 3-2 by Turkey, proving his fantasy empire is a house of cards held together by his own shitty ego, you dickhead. To top it off he's got Norway and Iraq both kicking off at 3pm, so he'll have to watch his own teams literally smash each other while he shits himself in the stands, you pathetic motherfucker.\n\nKyle's odds slumped to 15% after a 0-0 snoozefest between his Paraguay and Brett's Australia, a draw about as thrilling as watching paint dry on a landfill, you useless cunt. His roster looks like a thrift‑store clearance rack, and the only thing he’s scoring is a cold sweat every time his teams sit on the bench, you limp‑ass wanker. He’s basically a fantasy manager who thinks a draw is a win, you clueless dick.\n\nGregory’s title odds dropped to 8% from 9%, a dip that matches his roster’s ability to score – about as useful as a screen door on a submarine, you sorry shitbag. He keeps banking on Brazil like it’s a magic bullet, but his squad is a mismatched junkyard of underperformers that would make a garbage truck blush, you pathetic twat. Watching Gregory try to justify his picks is like watching a drunk wanker argue with a brick wall, you absolute motherfucker.\n\nBrett clung to his 8% odds as they fell from 12%, after his Netherlands‑versus‑Australia draw left his fantasy bank as empty as his brain, you dumbass. His lineup reads like a random Google autocomplete after a kid’s fever dream, and every decision he makes screams ‘I drafted with my eyes closed and a blindfold on,’ you clueless ass‑clown. He’s the kind of manager who’d bet his house on a coin flip and still lose to a toddler’s sock, you pathetic dipshit.\n\nJohn’s odds crept up to a measly 2% from 1% while his Germany‑16‑point gem still can’t pull his points out of the gutter, making him the league’s resident whiny wank, you spineless prick. David’s 7% odds sank from 9% and his Senegal‑versus‑Iraq showdown at 3pm will likely end in another crushing disappointment, proving his strategy is as coherent as a drunken ransom note, you clueless cunt. Ian, the perpetually buried 1% loser, is about to watch his France get steamrolled by Mike’s Norway, confirming that his fantasy career is a permanent dumpster fire, you pathetic motherfucker."
+    },
+    {
       "date": "2026-06-25",
       "generatedAt": "2026-06-25T11:07:15.380Z",
       "model": "gpt-oss:120b",
