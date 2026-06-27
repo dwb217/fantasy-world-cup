@@ -415,10 +415,14 @@ try {
   if (m) history = JSON.parse(m[1]);
 } catch (e) { /* first run: no history file yet */ }
 const today = out.meta.generatedAt.slice(0, 10);
-const entry = { date: today, playedMatches: PLAYED, titleOdds: {}, meanPts: {} };
+const entry = { date: today, playedMatches: PLAYED, titleOdds: {}, meanPts: {}, mrr: {} };
 for (const m of managersOut) {
   entry.titleOdds[m.name] = m.finish[0];
   entry.meanPts[m.name] = m.mean;
+  // Expected reciprocal rank: sum over every finishing place of (1/place) ×
+  // P(finishing there). m.finish[i] is P(finish in place i+1), so place = i+1.
+  // Ranges from 1.0 (certain 1st) down to 1/N (certain last). Higher = better.
+  entry.mrr[m.name] = r4(m.finish.reduce((s, p, i) => s + p / (i + 1), 0));
 }
 history = history.filter((h) => h.date !== today);
 history.push(entry);
