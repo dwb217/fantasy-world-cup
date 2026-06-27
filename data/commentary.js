@@ -4,6 +4,14 @@
 window.COMMENTARY = {
   "entries": [
     {
+      "date": "2026-06-27",
+      "generatedAt": "2026-06-27T10:22:16.362Z",
+      "model": "gpt-oss:120b",
+      "playedMatches": 66,
+      "headline": "Mike’s Crown Is Tarnished by His Own Shitshow",
+      "text": "Mike strutted into the morning like a peacock on steroids, clutching 97 points and a 47% title chance that plunged from 52% faster than his ego after a 1‑1 Egypt‑Iran draw and a 0‑1 Uruguay‑Spain loss, you massive dickhead. The only thing hotter than his self‑important grin is the sewage pipe he’s about to drown in when his USA finally gets knocked out, you colossal fuckwad.\n\nKyle’s 0‑0 snoozefest with Gregory’s Saudi Arabia gave him a boring 78 points, yet his title odds slipped to 14%—proof that even his own numbers are trying to escape his brain, you clueless fuckwad. He’s got Mexico and England on the docket, which means he’ll watch his squad score about as much as a mute hamster on a treadmill, you pathetic ass‑clown.\n\nGregory’s Brazil‑centric fantasy is as useful as a screen door on a submarine, and after a 0‑0 Cape Verde‑Saudi Arabia stalemate he’s down to a pathetic 5% chance, down from 8%—his roster is a dumpster fire that even the fire brigade won’t touch, you sorry wankstain. Now he has to face Ghana and Colombia, which will probably end in him crying into his own trash bag, you miserable motherfucker.\n\nBrett got his sorry ass thrashed 5‑1 by Belgium while his New Zealand flopped, yet he clings to 69 points and a measly 11% odds, up from 9%—the only thing rising is his delusion, you dumbass piece‑of‑shit. With Croatia vs Ghana and Panama vs England coming up, Brett will watch his “strategic genius” get steamrolled like a wet paper bag, you clueless dickhead.\n\nJohn is still stuck at 56 points and a stagnant 2% chance, his Spain squad yawning in the shadow of Mike’s Norway while he pretends his DR Congo versus Uzbekistan matchup will be a miracle, you spineless prick. Ian, the league’s permanent dumpster fire, is limping with 49 points after his New Zealand got trounced 5‑1, and his 1% odds are about as realistic as a unicorn on a leash, you pathetic motherfucker. Meanwhile David’s odds jumped to 19% after some random miracle, but he’s still far from catching Mike’s cock‑filled rocket, you clueless wank."
+    },
+    {
       "date": "2026-06-26",
       "generatedAt": "2026-06-26T11:14:42.903Z",
       "model": "gpt-oss:120b",
