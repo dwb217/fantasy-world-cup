@@ -20,6 +20,15 @@ window.ODDS_HISTORY = [
    "DAVID": 111.19,
    "KYLE": 110.35,
    "IAN": 93.63
+  },
+  "avgFinish": {
+   "MIKE": 2.4431,
+   "GREGORY": 2.8246,
+   "BRETT": 3.9051,
+   "JOHN": 4.366,
+   "DAVID": 4.3733,
+   "KYLE": 4.4705,
+   "IAN": 5.6166
   }
  },
  {
@@ -42,6 +51,15 @@ window.ODDS_HISTORY = [
    "KYLE": 110.7,
    "DAVID": 109.85,
    "IAN": 93.1
+  },
+  "avgFinish": {
+   "MIKE": 2.5325,
+   "GREGORY": 2.7306,
+   "BRETT": 3.8846,
+   "JOHN": 4.342,
+   "DAVID": 4.4663,
+   "KYLE": 4.4677,
+   "IAN": 5.5767
   }
  },
  {
@@ -64,6 +82,15 @@ window.ODDS_HISTORY = [
    "DAVID": 109.78,
    "KYLE": 107.14,
    "IAN": 93.19
+  },
+  "avgFinish": {
+   "MIKE": 2.4347,
+   "GREGORY": 2.6981,
+   "BRETT": 3.8512,
+   "JOHN": 4.297,
+   "DAVID": 4.4796,
+   "KYLE": 4.6542,
+   "IAN": 5.585
   }
  },
  {
@@ -86,6 +113,15 @@ window.ODDS_HISTORY = [
    "KYLE": 106.73,
    "JOHN": 105.83,
    "IAN": 93.39
+  },
+  "avgFinish": {
+   "MIKE": 2.3836,
+   "GREGORY": 2.9472,
+   "BRETT": 3.3682,
+   "DAVID": 4.4481,
+   "KYLE": 4.6471,
+   "JOHN": 4.6796,
+   "IAN": 5.5268
   }
  },
  {
@@ -108,6 +144,15 @@ window.ODDS_HISTORY = [
    "JOHN": 105.79,
    "KYLE": 105.01,
    "IAN": 93.32
+  },
+  "avgFinish": {
+   "MIKE": 2.3331,
+   "GREGORY": 3.0998,
+   "BRETT": 3.5593,
+   "DAVID": 4.0899,
+   "JOHN": 4.6351,
+   "KYLE": 4.7706,
+   "IAN": 5.512
   }
  },
  {
@@ -130,6 +175,15 @@ window.ODDS_HISTORY = [
    "JOHN": 106.28,
    "KYLE": 105.12,
    "IAN": 92.28
+  },
+  "avgFinish": {
+   "MIKE": 2.5326,
+   "GREGORY": 2.9762,
+   "BRETT": 3.5101,
+   "DAVID": 4.1663,
+   "JOHN": 4.5677,
+   "KYLE": 4.6991,
+   "IAN": 5.5467
   }
  },
  {
@@ -152,6 +206,15 @@ window.ODDS_HISTORY = [
    "KYLE": 107.64,
    "JOHN": 107.24,
    "IAN": 87.22
+  },
+  "avgFinish": {
+   "MIKE": 2.2671,
+   "GREGORY": 3.1378,
+   "BRETT": 3.6707,
+   "DAVID": 4.0155,
+   "JOHN": 4.5082,
+   "KYLE": 4.5491,
+   "IAN": 5.8513
   }
  },
  {
@@ -174,6 +237,15 @@ window.ODDS_HISTORY = [
    "JOHN": 107.16,
    "KYLE": 104.92,
    "IAN": 87.24
+  },
+  "avgFinish": {
+   "MIKE": 1.9988,
+   "GREGORY": 2.9097,
+   "BRETT": 3.8696,
+   "DAVID": 4.1986,
+   "JOHN": 4.4988,
+   "KYLE": 4.7034,
+   "IAN": 5.8208
   }
  },
  {
@@ -196,6 +268,15 @@ window.ODDS_HISTORY = [
    "KYLE": 108.5,
    "JOHN": 107.33,
    "IAN": 87.36
+  },
+  "avgFinish": {
+   "MIKE": 1.5449,
+   "GREGORY": 3.3623,
+   "BRETT": 4.0979,
+   "DAVID": 4.2157,
+   "KYLE": 4.4741,
+   "JOHN": 4.4865,
+   "IAN": 5.8194
   }
  },
  {
@@ -218,6 +299,15 @@ window.ODDS_HISTORY = [
    "DAVID": 111.7,
    "JOHN": 100.02,
    "IAN": 87.12
+  },
+  "avgFinish": {
+   "MIKE": 1.5923,
+   "GREGORY": 3.3743,
+   "BRETT": 3.8309,
+   "KYLE": 4.0846,
+   "DAVID": 4.2678,
+   "JOHN": 5.0149,
+   "IAN": 5.8351
   }
  },
  {
@@ -240,6 +330,15 @@ window.ODDS_HISTORY = [
    "KYLE": 108.85,
    "JOHN": 103.03,
    "IAN": 88.83
+  },
+  "avgFinish": {
+   "MIKE": 1.5648,
+   "GREGORY": 3.5494,
+   "BRETT": 3.5569,
+   "DAVID": 4.2451,
+   "KYLE": 4.4946,
+   "JOHN": 4.8089,
+   "IAN": 5.7807
   }
  },
  {
@@ -262,6 +361,15 @@ window.ODDS_HISTORY = [
    "KYLE": 111.69,
    "JOHN": 103.45,
    "IAN": 87.69
+  },
+  "avgFinish": {
+   "MIKE": 1.7985,
+   "GREGORY": 3.5224,
+   "BRETT": 3.5433,
+   "DAVID": 4.0889,
+   "KYLE": 4.3284,
+   "JOHN": 4.8256,
+   "IAN": 5.8941
   }
  },
  {
@@ -284,6 +392,15 @@ window.ODDS_HISTORY = [
    "KYLE": 104.74,
    "JOHN": 103.3,
    "IAN": 91.41
+  },
+  "avgFinish": {
+   "MIKE": 1.6571,
+   "GREGORY": 3.1488,
+   "BRETT": 3.562,
+   "DAVID": 4.3424,
+   "KYLE": 4.8036,
+   "JOHN": 4.8209,
+   "IAN": 5.6647
   }
  },
  {
@@ -306,6 +423,15 @@ window.ODDS_HISTORY = [
    "KYLE": 104.77,
    "JOHN": 100.65,
    "IAN": 91.39
+  },
+  "avgFinish": {
+   "MIKE": 1.6723,
+   "GREGORY": 3.3246,
+   "BRETT": 3.5621,
+   "DAVID": 3.939,
+   "KYLE": 4.8237,
+   "JOHN": 5.0055,
+   "IAN": 5.6754
   }
  },
  {
@@ -328,6 +454,15 @@ window.ODDS_HISTORY = [
    "GREGORY": 117.18,
    "JOHN": 94.27,
    "IAN": 90.86
+  },
+  "avgFinish": {
+   "MIKE": 1.7637,
+   "KYLE": 3.3591,
+   "BRETT": 3.7207,
+   "DAVID": 3.9175,
+   "GREGORY": 3.9507,
+   "JOHN": 5.503,
+   "IAN": 5.7845
   }
  },
  {
@@ -350,6 +485,15 @@ window.ODDS_HISTORY = [
    "BRETT": 113.88,
    "JOHN": 98.23,
    "IAN": 93.73
+  },
+  "avgFinish": {
+   "MIKE": 1.8548,
+   "KYLE": 3.2563,
+   "DAVID": 3.6062,
+   "GREGORY": 4.1316,
+   "BRETT": 4.2022,
+   "JOHN": 5.3075,
+   "IAN": 5.6418
   }
  },
  {
@@ -373,14 +517,14 @@ window.ODDS_HISTORY = [
    "JOHN": 99.23,
    "IAN": 94.36
   },
-  "mrr": {
-   "MIKE": 0.6739,
-   "DAVID": 0.4551,
-   "KYLE": 0.3993,
-   "BRETT": 0.3486,
-   "GREGORY": 0.2899,
-   "JOHN": 0.225,
-   "IAN": 0.2011
+  "avgFinish": {
+   "MIKE": 1.9594,
+   "DAVID": 3.1058,
+   "KYLE": 3.4167,
+   "BRETT": 4.042,
+   "GREGORY": 4.5143,
+   "JOHN": 5.2921,
+   "IAN": 5.6697
   }
  }
 ];

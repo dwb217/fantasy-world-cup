@@ -736,51 +736,53 @@
     return sec;
   }
 
-  // Mean-reciprocal-rank-over-time line chart from window.ODDS_HISTORY. Each
-  // entry's `mrr` is the expected reciprocal finishing rank — sum over every
-  // place of (1/place) × P(finishing there). 1.0 = certain 1st; 1/N = certain
-  // last; higher is better. `mrr` was added later, so only days that carry it
-  // are plotted (the chart grows from the day the field shipped).
-  function mrrHistorySection() {
+  // Average-finishing-position-over-time line chart from window.ODDS_HISTORY.
+  // Each entry's `avgFinish` is the expected final position — every finishing
+  // place weighted by its probability (place × P(place)). 1 = certain to win the
+  // league, 7 = certain last; LOWER is better, so the axis is inverted (best on
+  // top, like a league ladder). Only days carrying the field are plotted.
+  function avgFinishHistorySection() {
     const all = window.ODDS_HISTORY;
     if (!all || !all.length) return null;
-    const hist = all.filter((h) => h.mrr && Object.keys(h.mrr).length);
+    const hist = all.filter((h) => h.avgFinish && Object.keys(h.avgFinish).length);
     if (!hist.length) return null;
     const managers = Object.keys(DRAFT);
-    const latest = hist[hist.length - 1].mrr || {};
-    const order = managers.slice().sort((a, b) => (latest[b] || 0) - (latest[a] || 0));
+    const latest = hist[hist.length - 1].avgFinish || {};
+    // best (lowest avg position) first
+    const order = managers.slice().sort((a, b) => (latest[a] || 99) - (latest[b] || 99));
     const color = {};
     order.forEach((m, i) => (color[m] = MGR_COLORS[i % MGR_COLORS.length]));
-    const fmtMrr = (v) => (v || 0).toFixed(3);
+    const fmtPos = (v) => (v || 0).toFixed(2);
 
     const W = 600, H = 380, padL = 44, padR = 10, padT = 16, padB = 30;
     const n = hist.length;
-    const vals = hist.flatMap((h) => order.map((m) => h.mrr[m] || 0));
+    const vals = hist.flatMap((h) => order.map((m) => h.avgFinish[m]).filter((v) => v != null));
     const lo0 = Math.min(...vals), hi0 = Math.max(...vals);
     const span = hi0 - lo0 || 1;
-    const lo = Math.max(0, lo0 - span * 0.15), hi = Math.min(1, hi0 + span * 0.15);
+    const lo = Math.max(1, lo0 - span * 0.15), hi = Math.min(managers.length, hi0 + span * 0.15);
     const sx = (i) => padL + (n === 1 ? (W - padL - padR) / 2 : (i / (n - 1)) * (W - padL - padR));
-    const sy = scale(lo, hi, H - padB, padT);
+    // inverted: smaller position (better) maps higher up the plot
+    const sy = scale(lo, hi, padT, H - padB);
     const grid = [lo, (lo + hi) / 2, hi].map((v) =>
       `<line x1="${padL}" y1="${sy(v)}" x2="${W - padR}" y2="${sy(v)}" stroke="${PC.border}" stroke-width="1" stroke-dasharray="2 3"/>` +
-      `<text x="${padL - 6}" y="${sy(v) + 4}" fill="${PC.muted}" font-size="13" text-anchor="end">${fmtMrr(v)}</text>`).join("");
+      `<text x="${padL - 6}" y="${sy(v) + 4}" fill="${PC.muted}" font-size="13" text-anchor="end">${fmtPos(v)}</text>`).join("");
     const step = Math.max(1, Math.ceil(n / 6));
     const labels = hist.map((h, i) => (i % step === 0 || i === n - 1)
       ? `<text x="${sx(i)}" y="${H - 8}" fill="${PC.muted}" font-size="12" text-anchor="${i === 0 ? "start" : i === n - 1 ? "end" : "middle"}">${esc(fmtDate(h.date))}</text>` : "").join("");
     const series = order.map((m) => {
-      const ptsStr = hist.map((h, i) => `${sx(i)},${sy(h.mrr[m] || 0)}`).join(" ");
-      const dots = hist.map((h, i) => `<circle cx="${sx(i)}" cy="${sy(h.mrr[m] || 0)}" r="3" fill="${color[m]}"/>`).join("");
+      const ptsStr = hist.map((h, i) => `${sx(i)},${sy(h.avgFinish[m])}`).join(" ");
+      const dots = hist.map((h, i) => `<circle cx="${sx(i)}" cy="${sy(h.avgFinish[m])}" r="3" fill="${color[m]}"/>`).join("");
       return (n > 1 ? `<polyline points="${ptsStr}" fill="none" stroke="${color[m]}" stroke-width="2.5"/>` : "") + dots;
     }).join("");
 
     const sec = el("div");
-    sec.appendChild(el("h3", "proj-h", "Expected finishing rank (MRR) over time"));
+    sec.appendChild(el("h3", "proj-h", "Projected average finish over time"));
     sec.appendChild(el("p", "proj-sub muted",
-      "Each manager's mean reciprocal rank — every possible finishing place weighted by its probability (1/place × P(place)). " +
-      "1.000 = certain to win; lower means a worse expected finish." +
+      "Each manager's expected final position — every finishing place weighted by its probability (place × P(place)). " +
+      "1.00 = certain to win the league, 7.00 = certain last. Lower is better, so best sits on top." +
       (n === 1 ? " The chart grows as the tournament progresses." : "")));
     const legend = order.map((m) =>
-      `<span class="odds-key"><span class="odds-swatch" style="background:${color[m]}"></span>${esc(m)} <b>${fmtMrr(latest[m] || 0)}</b></span>`).join("");
+      `<span class="odds-key"><span class="odds-swatch" style="background:${color[m]}"></span>${esc(m)} <b>${fmtPos(latest[m] || 0)}</b></span>`).join("");
     sec.appendChild(el("div", "odds-legend", legend));
     const box = el("div", "proj-chart-box odds-chart");
     box.innerHTML = `<svg class="chart tall" viewBox="0 0 ${W} ${H}" role="img">${grid}${series}${labels}</svg>`;
@@ -858,9 +860,9 @@
     const oddsSec = oddsHistorySection();
     if (oddsSec) root.appendChild(oddsSec);
 
-    // ===== Section 2c: expected finishing rank (MRR) over time =====
-    const mrrSec = mrrHistorySection();
-    if (mrrSec) root.appendChild(mrrSec);
+    // ===== Section 2c: projected average finish over time =====
+    const avgFinishSec = avgFinishHistorySection();
+    if (avgFinishSec) root.appendChild(avgFinishSec);
 
     // ===== Section 3: per-manager detail cards =====
     root.appendChild(el("h3", "proj-h", "Manager detail"));

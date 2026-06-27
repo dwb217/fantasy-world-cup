@@ -1,0 +1,120 @@
+#!/usr/bin/env node
+/* One-off backfill: add the `avgFinish` (expected final position) field to the
+ * historical data/odds_history.js entries that predate it.
+ *
+ * avgFinish for a day needs that day's full finishing-position distribution,
+ * which we get by re-running the SAME projection engine
+ * (scripts/build_projections.js → simulate) against the matches.js state as it
+ * existed on that day. We pull that state straight from git: for each
+ * odds-history entry we pick the historical data/matches.js blob whose
+ * played-match count equals the entry's playedMatches (the most fixture-complete
+ * such blob on/before the entry date), so both the locked results AND the
+ * fixtures-known-then match reality.
+ *
+ * Existing titleOdds/meanPts are preserved untouched — we only add avgFinish
+ * (and drop any legacy `mrr`). The whole series (including today) is recomputed
+ * through one code path so the line is methodologically uniform.
+ *
+ *     node scripts/backfill_avg_finish.js [nSims]
+ */
+"use strict";
+const fs = require("fs");
+const path = require("path");
+const { execSync } = require("child_process");
+const { simulate, avgFinishOf, ALL_MATCHES, MANAGERS } = require("./build_projections.js");
+
+const ROOT = path.resolve(__dirname, "..");
+const N = Number(process.argv[2]) || 20000;
+const HIST = path.join(ROOT, "data/odds_history.js");
+
+const hasResult = (m) =>
+  m.scoreA !== null && m.scoreA !== "" && Number.isFinite(Number(m.scoreA)) &&
+  m.scoreB !== null && m.scoreB !== "" && Number.isFinite(Number(m.scoreB));
+
+// Eval a matches.js source string in a throwaway sandbox -> the MATCHES array.
+function parseMatches(src) {
+  const window = {};
+  eval(src); // src is `window.MATCHES = [...]`
+  return window.MATCHES || [];
+}
+
+// Load current odds-history.
+let history;
+{
+  const window = {};
+  eval(fs.readFileSync(HIST, "utf8"));
+  history = window.ODDS_HISTORY;
+}
+
+// Every commit that touched data/matches.js, newest first, with commit datetime.
+const commits = execSync(`git log --format=%H%x09%cI -- data/matches.js`, { cwd: ROOT })
+  .toString().trim().split("\n").map((l) => {
+    const [hash, iso] = l.split("\t");
+    return { hash, iso, date: iso.slice(0, 10) };
+  });
+
+// Lazily fetch + count a commit's matches.js blob (cache keyed by hash).
+const blobCache = new Map();
+function blobFor(hash) {
+  if (!blobCache.has(hash)) {
+    let matches;
+    try {
+      matches = parseMatches(execSync(`git show ${hash}:data/matches.js`, { cwd: ROOT }).toString());
+    } catch (e) { matches = null; }
+    blobCache.set(hash, matches);
+  }
+  return blobCache.get(hash);
+}
+const playedCount = (m) => (m ? m.filter(hasResult).length : -1);
+
+// Pick the matches list that best reconstructs a given entry: the blob with
+// exactly entry.playedMatches results, choosing the most recent such commit
+// dated on/before the entry date (so knockout fixtures announced that day are
+// included). Fall back to the nearest played-count if none matches exactly.
+function reconstruct(entry) {
+  const candidates = commits.filter((c) => c.date <= entry.date);
+  let exact = null, nearest = null, nearestGap = Infinity;
+  for (const c of candidates) {            // commits are newest-first
+    const m = blobFor(c.hash);
+    if (!m) continue;
+    const pc = playedCount(m);
+    if (pc === entry.playedMatches) { exact = { c, m, pc }; break; }
+    const gap = Math.abs(pc - entry.playedMatches);
+    if (gap < nearestGap) { nearestGap = gap; nearest = { c, m, pc }; }
+  }
+  return exact || nearest;
+}
+
+console.log(`Backfilling avgFinish for ${history.length} entries (${N} sims each)…\n`);
+console.log("date        played  source(commit/played)            best avg-finish");
+
+for (const entry of history) {
+  // Today's entry: just use the working-tree matches (HEAD state).
+  const isToday = entry === history[history.length - 1];
+  let matches, srcLabel;
+  if (isToday) {
+    matches = ALL_MATCHES; srcLabel = `working-tree/${playedCount(ALL_MATCHES)}`;
+  } else {
+    const r = reconstruct(entry);
+    if (!r) { console.warn(`  ${entry.date}: no matches.js blob found — skipped`); continue; }
+    matches = r.m; srcLabel = `${r.c.hash.slice(0, 7)}/${r.pc}${r.pc === entry.playedMatches ? "" : "*approx"}`;
+  }
+
+  const { managersOut } = simulate(matches, N);
+  delete entry.mrr; // drop any legacy field from earlier experiments
+  const avg = {};
+  for (const m of managersOut) avg[m.name] = avgFinishOf(m.finish);
+  // Stable key order: best (lowest avg position) first.
+  entry.avgFinish = Object.fromEntries(
+    MANAGERS.map((m) => [m, avg[m]]).sort((a, b) => a[1] - b[1]));
+
+  const best = Object.entries(entry.avgFinish)[0];
+  console.log(`${entry.date}   ${String(entry.playedMatches).padStart(3)}     ${srcLabel.padEnd(30)}  ${best[0]} ${best[1]}`);
+}
+
+history.sort((a, b) => String(a.date).localeCompare(String(b.date)));
+fs.writeFileSync(HIST,
+  `// AUTO-GENERATED by scripts/build_projections.js — daily title-odds history.\n` +
+  `window.ODDS_HISTORY = ` + JSON.stringify(history, null, 1) + ";\n");
+
+console.log(`\nWrote data/odds_history.js — ${history.length} entries, all with avgFinish.`);

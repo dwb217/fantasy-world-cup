@@ -20,6 +20,11 @@
  *
  *     node scripts/build_projections.js [nSims]
  *
+ * The core simulation is exposed as simulate(matches, N) and the CLI body only
+ * runs when invoked directly (require.main guard), so other scripts — e.g.
+ * scripts/backfill_mrr.js — can reuse the exact same model against an arbitrary
+ * (e.g. historical) match list without triggering a file write.
+ *
  * Model: Elo-style team ratings -> per-match expected goals via Poisson, which
  * naturally produces realistic W/D/L, clean-sheet, 2+/4+ goal and win-by-2 rates
  * that feed the bonus rules. If no fixture list exists yet, the group draw falls
@@ -32,7 +37,6 @@ const fs = require("fs");
 const path = require("path");
 
 const ROOT = path.resolve(__dirname, "..");
-const N = Number(process.argv[2]) || 20000;
 
 /* ---- draft = single source of truth (data/draft.js) ---- */
 const window = {};
@@ -109,65 +113,9 @@ function scoreKo(gf, ga, advanced, wentET, wentPK) {
   return p;
 }
 
-/* ---- condition on what has actually happened ---- */
-
 const hasResult = (m) =>
   m.scoreA !== null && m.scoreA !== "" && Number.isFinite(Number(m.scoreA)) &&
   m.scoreB !== null && m.scoreB !== "" && Number.isFinite(Number(m.scoreB));
-
-const groupFix = ALL_MATCHES.filter((m) => m.stage === "group" && m.teamA in RATING && m.teamB in RATING);
-const koFixAll = ALL_MATCHES.filter((m) => m.stage === "knockout" && m.teamA in RATING && m.teamB in RATING);
-const PLAYED = ALL_MATCHES.filter(hasResult).length;
-
-// The real groups fall out of the fixture list: each team's 3 distinct group
-// opponents define its group of 4. Returns null (→ random-pots fallback) if the
-// schedule isn't loaded or doesn't form 12 clean groups.
-function deriveGroups() {
-  if (groupFix.length !== 72) return null;
-  const opp = {};
-  for (const f of groupFix) {
-    (opp[f.teamA] = opp[f.teamA] || new Set()).add(f.teamB);
-    (opp[f.teamB] = opp[f.teamB] || new Set()).add(f.teamA);
-  }
-  if (Object.keys(opp).length !== 48) return null;
-  const seen = new Set(), groups = [];
-  for (const t of Object.keys(opp)) {
-    if (seen.has(t)) continue;
-    if (opp[t].size !== 3) return null;
-    const g = [t, ...opp[t]];
-    for (const x of g) { if (seen.has(x)) return null; seen.add(x); }
-    groups.push(g);
-  }
-  return groups.length === 12 ? groups : null;
-}
-const FIXED_GROUPS = deriveGroups();
-
-// Known knockout fixtures, bucketed by round size. Labels come from the
-// importer's date-window mapping; anything unrecognized disables the use of
-// real pairings (random pairing still works) rather than corrupting a bracket.
-const KO_SIZE = { "Round of 32": 32, "Round of 16": 16, "Quarter-Final": 8, "Semi-Final": 4, "Final": 2 };
-let koBySize = { 32: [], 16: [], 8: [], 4: [], 2: [] };
-let thirdPlaceFix = null;
-for (const f of koFixAll) {
-  if (f.roundLabel === "Third Place") { thirdPlaceFix = f; continue; }
-  const s = KO_SIZE[f.roundLabel];
-  if (!s) {
-    console.warn(`Unrecognized knockout round label "${f.roundLabel}" — ignoring real knockout pairings.`);
-    koBySize = { 32: [], 16: [], 8: [], 4: [], 2: [] };
-    thirdPlaceFix = null;
-    break;
-  }
-  koBySize[s].push(f);
-}
-
-// Once the full Round of 32 is announced, the qualifier list is a fact — use it
-// instead of re-deriving from standings (our tiebreakers approximate FIFA's and
-// could differ in razor-thin cases).
-const REAL_QUALIFIERS = (() => {
-  if (koBySize[32].length !== 16) return null;
-  const q = [...new Set(koBySize[32].flatMap((f) => [f.teamA, f.teamB]))];
-  return q.length === 32 ? q : null;
-})();
 
 // Outcome facts for a played knockout fixture. A level score means ET + PK by
 // definition; winner is null when the shootout winner hasn't been recorded yet
@@ -189,137 +137,13 @@ const shuffle = (a) => { for (let i=a.length-1;i>0;i--){const j=Math.floor(Math.
 
 const STAGES = ["Group","R32","R16","QF","SF","Final"];
 const stageIdxBySize = { 32:1, 16:2, 8:3, 4:4, 2:5 };
-
-/* accumulators */
-const mgrTotals = {}; MANAGERS.forEach(m => mgrTotals[m] = []);
-const mgrCum = {};    MANAGERS.forEach(m => mgrCum[m] = STAGES.map(() => []));   // per stage: array of cumulative pts
-const finishCounts = {}; MANAGERS.forEach(m => finishCounts[m] = new Array(MANAGERS.length).fill(0));
-const teamTotals = {}; TEAMS.forEach(t => teamTotals[t] = []);
-const teamGoals = {};  TEAMS.forEach(t => teamGoals[t] = 0);
-const teamGames = {};  TEAMS.forEach(t => teamGames[t] = 0);
-const teamProg = {};   TEAMS.forEach(t => teamProg[t] = { advance:0, r16:0, qf:0, sf:0, final:0, champion:0 });
+const KO_SIZE = { "Round of 32": 32, "Round of 16": 16, "Quarter-Final": 8, "Semi-Final": 4, "Final": 2 };
 
 function koWinner(a, b, ga, gb) {
   if (ga > gb) return a;
   if (gb > ga) return b;
   const pa = 1 / (1 + Math.pow(10, (RATING[b] - RATING[a]) / 400));
   return Math.random() < pa ? a : b;
-}
-
-for (let s = 0; s < N; s++) {
-  const pts = {}; TEAMS.forEach(t => pts[t] = 0);
-  const mPts = {}; MANAGERS.forEach(m => mPts[m] = STAGES.map(() => 0));
-  const addTeam = (t, p, stageIdx) => { pts[t] += p; mPts[owner[t]][stageIdx] += p; };
-
-  // groups: the real draw when the schedule is known, otherwise random pots
-  const groups = FIXED_GROUPS ||
-    (() => {
-      const pots = POTS.map(p => shuffle(p.slice()));
-      const out = [];
-      for (let g = 0; g < 12; g++) out.push([pots[0][g], pots[1][g], pots[2][g], pots[3][g]]);
-      return out;
-    })();
-
-  const stand = {};
-  for (const g of groups) for (const t of g) stand[t] = [0,0,0]; // pts, gd, gf
-
-  const playGroupGame = (a, b, ga, gb) => {
-    addTeam(a, scoreGroup(ga,gb), 0); addTeam(b, scoreGroup(gb,ga), 0);
-    teamGoals[a]+=ga; teamGoals[b]+=gb; teamGames[a]++; teamGames[b]++;
-    if (ga>gb) stand[a][0]+=3; else if (gb>ga) stand[b][0]+=3; else {stand[a][0]++;stand[b][0]++;}
-    stand[a][1]+=ga-gb; stand[b][1]+=gb-ga; stand[a][2]+=ga; stand[b][2]+=gb;
-  };
-
-  if (FIXED_GROUPS) {
-    // real fixtures: played ones locked at the actual score, the rest simulated
-    for (const f of groupFix) {
-      if (hasResult(f)) playGroupGame(f.teamA, f.teamB, Number(f.scoreA), Number(f.scoreB));
-      else playGroupGame(f.teamA, f.teamB, pois(lam(f.teamA,f.teamB)), pois(lam(f.teamB,f.teamA)));
-    }
-  } else {
-    for (const g of groups) {
-      for (let i = 0; i < 4; i++) for (let j = i+1; j < 4; j++) {
-        playGroupGame(g[i], g[j], pois(lam(g[i],g[j])), pois(lam(g[j],g[i])));
-      }
-    }
-  }
-
-  let qualifiers;
-  if (REAL_QUALIFIERS) {
-    qualifiers = REAL_QUALIFIERS.slice();
-  } else {
-    const cmp = (x,y) => (stand[y][0]-stand[x][0]) || (stand[y][1]-stand[x][1]) || (stand[y][2]-stand[x][2]) || (RATING[y]-RATING[x]);
-    qualifiers = []; const thirds = [];
-    for (const g of groups) { const gs = g.slice().sort(cmp); qualifiers.push(gs[0], gs[1]); thirds.push(gs[2]); }
-    thirds.sort(cmp); qualifiers = qualifiers.concat(thirds.slice(0,8)); // 32
-  }
-  for (const t of qualifiers) teamProg[t].advance++;
-
-  // a single knockout game: locked if played, simulated otherwise
-  const playKoGame = (a, b, fixture, si) => {
-    let ga, gb, wentET = false, wentPK = false, w;
-    if (fixture && hasResult(fixture)) {
-      ga = Number(fixture.scoreA); gb = Number(fixture.scoreB);
-      const o = actualKoOutcome(fixture);
-      wentET = o.wentET; wentPK = o.wentPK;
-      w = o.winner || koWinner(a, b, 0, 0); // level, shootout winner not recorded yet
-      teamGoals[a]+=ga; teamGoals[b]+=gb; teamGames[a]++; teamGames[b]++;
-    } else {
-      ga = pois(lam(a,b)); gb = pois(lam(b,a));
-      teamGoals[a]+=ga; teamGoals[b]+=gb; teamGames[a]++; teamGames[b]++;
-      if (ga === gb) { wentET=true; const ea=pois(lam(a,b)*ET), eb=pois(lam(b,a)*ET); ga+=ea; gb+=eb; teamGoals[a]+=ea; teamGoals[b]+=eb; if (ga===gb) wentPK=true; }
-      w = koWinner(a,b,ga,gb);
-    }
-    const l = (w===a)?b:a;
-    const wgf=(w===a)?ga:gb, wga=(w===a)?gb:ga, lgf=(l===a)?ga:gb, lga=(l===a)?gb:ga;
-    addTeam(w, scoreKo(wgf,wga,true,wentET,wentPK), si);
-    addTeam(l, scoreKo(lgf,lga,false,wentET,wentPK), si);
-    return w;
-  };
-
-  // knockout: real pairings where fixtures exist, random pairing for the rest
-  let cur = shuffle(qualifiers.slice());
-  let sfLosers = [];
-  while (cur.length > 1) {
-    const S = cur.length;
-    const si = stageIdxBySize[S];
-    const inRound = new Set(cur);
-    const next = [];
-    const paired = new Set();
-    const actual = (koBySize[S] || []).filter(f =>
-      inRound.has(f.teamA) && inRound.has(f.teamB) && !paired.has(f.teamA) && !paired.has(f.teamB) &&
-      (paired.add(f.teamA), paired.add(f.teamB), true));
-    for (const f of actual) next.push(playKoGame(f.teamA, f.teamB, f, si));
-    const pool = shuffle(cur.filter(t => !paired.has(t)));
-    for (let i = 0; i + 1 < pool.length; i += 2) next.push(playKoGame(pool[i], pool[i+1], null, si));
-    if (S === 32) for (const t of next) teamProg[t].r16++;
-    else if (S === 16) for (const t of next) teamProg[t].qf++;
-    else if (S === 8) for (const t of next) teamProg[t].sf++;
-    else if (S === 4) { for (const t of next) teamProg[t].final++; sfLosers = cur.filter(t => !next.includes(t)); }
-    cur = next;
-  }
-  teamProg[cur[0]].champion++;
-
-  // third-place game (a real, points-scoring match between the SF losers)
-  if (sfLosers.length === 2) {
-    const [a, b] = sfLosers;
-    const fix = (thirdPlaceFix &&
-      ((thirdPlaceFix.teamA === a && thirdPlaceFix.teamB === b) ||
-       (thirdPlaceFix.teamA === b && thirdPlaceFix.teamB === a)))
-      ? thirdPlaceFix : null;
-    playKoGame(fix ? fix.teamA : a, fix ? fix.teamB : b, fix, 5);
-  }
-
-  // record
-  const totals = {};
-  for (const t of TEAMS) teamTotals[t].push(pts[t]);
-  for (const m of MANAGERS) {
-    let run = 0;
-    for (let i = 0; i < STAGES.length; i++) { run += mPts[m][i]; mgrCum[m][i].push(run); }
-    totals[m] = run; mgrTotals[m].push(run);
-  }
-  const order = MANAGERS.slice().sort((a,b) => totals[b]-totals[a]);
-  order.forEach((m, rank) => finishCounts[m][rank]++);
 }
 
 /* ---- aggregate helpers ---- */
@@ -348,99 +172,302 @@ function poissonPmf(lambda, kmax) {
   return out;
 }
 
-const managersOut = MANAGERS.map(m => {
-  const sorted = mgrTotals[m].slice().sort((a,b)=>a-b);
-  return {
-    name: m, teams: DRAFT[m].slice(), teamCount: DRAFT[m].length,
-    mean: r2(mean(sorted)), std: r2(std(sorted)),
-    min: sorted[0], max: sorted[sorted.length-1],
-    pct: { p5:pct(sorted,.05), p25:pct(sorted,.25), p50:pct(sorted,.5), p75:pct(sorted,.75), p95:pct(sorted,.95) },
-    hist: hist(mgrTotals[m], 10),
-    finish: finishCounts[m].map(c => r4(c/N)),
-    cumulative: STAGES.map((st, i) => {
-      const cs = mgrCum[m][i].slice().sort((a,b)=>a-b);
-      return { stage: st, mean: r2(mean(cs)), p25: pct(cs,.25), p75: pct(cs,.75) };
-    }),
-  };
-}).sort((a,b) => b.mean - a.mean);
+/* ----------------------------------------------------------------------------
+ * Core Monte-Carlo. Pure with respect to the file system: takes a match list
+ * (so callers can pass a historical snapshot) and the sim count, returns the
+ * aggregated manager/team distributions. All conditioning on reality flows from
+ * `allMatches` via hasResult / the fixtures present, so passing an older
+ * matches.js reproduces exactly that day's projection.
+ * -------------------------------------------------------------------------- */
+function simulate(allMatches, N) {
+  const groupFix = allMatches.filter((m) => m.stage === "group" && m.teamA in RATING && m.teamB in RATING);
+  const koFixAll = allMatches.filter((m) => m.stage === "knockout" && m.teamA in RATING && m.teamB in RATING);
+  const PLAYED = allMatches.filter(hasResult).length;
 
-const teamsOut = TEAMS.map(t => {
-  const sorted = teamTotals[t].slice().sort((a,b)=>a-b);
-  const lambda = teamGoals[t]/teamGames[t];
-  const pr = teamProg[t];
-  return {
-    team: t, owner: owner[t], rating: RATING[t],
-    mean: r2(mean(sorted)), std: r2(std(sorted)),
-    pct: { p5:pct(sorted,.05), p50:pct(sorted,.5), p95:pct(sorted,.95) },
-    hist: hist(teamTotals[t], 3),
-    lambda: r2(lambda),
-    goalDist: poissonPmf(lambda, 5), // P(0),P(1),P(2),P(3),P(4),P(5+)
-    prog: { advance:r4(pr.advance/N), r16:r4(pr.r16/N), qf:r4(pr.qf/N), sf:r4(pr.sf/N), final:r4(pr.final/N), champion:r4(pr.champion/N) },
-  };
-}).sort((a,b) => b.mean - a.mean);
+  // The real groups fall out of the fixture list: each team's 3 distinct group
+  // opponents define its group of 4. Returns null (→ random-pots fallback) if the
+  // schedule isn't loaded or doesn't form 12 clean groups.
+  function deriveGroups() {
+    if (groupFix.length !== 72) return null;
+    const opp = {};
+    for (const f of groupFix) {
+      (opp[f.teamA] = opp[f.teamA] || new Set()).add(f.teamB);
+      (opp[f.teamB] = opp[f.teamB] || new Set()).add(f.teamA);
+    }
+    if (Object.keys(opp).length !== 48) return null;
+    const seen = new Set(), groups = [];
+    for (const t of Object.keys(opp)) {
+      if (seen.has(t)) continue;
+      if (opp[t].size !== 3) return null;
+      const g = [t, ...opp[t]];
+      for (const x of g) { if (seen.has(x)) return null; seen.add(x); }
+      groups.push(g);
+    }
+    return groups.length === 12 ? groups : null;
+  }
+  const FIXED_GROUPS = deriveGroups();
 
-const noteParts = [];
-if (PLAYED) {
-  noteParts.push(`Conditioned on the ${PLAYED} match result${PLAYED === 1 ? "" : "s"} so far: played games are locked at their actual scores and points; only the remaining games are simulated.`);
-} else {
-  noteParts.push("Pre-tournament estimate, not a prediction of any single outcome.");
+  // Known knockout fixtures, bucketed by round size. Labels come from the
+  // importer's date-window mapping; anything unrecognized disables the use of
+  // real pairings (random pairing still works) rather than corrupting a bracket.
+  let koBySize = { 32: [], 16: [], 8: [], 4: [], 2: [] };
+  let thirdPlaceFix = null;
+  for (const f of koFixAll) {
+    if (f.roundLabel === "Third Place") { thirdPlaceFix = f; continue; }
+    const s = KO_SIZE[f.roundLabel];
+    if (!s) {
+      console.warn(`Unrecognized knockout round label "${f.roundLabel}" — ignoring real knockout pairings.`);
+      koBySize = { 32: [], 16: [], 8: [], 4: [], 2: [] };
+      thirdPlaceFix = null;
+      break;
+    }
+    koBySize[s].push(f);
+  }
+
+  // Once the full Round of 32 is announced, the qualifier list is a fact — use it
+  // instead of re-deriving from standings (our tiebreakers approximate FIFA's and
+  // could differ in razor-thin cases).
+  const REAL_QUALIFIERS = (() => {
+    if (koBySize[32].length !== 16) return null;
+    const q = [...new Set(koBySize[32].flatMap((f) => [f.teamA, f.teamB]))];
+    return q.length === 32 ? q : null;
+  })();
+
+  /* accumulators */
+  const mgrTotals = {}; MANAGERS.forEach(m => mgrTotals[m] = []);
+  const mgrCum = {};    MANAGERS.forEach(m => mgrCum[m] = STAGES.map(() => []));   // per stage: array of cumulative pts
+  const finishCounts = {}; MANAGERS.forEach(m => finishCounts[m] = new Array(MANAGERS.length).fill(0));
+  const teamTotals = {}; TEAMS.forEach(t => teamTotals[t] = []);
+  const teamGoals = {};  TEAMS.forEach(t => teamGoals[t] = 0);
+  const teamGames = {};  TEAMS.forEach(t => teamGames[t] = 0);
+  const teamProg = {};   TEAMS.forEach(t => teamProg[t] = { advance:0, r16:0, qf:0, sf:0, final:0, champion:0 });
+
+  for (let s = 0; s < N; s++) {
+    const pts = {}; TEAMS.forEach(t => pts[t] = 0);
+    const mPts = {}; MANAGERS.forEach(m => mPts[m] = STAGES.map(() => 0));
+    const addTeam = (t, p, stageIdx) => { pts[t] += p; mPts[owner[t]][stageIdx] += p; };
+
+    // groups: the real draw when the schedule is known, otherwise random pots
+    const groups = FIXED_GROUPS ||
+      (() => {
+        const pots = POTS.map(p => shuffle(p.slice()));
+        const out = [];
+        for (let g = 0; g < 12; g++) out.push([pots[0][g], pots[1][g], pots[2][g], pots[3][g]]);
+        return out;
+      })();
+
+    const stand = {};
+    for (const g of groups) for (const t of g) stand[t] = [0,0,0]; // pts, gd, gf
+
+    const playGroupGame = (a, b, ga, gb) => {
+      addTeam(a, scoreGroup(ga,gb), 0); addTeam(b, scoreGroup(gb,ga), 0);
+      teamGoals[a]+=ga; teamGoals[b]+=gb; teamGames[a]++; teamGames[b]++;
+      if (ga>gb) stand[a][0]+=3; else if (gb>ga) stand[b][0]+=3; else {stand[a][0]++;stand[b][0]++;}
+      stand[a][1]+=ga-gb; stand[b][1]+=gb-ga; stand[a][2]+=ga; stand[b][2]+=gb;
+    };
+
+    if (FIXED_GROUPS) {
+      // real fixtures: played ones locked at the actual score, the rest simulated
+      for (const f of groupFix) {
+        if (hasResult(f)) playGroupGame(f.teamA, f.teamB, Number(f.scoreA), Number(f.scoreB));
+        else playGroupGame(f.teamA, f.teamB, pois(lam(f.teamA,f.teamB)), pois(lam(f.teamB,f.teamA)));
+      }
+    } else {
+      for (const g of groups) {
+        for (let i = 0; i < 4; i++) for (let j = i+1; j < 4; j++) {
+          playGroupGame(g[i], g[j], pois(lam(g[i],g[j])), pois(lam(g[j],g[i])));
+        }
+      }
+    }
+
+    let qualifiers;
+    if (REAL_QUALIFIERS) {
+      qualifiers = REAL_QUALIFIERS.slice();
+    } else {
+      const cmp = (x,y) => (stand[y][0]-stand[x][0]) || (stand[y][1]-stand[x][1]) || (stand[y][2]-stand[x][2]) || (RATING[y]-RATING[x]);
+      qualifiers = []; const thirds = [];
+      for (const g of groups) { const gs = g.slice().sort(cmp); qualifiers.push(gs[0], gs[1]); thirds.push(gs[2]); }
+      thirds.sort(cmp); qualifiers = qualifiers.concat(thirds.slice(0,8)); // 32
+    }
+    for (const t of qualifiers) teamProg[t].advance++;
+
+    // a single knockout game: locked if played, simulated otherwise
+    const playKoGame = (a, b, fixture, si) => {
+      let ga, gb, wentET = false, wentPK = false, w;
+      if (fixture && hasResult(fixture)) {
+        ga = Number(fixture.scoreA); gb = Number(fixture.scoreB);
+        const o = actualKoOutcome(fixture);
+        wentET = o.wentET; wentPK = o.wentPK;
+        w = o.winner || koWinner(a, b, 0, 0); // level, shootout winner not recorded yet
+        teamGoals[a]+=ga; teamGoals[b]+=gb; teamGames[a]++; teamGames[b]++;
+      } else {
+        ga = pois(lam(a,b)); gb = pois(lam(b,a));
+        teamGoals[a]+=ga; teamGoals[b]+=gb; teamGames[a]++; teamGames[b]++;
+        if (ga === gb) { wentET=true; const ea=pois(lam(a,b)*ET), eb=pois(lam(b,a)*ET); ga+=ea; gb+=eb; teamGoals[a]+=ea; teamGoals[b]+=eb; if (ga===gb) wentPK=true; }
+        w = koWinner(a,b,ga,gb);
+      }
+      const l = (w===a)?b:a;
+      const wgf=(w===a)?ga:gb, wga=(w===a)?gb:ga, lgf=(l===a)?ga:gb, lga=(l===a)?gb:ga;
+      addTeam(w, scoreKo(wgf,wga,true,wentET,wentPK), si);
+      addTeam(l, scoreKo(lgf,lga,false,wentET,wentPK), si);
+      return w;
+    };
+
+    // knockout: real pairings where fixtures exist, random pairing for the rest
+    let cur = shuffle(qualifiers.slice());
+    let sfLosers = [];
+    while (cur.length > 1) {
+      const S = cur.length;
+      const si = stageIdxBySize[S];
+      const inRound = new Set(cur);
+      const next = [];
+      const paired = new Set();
+      const actual = (koBySize[S] || []).filter(f =>
+        inRound.has(f.teamA) && inRound.has(f.teamB) && !paired.has(f.teamA) && !paired.has(f.teamB) &&
+        (paired.add(f.teamA), paired.add(f.teamB), true));
+      for (const f of actual) next.push(playKoGame(f.teamA, f.teamB, f, si));
+      const pool = shuffle(cur.filter(t => !paired.has(t)));
+      for (let i = 0; i + 1 < pool.length; i += 2) next.push(playKoGame(pool[i], pool[i+1], null, si));
+      if (S === 32) for (const t of next) teamProg[t].r16++;
+      else if (S === 16) for (const t of next) teamProg[t].qf++;
+      else if (S === 8) for (const t of next) teamProg[t].sf++;
+      else if (S === 4) { for (const t of next) teamProg[t].final++; sfLosers = cur.filter(t => !next.includes(t)); }
+      cur = next;
+    }
+    teamProg[cur[0]].champion++;
+
+    // third-place game (a real, points-scoring match between the SF losers)
+    if (sfLosers.length === 2) {
+      const [a, b] = sfLosers;
+      const fix = (thirdPlaceFix &&
+        ((thirdPlaceFix.teamA === a && thirdPlaceFix.teamB === b) ||
+         (thirdPlaceFix.teamA === b && thirdPlaceFix.teamB === a)))
+        ? thirdPlaceFix : null;
+      playKoGame(fix ? fix.teamA : a, fix ? fix.teamB : b, fix, 5);
+    }
+
+    // record
+    const totals = {};
+    for (const t of TEAMS) teamTotals[t].push(pts[t]);
+    for (const m of MANAGERS) {
+      let run = 0;
+      for (let i = 0; i < STAGES.length; i++) { run += mPts[m][i]; mgrCum[m][i].push(run); }
+      totals[m] = run; mgrTotals[m].push(run);
+    }
+    const order = MANAGERS.slice().sort((a,b) => totals[b]-totals[a]);
+    order.forEach((m, rank) => finishCounts[m][rank]++);
+  }
+
+  const managersOut = MANAGERS.map(m => {
+    const sorted = mgrTotals[m].slice().sort((a,b)=>a-b);
+    return {
+      name: m, teams: DRAFT[m].slice(), teamCount: DRAFT[m].length,
+      mean: r2(mean(sorted)), std: r2(std(sorted)),
+      min: sorted[0], max: sorted[sorted.length-1],
+      pct: { p5:pct(sorted,.05), p25:pct(sorted,.25), p50:pct(sorted,.5), p75:pct(sorted,.75), p95:pct(sorted,.95) },
+      hist: hist(mgrTotals[m], 10),
+      finish: finishCounts[m].map(c => r4(c/N)),
+      cumulative: STAGES.map((st, i) => {
+        const cs = mgrCum[m][i].slice().sort((a,b)=>a-b);
+        return { stage: st, mean: r2(mean(cs)), p25: pct(cs,.25), p75: pct(cs,.75) };
+      }),
+    };
+  }).sort((a,b) => b.mean - a.mean);
+
+  const teamsOut = TEAMS.map(t => {
+    const sorted = teamTotals[t].slice().sort((a,b)=>a-b);
+    const lambda = teamGoals[t]/teamGames[t];
+    const pr = teamProg[t];
+    return {
+      team: t, owner: owner[t], rating: RATING[t],
+      mean: r2(mean(sorted)), std: r2(std(sorted)),
+      pct: { p5:pct(sorted,.05), p50:pct(sorted,.5), p95:pct(sorted,.95) },
+      hist: hist(teamTotals[t], 3),
+      lambda: r2(lambda),
+      goalDist: poissonPmf(lambda, 5), // P(0),P(1),P(2),P(3),P(4),P(5+)
+      prog: { advance:r4(pr.advance/N), r16:r4(pr.r16/N), qf:r4(pr.qf/N), sf:r4(pr.sf/N), final:r4(pr.final/N), champion:r4(pr.champion/N) },
+    };
+  }).sort((a,b) => b.mean - a.mean);
+
+  return { managersOut, teamsOut, PLAYED, FIXED_GROUPS, N };
 }
-noteParts.push("Team strength is Elo-style (hand-set, ~2026 form); per-match goals are Poisson from the rating gap, scored with the live app's exact rules.");
-noteParts.push(FIXED_GROUPS
-  ? "Groups are the real draw; real knockout pairings are used once fixtures are announced (random pairing until then)."
-  : "Group draw uses balanced pots; knockout bracket is random pairing.");
 
-const out = {
-  meta: {
-    nSims: N,
-    generatedAt: new Date().toISOString(),
-    playedMatches: PLAYED,
-    scheduledMatches: ALL_MATCHES.length,
-    model: { mu: MU, k: K, etFactor: ET },
-    stages: STAGES,
-    format: "48 teams · 12 groups of 4 · top 2 + 8 best thirds → R32 → R16 → QF → SF → Final",
-    note: noteParts.join(" "),
-  },
-  managers: managersOut,
-  teams: teamsOut,
-};
+// Expected (mean) finishing position from a manager's finishing distribution:
+// sum over every place of place × P(finishing there). finish[i] is P(finish in
+// place i+1), so place = i+1. Ranges 1 (certain 1st) to N (certain last); LOWER
+// is better. A plain, legible weighted average of where they end up.
+const avgFinishOf = (finish) => r4(finish.reduce((s, p, i) => s + p * (i + 1), 0));
 
-/* ---- title-odds history: one entry per UTC day, drives the "odds over time"
-   chart. Same-day reruns overwrite that day's entry. ---- */
-const histPath = path.join(ROOT, "data/odds_history.js");
-let history = [];
-try {
-  const src = fs.readFileSync(histPath, "utf8");
-  const m = src.match(/=\s*(\[[\s\S]*\]);?\s*$/);
-  if (m) history = JSON.parse(m[1]);
-} catch (e) { /* first run: no history file yet */ }
-const today = out.meta.generatedAt.slice(0, 10);
-const entry = { date: today, playedMatches: PLAYED, titleOdds: {}, meanPts: {}, mrr: {} };
-for (const m of managersOut) {
-  entry.titleOdds[m.name] = m.finish[0];
-  entry.meanPts[m.name] = m.mean;
-  // Expected reciprocal rank: sum over every finishing place of (1/place) ×
-  // P(finishing there). m.finish[i] is P(finish in place i+1), so place = i+1.
-  // Ranges from 1.0 (certain 1st) down to 1/N (certain last). Higher = better.
-  entry.mrr[m.name] = r4(m.finish.reduce((s, p, i) => s + p / (i + 1), 0));
-}
-history = history.filter((h) => h.date !== today);
-history.push(entry);
-history.sort((a, b) => String(a.date).localeCompare(String(b.date)));
-fs.writeFileSync(histPath,
-  `// AUTO-GENERATED by scripts/build_projections.js — daily title-odds history.\n` +
-  `window.ODDS_HISTORY = ` + JSON.stringify(history, null, 1) + ";\n");
+module.exports = { simulate, avgFinishOf, ALL_MATCHES, MANAGERS, DRAFT, hasResult };
 
-const banner =
+/* ----------------------------------------------------------------------------
+ * CLI: only when run directly. Simulates today's matches.js, writes
+ * data/projections.js, and appends today's point to the odds-history series.
+ * -------------------------------------------------------------------------- */
+if (require.main === module) {
+  const N = Number(process.argv[2]) || 20000;
+  const { managersOut, teamsOut, PLAYED, FIXED_GROUPS } = simulate(ALL_MATCHES, N);
+
+  const noteParts = [];
+  if (PLAYED) {
+    noteParts.push(`Conditioned on the ${PLAYED} match result${PLAYED === 1 ? "" : "s"} so far: played games are locked at their actual scores and points; only the remaining games are simulated.`);
+  } else {
+    noteParts.push("Pre-tournament estimate, not a prediction of any single outcome.");
+  }
+  noteParts.push("Team strength is Elo-style (hand-set, ~2026 form); per-match goals are Poisson from the rating gap, scored with the live app's exact rules.");
+  noteParts.push(FIXED_GROUPS
+    ? "Groups are the real draw; real knockout pairings are used once fixtures are announced (random pairing until then)."
+    : "Group draw uses balanced pots; knockout bracket is random pairing.");
+
+  const out = {
+    meta: {
+      nSims: N,
+      generatedAt: new Date().toISOString(),
+      playedMatches: PLAYED,
+      scheduledMatches: ALL_MATCHES.length,
+      model: { mu: MU, k: K, etFactor: ET },
+      stages: STAGES,
+      format: "48 teams · 12 groups of 4 · top 2 + 8 best thirds → R32 → R16 → QF → SF → Final",
+      note: noteParts.join(" "),
+    },
+    managers: managersOut,
+    teams: teamsOut,
+  };
+
+  /* ---- title-odds history: one entry per UTC day, drives the "odds over time"
+     chart. Same-day reruns overwrite that day's entry. ---- */
+  const histPath = path.join(ROOT, "data/odds_history.js");
+  let history = [];
+  try {
+    const src = fs.readFileSync(histPath, "utf8");
+    const m = src.match(/=\s*(\[[\s\S]*\]);?\s*$/);
+    if (m) history = JSON.parse(m[1]);
+  } catch (e) { /* first run: no history file yet */ }
+  const today = out.meta.generatedAt.slice(0, 10);
+  const entry = { date: today, playedMatches: PLAYED, titleOdds: {}, meanPts: {}, avgFinish: {} };
+  for (const m of managersOut) {
+    entry.titleOdds[m.name] = m.finish[0];
+    entry.meanPts[m.name] = m.mean;
+    entry.avgFinish[m.name] = avgFinishOf(m.finish);
+  }
+  history = history.filter((h) => h.date !== today);
+  history.push(entry);
+  history.sort((a, b) => String(a.date).localeCompare(String(b.date)));
+  fs.writeFileSync(histPath,
+    `// AUTO-GENERATED by scripts/build_projections.js — daily title-odds history.\n` +
+    `window.ODDS_HISTORY = ` + JSON.stringify(history, null, 1) + ";\n");
+
+  const banner =
 `// AUTO-GENERATED by scripts/build_projections.js — do not hand-edit.
 // Monte-Carlo projections (${N} simulated tournaments), conditioned on the
 // results in data/matches.js at build time (${PLAYED} played). Refreshed daily
 // at 10:00 UTC by .github/workflows/update-projections.yml.
 `;
-fs.writeFileSync(path.join(ROOT, "data/projections.js"),
-  banner + "window.PROJECTIONS = " + JSON.stringify(out, null, 2) + ";\n");
+  fs.writeFileSync(path.join(ROOT, "data/projections.js"),
+    banner + "window.PROJECTIONS = " + JSON.stringify(out, null, 2) + ";\n");
 
-console.log(`Wrote data/projections.js (${N} sims, ${PLAYED} real results locked in, groups ${FIXED_GROUPS ? "real" : "random pots"}).`);
-console.log(`Wrote data/odds_history.js (${history.length} day${history.length === 1 ? "" : "s"} of title odds).`);
-console.log("Projected standings:");
-managersOut.forEach((m,i) => console.log(`  ${i+1}. ${m.name.padEnd(8)} ${String(m.mean).padStart(6)} ±${m.std}  (win title region p95=${m.pct.p95})`));
+  console.log(`Wrote data/projections.js (${N} sims, ${PLAYED} real results locked in, groups ${FIXED_GROUPS ? "real" : "random pots"}).`);
+  console.log(`Wrote data/odds_history.js (${history.length} day${history.length === 1 ? "" : "s"} of title odds).`);
+  console.log("Projected standings:");
+  managersOut.forEach((m,i) => console.log(`  ${i+1}. ${m.name.padEnd(8)} ${String(m.mean).padStart(6)} ±${m.std}  (win title region p95=${m.pct.p95})`));
+}
