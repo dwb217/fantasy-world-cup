@@ -22,6 +22,7 @@
 
 const fs = require("fs");
 const path = require("path");
+const crypto = require("crypto");
 
 // Default model. qwen2.5:14b uses the structured data well and writes sharply.
 // (Avoid gemma4:12b-mlx — its MLX runner wedges on this prompt.) CLI arg /
@@ -198,6 +199,28 @@ const recentDispatches = priorEntries
   .slice(0, PREV_FOR_CONTEXT)
   .map((e) => ({ date: e.date, headline: e.headline || "", text: e.text || "" }));
 
+// ---- the day's "golden boy" ----
+// Each dispatch lavishes ONE randomly chosen manager with effusive, sincere
+// praise while still gutting the other six. To keep it fresh, the pick must be
+// TRULY random AND must exclude anyone praised in the last few days — we read
+// the `kindTo` field off recent entries and remove those managers from the
+// eligible pool. crypto.randomInt gives an unbiased draw (not Math.random).
+const KIND_COOLDOWN_DAYS = 3;
+const recentlyPraised = new Set(
+  priorEntries
+    .filter((e) => e.date !== entryDate)
+    .sort((a, b) => String(b.date).localeCompare(String(a.date)))
+    .slice(0, KIND_COOLDOWN_DAYS)
+    .map((e) => e.kindTo)
+    .filter(Boolean),
+);
+const managers = Object.keys(DRAFT);
+let kindPool = managers.filter((m) => !recentlyPraised.has(m));
+// Safety net: if the cooldown ever empties the pool (tiny league, gappy data),
+// fall back to the full roster so we still pick someone.
+if (!kindPool.length) kindPool = managers.slice();
+const kindTarget = kindPool[crypto.randomInt(kindPool.length)];
+
 const context = {
   entryDate,
   previousDate: prevOdds ? prevOdds.date : null,
@@ -208,6 +231,7 @@ const context = {
   upcomingToday,                  // today's fixtures NOT yet played — this runs in the morning, before kickoff
   recentDispatches,               // your last few entries — for continuity; do NOT repeat their jokes
   rosters: Object.fromEntries(Object.entries(DRAFT).map(([m, t]) => [m, t])),
+  kindTarget,                     // the ONE manager to praise effusively today; roast the rest
 };
 
 const prompt = `You are the foul mouthed pundit for a fantasy World Cup draft league. Seven friends — ${Object.keys(DRAFT).join(", ")} — each drafted national teams and bank fantasy points based on how those teams perform.
@@ -218,6 +242,16 @@ How to use the data — this is the most important rule:
 - Pick only a FEW facts (a scoreline or two, a point total, an odds swing) and use each as the SETUP or PUNCHLINE for a joke at a specific manager's expense. One vivid, specific jab lands harder than a paragraph of stats.
 - Do NOT walk through every result. Do NOT go manager-by-manager listing everyone's points. Do NOT write a "how we got here" recap. If a sentence is just reporting what happened with no joke attached, cut it and write an insult instead.
 - Name specific managers and tear into them; vary who gets it and how — don't give everyone the same treatment.
+
+Structure — one short paragraph per manager:
+- Write exactly ONE short, punchy paragraph for EACH of the seven managers (${Object.keys(DRAFT).join(", ")}) — ${Object.keys(DRAFT).length} paragraphs total, each one centered on a single manager and naming him. That manager is the subject of his paragraph; you may reference others inside it, but every manager must headline his own paragraph and get roughly the SAME amount of coverage. Nobody hides, nobody hogs the spotlight, and don't merge two managers into one paragraph.
+
+Today's golden boy (${kindTarget}) — ONE manager gets the unconditional-girlfriend treatment:
+- "kindTarget" names the ONE manager you must be effusively, sincerely NICE to today. Adopt the voice of an unreasonably supportive, doting girlfriend talking about her perfect boyfriend: gushing, warm, defensive, devoted — he can do no wrong and you're a little offended on his behalf that anyone would suggest otherwise.
+- Crucially, whenever his teams lose, his picks flop, or his odds tank, it is NEVER his fault. Explain every single problem away by blaming someone else — pin it on one of the other six managers (name them), or on a famous outside scapegoat (a referee, a coach, a star player who choked, a politician, a celebrity, FIFA, the weather, anyone). His losses are always somebody else's sabotage or bad luck, never his doing.
+- Lay the praise on thick and sincere — his draft was visionary, his instincts flawless, he's surrounded by idiots dragging him down. NO sarcasm, no backhanded jabs, no "but" aimed at HIM (the "but" always redirects the blame outward).
+- Keep being absolutely vicious to the other six. The contrast is the joke: six get savaged, one gets coddled like a golden child.
+- Do NOT explain or lampshade that you're "being nice" to him or that he was "chosen" — just dote on him naturally as if he genuinely walks on water.
 
 Timing: this dispatch is written in the MORNING, before today's matches kick off, so today has no results yet — that is expected, not a slow news day.
 - If "upcomingToday" is non-empty, use today's matchups as fuel for shit-talk about the managers whose teams are playing and what's at stake — not as a fixture list to read out.
@@ -252,7 +286,7 @@ Voice/tone: The tone is vicious, profane, immature, politically incorrect, relen
 
 Output ONLY a JSON object with exactly two string fields and nothing else:
 - "headline": ONE short, punchy title — a single sentence, no more than 12 words. It is a title, not the opening line: do NOT put results, scores, or stats in it.
-- "body": exactly 5 short, punchy paragraphs of plain prose, separated by blank lines (\\n\\n) — jokes and roasting first, with only a few facts woven in as ammunition. NOT a recap. No markdown, no bullet points.
+- "body": exactly ${Object.keys(DRAFT).length} short, punchy paragraphs of plain prose, separated by blank lines (\\n\\n) — ONE paragraph per manager (${Object.keys(DRAFT).join(", ")}), each centered on and naming that manager, in any order you like. Jokes and roasting first, with only a few facts woven in as ammunition. NOT a recap. No markdown, no bullet points. The paragraph about ${kindTarget} is the effusive girlfriend-style one; the other six are savage.
 - Check that offensive curse words are used in nearly every (80% or more) sentence and if they are not, then insert them liberally.
 
 Data (JSON):
@@ -338,6 +372,7 @@ async function main() {
     generatedAt: new Date().toISOString(),
     model: MODEL,
     playedMatches: played.length,
+    kindTo: kindTarget,   // who got the effusive praise — drives the no-repeat cooldown
     headline,
     text: body,
   };
