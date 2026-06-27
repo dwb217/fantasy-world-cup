@@ -756,16 +756,14 @@
 
     const W = 600, H = 380, padL = 44, padR = 10, padT = 16, padB = 30;
     const n = hist.length;
-    const vals = hist.flatMap((h) => order.map((m) => h.avgFinish[m]).filter((v) => v != null));
-    const lo0 = Math.min(...vals), hi0 = Math.max(...vals);
-    const span = hi0 - lo0 || 1;
-    const lo = Math.max(1, lo0 - span * 0.15), hi = Math.min(managers.length, hi0 + span * 0.15);
+    // Full place range 1..N with a gridline at every integer position.
+    const lo = 1, hi = managers.length;
     const sx = (i) => padL + (n === 1 ? (W - padL - padR) / 2 : (i / (n - 1)) * (W - padL - padR));
     // inverted: smaller position (better) maps higher up the plot
     const sy = scale(lo, hi, padT, H - padB);
-    const grid = [lo, (lo + hi) / 2, hi].map((v) =>
+    const grid = Array.from({ length: hi - lo + 1 }, (_, k) => lo + k).map((v) =>
       `<line x1="${padL}" y1="${sy(v)}" x2="${W - padR}" y2="${sy(v)}" stroke="${PC.border}" stroke-width="1" stroke-dasharray="2 3"/>` +
-      `<text x="${padL - 6}" y="${sy(v) + 4}" fill="${PC.muted}" font-size="13" text-anchor="end">${fmtPos(v)}</text>`).join("");
+      `<text x="${padL - 6}" y="${sy(v) + 4}" fill="${PC.muted}" font-size="13" text-anchor="end">${v}</text>`).join("");
     const step = Math.max(1, Math.ceil(n / 6));
     const labels = hist.map((h, i) => (i % step === 0 || i === n - 1)
       ? `<text x="${sx(i)}" y="${H - 8}" fill="${PC.muted}" font-size="12" text-anchor="${i === 0 ? "start" : i === n - 1 ? "end" : "middle"}">${esc(fmtDate(h.date))}</text>` : "").join("");
