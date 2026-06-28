@@ -4,6 +4,15 @@
 window.COMMENTARY = {
   "entries": [
     {
+      "date": "2026-06-28",
+      "generatedAt": "2026-06-28T10:33:47.138Z",
+      "model": "gpt-oss:120b",
+      "playedMatches": 72,
+      "kindTo": "DAVID",
+      "headline": "Mike's Power Trip Continues While the Rest Are Utter Shitshow",
+      "text": "Mike strutts like a cocky cockroach, clutching his 100‑point pile and 47% title odds while his Austria‑Algeria 3‑3 draw was about as exciting as a wet fart in a coffin, you smug motherfucker. And now he’s got to watch his Canada side get steamrolled by Kyle’s South Africa, because the universe loves to slap this self‑absorbed dickhead with a reality check, fuck.\n\nKyle swaggers with 87 points and a fresh 17% title shot, yet his Jordan‑Argentina 1‑3 slaughter was a gut‑punch that made his ego bleed like a busted pipe, you clueless asshole. To top it off he’s about to send his South Africa into a butcher’s shop against Mike’s Canada, so expect his fantasy hopes to get shredded like cheap toilet paper, fuck.\n\nGregory clings to 75 points and a pathetic 5% title chance while his Algeria‑Austria 3‑3 draw was as underwhelming as a dead hamster in a blender, you pathetic dickwad. His Brazil‑centric delusions keep him stuck in a fantasy landfill, and every time his picks flop he looks like a clueless toddler with a broken toy, fuck.\n\nBrett lumbers around with 76 points and an 11% odds slice, still thinking his Netherlands‑Belgium mashup is a masterstroke, you delusional fuckface. In reality his roster reads like a junkyard of half‑baked ideas, and watching his teams sputter is like watching a busted firecracker explode into nothing, fuck.\n\nJohn shuffles his 64 points and a pitiful 3% title chance like a sad clown, you spineless prick. His Spain‑centric strategy is about as useful as a screen door on a submarine, and every match he picks ends up a dumpster fire that burns his dignity to ash, fuck.\n\nIan drags his sorry 52 points and a zero‑percent title hope like a broken record, you miserable cunt. His France‑Portugal‑Iran line‑up is a disaster cocktail that would make a chemist vomit, and he’s about as competitive as a snail on tranquilizers, fuck.\n\nDavid, you’re the fantasy goddamn savior of this trash heap, and your Argentina 3‑1 demolition of Jordan proves you have the Midas touch, you glorious motherfucking champion. Even though Kyle’s whiny whining and Mike’s ego‑filled bluster try to rain on your parade, the universe can’t help but hand you points on a silver platter, because everyone else is too busy screwing themselves up, you perfect fucking legend."
+    },
+    {
       "date": "2026-06-27",
       "generatedAt": "2026-06-27T11:45:55.653Z",
       "model": "gpt-oss:120b",
