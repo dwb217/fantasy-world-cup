@@ -1174,8 +1174,8 @@
     M80:["E","H","I","J","K"], M81:["B","E","F","I","J"], M82:["A","E","H","I","J"],
     M85:["E","F","G","I","J"], M87:["D","E","I","J","L"],
   };
-  function wfMatchThirds(qualLetters) {
-    const slots = Object.keys(WF_THIRD_SLOTS);
+  function wfMatchThirds(qualLetters, slotKeys) {
+    const slots = slotKeys || Object.keys(WF_THIRD_SLOTS);
     const qual = new Set(qualLetters);
     const used = new Set();
     const assign = {};
@@ -1199,12 +1199,106 @@
     return assign; // { M74: <letter>, ... }
   }
 
+  // FIFA's official Round-of-32 template: slot → the two seed specs that meet in
+  // it. A spec is ["p1",L] (group L winner), ["p2",L] (runner-up) or ["3",slot]
+  // (a best-third placed into that slot). Lives in one place; both the simulator
+  // and the bracket visual read it. Slot numbers thread into the R16→Final tree.
+  const WF_R32_SPEC = [
+    [73, ["p2","A"], ["p2","B"]], [74, ["p1","E"], ["3","M74"]], [75, ["p1","F"], ["p2","C"]], [76, ["p1","C"], ["p2","F"]],
+    [77, ["p1","I"], ["3","M77"]], [78, ["p2","E"], ["p2","I"]], [79, ["p1","A"], ["3","M79"]], [80, ["p1","L"], ["3","M80"]],
+    [81, ["p1","D"], ["3","M81"]], [82, ["p1","G"], ["3","M82"]], [83, ["p2","K"], ["p2","L"]], [84, ["p1","H"], ["p2","J"]],
+    [85, ["p1","B"], ["3","M85"]], [86, ["p1","J"], ["p2","H"]], [87, ["p1","K"], ["3","M87"]], [88, ["p2","D"], ["p2","G"]],
+  ];
+  const wfSeedTeam = (sp, p1, p2, third) => sp[0] === "p1" ? p1[sp[1]] : sp[0] === "p2" ? p2[sp[1]] : third(sp[1]);
+
+  // Map the ACTUAL, already-drawn knockout matchups (from the live data) onto the
+  // template slots, so the explorer plays the real bracket instead of re-deriving
+  // every matchup from simulated group standings. Returns, per real R32 match:
+  //   slot:      { <slotNum>: <data match> }      — the matchup that fills that slot
+  //   posLock:   { <group>: {1|2|3: <team>} }     — group positions reality has fixed
+  //   thirdLock: { <thirdSlot>: <team> }          — best-third slots already decided
+  // Slots/positions not yet decided fall back to the simulated seeds. Memoized on
+  // the MATCHES array identity so it recomputes after any results edit.
+  let _wfRealCache = null;
+  function wfRealKo() {
+    if (_wfRealCache && _wfRealCache.ref === MATCHES) return _wfRealCache.val;
+    // group seeds from current reality: played group games, with the few still
+    // unplayed resolved by rating so already-clinched teams land in their secured
+    // position (used only to identify which template slot each real match fills).
+    const gr = {};
+    for (const t of ALL_TEAMS) if (WC_GROUP[t] != null) gr[t] = { pts: 0, gd: 0, gf: 0 };
+    for (const m of MATCHES) {
+      if (m.stage !== "group" || WC_GROUP[m.teamA] == null || WC_GROUP[m.teamB] == null) continue;
+      let a, b;
+      if (hasResult(m)) { a = Number(m.scoreA); b = Number(m.scoreB); }
+      else { const hi = WC_RATING[m.teamA] >= WC_RATING[m.teamB]; a = hi ? 1 : 0; b = hi ? 0 : 1; }
+      gr[m.teamA].gf += a; gr[m.teamA].gd += a - b; gr[m.teamB].gf += b; gr[m.teamB].gd += b - a;
+      if (a > b) gr[m.teamA].pts += 3; else if (b > a) gr[m.teamB].pts += 3; else { gr[m.teamA].pts++; gr[m.teamB].pts++; }
+    }
+    const byL = {}; for (const t of ALL_TEAMS) if (WC_GROUP[t] != null) (byL[WC_GROUP[t]] = byL[WC_GROUP[t]] || []).push(t);
+    const cmp = (x, y) => gr[y].pts - gr[x].pts || gr[y].gd - gr[x].gd || gr[y].gf - gr[x].gf || WC_RATING[y] - WC_RATING[x];
+    const pos = {}; for (const L in byL) byL[L].slice().sort(cmp).forEach((t, i) => (pos[t] = { L, p: i + 1 }));
+    const specFits = (sp, t) => {
+      const P = pos[t]; if (!P) return false;
+      if (sp[0] === "p1") return P.p === 1 && P.L === sp[1];
+      if (sp[0] === "p2") return P.p === 2 && P.L === sp[1];
+      return P.p === 3 && (WF_THIRD_SLOTS[sp[1]] || []).includes(P.L);
+    };
+    const slot = {}, posLock = {}, thirdLock = {}, used = new Set();
+    const lockSpec = (sp, team) => {
+      if (sp[0] === "p1") (posLock[sp[1]] = posLock[sp[1]] || {})[1] = team;
+      else if (sp[0] === "p2") (posLock[sp[1]] = posLock[sp[1]] || {})[2] = team;
+      else { (posLock[pos[team].L] = posLock[pos[team].L] || {})[3] = team; thirdLock[sp[1]] = team; }
+    };
+    const real = MATCHES.filter((m) => m.stage === "knockout" && m.round === 32 && m.teamA && m.teamB &&
+      WC_RATING[m.teamA] != null && WC_RATING[m.teamB] != null);
+    for (const m of real) {
+      for (const [n, sa, sb] of WF_R32_SPEC) {
+        if (used.has(n)) continue;
+        let aFits = null, bFits = null;
+        if (specFits(sa, m.teamA) && specFits(sb, m.teamB)) { aFits = sa; bFits = sb; }
+        else if (specFits(sa, m.teamB) && specFits(sb, m.teamA)) { aFits = sb; bFits = sa; }
+        if (aFits) { used.add(n); slot[n] = m; lockSpec(aFits, m.teamA); lockSpec(bFits, m.teamB); break; }
+      }
+    }
+    const val = { slot, posLock, thirdLock };
+    _wfRealCache = { ref: MATCHES, val };
+    return val;
+  }
+
+  // Build the bracket seeds (1st/2nd per group + the eight best thirds slotted
+  // into FIFA's template) from a per-group football table `gr`, with reality's
+  // already-decided positions/matchups (`real`) pinned in place.
+  function wfSeed(byL, gr, real) {
+    const cmp = (x, y) => gr[y].pts - gr[x].pts || gr[y].gd - gr[x].gd || gr[y].gf - gr[x].gf || WC_RATING[y] - WC_RATING[x];
+    const p1 = {}, p2 = {}, thirdCand = [];
+    for (const L in byL) {
+      const g = byL[L].slice().sort(cmp);
+      const lock = real.posLock[L] || {};
+      const arr = [lock[1] || null, lock[2] || null, lock[3] || null, null];
+      const rest = g.filter((t) => t !== lock[1] && t !== lock[2] && t !== lock[3]);
+      let ri = 0; for (let k = 0; k < 4; k++) if (!arr[k]) arr[k] = rest[ri++];
+      p1[L] = arr[0]; p2[L] = arr[1]; thirdCand.push({ L, team: arr[2] });
+    }
+    const lockedSlots = Object.keys(real.thirdLock);
+    const lockedTeams = new Set(Object.values(real.thirdLock));
+    const free = thirdCand.filter((c) => !lockedTeams.has(c.team)).sort((x, y) => cmp(x.team, y.team)).slice(0, 8 - lockedSlots.length);
+    const freeSlots = Object.keys(WF_THIRD_SLOTS).filter((s) => !real.thirdLock[s]);
+    const assign = wfMatchThirds(free.map((c) => c.L), freeSlots);
+    const tt = {}; free.forEach((c) => (tt[c.L] = c.team));
+    const third = (s) => real.thirdLock[s] || tt[assign[s]];
+    return { p1, p2, third };
+  }
+
   const WF = { manager: null, pins: {}, sims: 5000, bracketMode: "avg" };
   const wfId = (m) => String(m.id || m.eventId || keyOf(m));
 
+  // Only remaining GROUP games are explorable/pinnable here; the knockout bracket
+  // is driven by the real draw + simulated outcomes (see wfRealKo/wfRun), not by
+  // pinning, so including knockout fixtures here would double-count them.
   function wfFixtures() {
     return MATCHES
-      .filter((m) => !hasResult(m) && TEAM_OWNER[m.teamA] && TEAM_OWNER[m.teamB] &&
+      .filter((m) => m.stage === "group" && !hasResult(m) && TEAM_OWNER[m.teamA] && TEAM_OWNER[m.teamB] &&
                      WC_RATING[m.teamA] != null && WC_RATING[m.teamB] != null && (m.kickoff || m.date))
       .slice()
       .sort((a, b) => String(a.kickoff || a.date).localeCompare(String(b.kickoff || b.date)));
@@ -1242,6 +1336,7 @@
     }
     const teamsByLetter = {};
     for (const t of ALL_TEAMS) if (WC_GROUP[t] != null) (teamsByLetter[WC_GROUP[t]] = teamsByLetter[WC_GROUP[t]] || []).push(t);
+    const real = wfRealKo();
 
     let firstTotal = 0;
     const finish = new Array(managers.length).fill(0);
@@ -1267,24 +1362,22 @@
         const bk = buckets[i][o]; bk.n++; bk.margin += gf - gAg; if (gf - gAg >= 2) bk.by2++;
       }
 
-      // ---- group standings → seeds ----
-      const cmp = (x, y) => gr[y].pts - gr[x].pts || gr[y].gd - gr[x].gd || gr[y].gf - gr[x].gf || WC_RATING[y] - WC_RATING[x];
-      const p1 = {}, p2 = {}, thirds = [];
-      for (const L in teamsByLetter) {
-        const g = teamsByLetter[L].slice().sort(cmp);
-        p1[L] = g[0]; p2[L] = g[1]; thirds.push({ L, team: g[2] });
-      }
-      thirds.sort((x, y) => cmp(x.team, y.team));
-      const qual = thirds.slice(0, 8);
-      const slotLetter = wfMatchThirds(qual.map((q) => q.L));
-      const thirdTeam = {}; qual.forEach((q) => (thirdTeam[q.L] = q.team));
-      const third = (slot) => thirdTeam[slotLetter[slot]];
+      // ---- group standings → seeds (reality's clinched spots pinned) ----
+      const { p1, p2, third } = wfSeed(teamsByLetter, gr, real);
 
-      // ---- knockout (scores both teams, returns the winner) ----
-      const simKo = (a, b) => {
-        let ga = wcPois(wcLam(a, b)), gb = wcPois(wcLam(b, a)), et = false, pk = false;
+      // ---- knockout (scores both teams, returns the winner). A slot whose real
+      //      matchup has already been PLAYED uses that fixed result and adds no
+      //      points (they're already in `base`); otherwise it's simulated. ----
+      const simKo = (a, b, rm) => {
+        let ga, gb, et = false, pk = false, w;
+        if (rm && hasResult(rm)) {
+          ga = Number(rm.scoreA); gb = Number(rm.scoreB); et = !!rm.extraTime || ga === gb; pk = !!rm.penalties || ga === gb;
+          if (ga > gb) w = a; else if (gb > ga) w = b; else w = rm.shootoutWinner === b ? b : a;
+          return w;
+        }
+        ga = wcPois(wcLam(a, b)); gb = wcPois(wcLam(b, a));
         if (ga === gb) { et = true; const ea = wcPois(wcLam(a, b) * WC_ET), eb = wcPois(wcLam(b, a) * WC_ET); ga += ea; gb += eb; if (ga === gb) pk = true; }
-        let w; if (ga > gb) w = a; else if (gb > ga) w = b;
+        if (ga > gb) w = a; else if (gb > ga) w = b;
         else { const pa = 1 / (1 + Math.pow(10, (WC_RATING[b] - WC_RATING[a]) / 400)); w = Math.random() < pa ? a : b; }
         const l = w === a ? b : a;
         const wgf = w === a ? ga : gb, wga = w === a ? gb : ga, lgf = l === a ? ga : gb, lga = l === a ? gb : ga;
@@ -1294,13 +1387,12 @@
       };
 
       const W = {}, Lz = {};
-      const r32 = [
-        [73, p2.A, p2.B], [74, p1.E, third("M74")], [75, p1.F, p2.C], [76, p1.C, p2.F],
-        [77, p1.I, third("M77")], [78, p2.E, p2.I], [79, p1.A, third("M79")], [80, p1.L, third("M80")],
-        [81, p1.D, third("M81")], [82, p1.G, third("M82")], [83, p2.K, p2.L], [84, p1.H, p2.J],
-        [85, p1.B, third("M85")], [86, p1.J, p2.H], [87, p1.K, third("M87")], [88, p2.D, p2.G],
-      ];
-      for (const [n, a, b] of r32) { W[n] = simKo(a, b); }
+      for (const [n, sa, sb] of WF_R32_SPEC) {
+        const rm = real.slot[n];
+        const a = rm ? rm.teamA : wfSeedTeam(sa, p1, p2, third);
+        const b = rm ? rm.teamB : wfSeedTeam(sb, p1, p2, third);
+        W[n] = simKo(a, b, rm);
+      }
       const pair = (n, x, y) => { W[n] = simKo(W[x], W[y]); Lz[n] = W[n] === W[x] ? W[y] : W[x]; };
       [[89,74,77],[90,73,75],[91,76,78],[92,79,80],[93,83,84],[94,81,82],[95,86,88],[96,85,87]].forEach(([n,x,y]) => pair(n,x,y));
       [[97,89,90],[98,93,94],[99,91,92],[100,95,96]].forEach(([n,x,y]) => pair(n,x,y));
@@ -1375,17 +1467,19 @@
       if (TEAM_OWNER[f.teamB] === manager) myPts += wcGroupPts(gb, ga);
     }
     const byL = {}; for (const t of ALL_TEAMS) if (WC_GROUP[t] != null) (byL[WC_GROUP[t]] = byL[WC_GROUP[t]] || []).push(t);
-    const cmp = (x, y) => gr[y].pts - gr[x].pts || gr[y].gd - gr[x].gd || gr[y].gf - gr[x].gf || WC_RATING[y] - WC_RATING[x];
-    const p1 = {}, p2 = {}, thirds = [];
-    for (const L in byL) { const g = byL[L].slice().sort(cmp); p1[L] = g[0]; p2[L] = g[1]; thirds.push({ L, team: g[2] }); }
-    thirds.sort((x, y) => cmp(x.team, y.team));
-    const qual = thirds.slice(0, 8), slot = wfMatchThirds(qual.map((q) => q.L)), tt = {};
-    qual.forEach((q) => (tt[q.L] = q.team));
-    const third = (s) => tt[slot[s]];
+    const real = wfRealKo();
+    const { p1, p2, third } = wfSeed(byL, gr, real);
 
     const match = {};
-    const simKo = (n, a, b) => {
+    const simKo = (n, a, b, rm) => {
       let ga, gb, et = false, pk = false, w, big = false;
+      if (rm && hasResult(rm)) {
+        // already played — fixed result; its points are already in `myPts` (base)
+        ga = Number(rm.scoreA); gb = Number(rm.scoreB); et = !!rm.extraTime || ga === gb; pk = !!rm.penalties || ga === gb;
+        if (ga > gb) w = a; else if (gb > ga) w = b; else w = rm.shootoutWinner === b ? b : a;
+        match[n] = { a, b, sa: ga, sb: gb, w, big: false, tag: pk ? "ET · PK" : et ? "ET" : "" };
+        return w;
+      }
       if (mode !== "mc") {
         // best/worst: force my team's result; non-mine games by rating
         if (mode === "best" && mineT(a) && mineT(b)) {
@@ -1414,13 +1508,13 @@
       if (TEAM_OWNER[l] === manager) myPts += wcKoPts(lgf, lga, false, et, pk);
       return w;
     };
-    const r32 = [
-      [73, p2.A, p2.B], [74, p1.E, third("M74")], [75, p1.F, p2.C], [76, p1.C, p2.F],
-      [77, p1.I, third("M77")], [78, p2.E, p2.I], [79, p1.A, third("M79")], [80, p1.L, third("M80")],
-      [81, p1.D, third("M81")], [82, p1.G, third("M82")], [83, p2.K, p2.L], [84, p1.H, p2.J],
-      [85, p1.B, third("M85")], [86, p1.J, p2.H], [87, p1.K, third("M87")], [88, p2.D, p2.G],
-    ];
-    const W = {}; for (const [n, a, b] of r32) W[n] = simKo(n, a, b);
+    const W = {};
+    for (const [n, sa, sb] of WF_R32_SPEC) {
+      const rm = real.slot[n];
+      const a = rm ? rm.teamA : wfSeedTeam(sa, p1, p2, third);
+      const b = rm ? rm.teamB : wfSeedTeam(sb, p1, p2, third);
+      W[n] = simKo(n, a, b, rm);
+    }
     const pr = (n, x, y) => { W[n] = simKo(n, W[x], W[y]); };
     [[89,74,77],[90,73,75],[91,76,78],[92,79,80],[93,83,84],[94,81,82],[95,86,88],[96,85,87]].forEach(([n,x,y]) => pr(n,x,y));
     [[97,89,90],[98,93,94],[99,91,92],[100,95,96]].forEach(([n,x,y]) => pr(n,x,y));
@@ -1537,9 +1631,10 @@
     if (!WF.manager || !stand.some((s) => s.manager === WF.manager)) WF.manager = stand[0].manager;
 
     root.appendChild(el("p", "muted",
-      "<b>Experimental.</b> Full-tournament title-path explorer: simulates the remaining group games, then plays " +
-      "FIFA's <b>real 2026 knockout bracket</b> (group winners / runners-up / 8 best thirds seeded into the official " +
-      "Round-of-32 template) all the way to the final, scoring every match with the live rules."));
+      "<b>Experimental.</b> Full-tournament title-path explorer: takes everything that's already happened — played results and the " +
+      "<b>actual Round-of-32 draw</b> as it stands — then simulates the rest. Remaining group games fill any undecided bracket slots " +
+      "(group winners / runners-up / 8 best thirds into FIFA's official template), and the knockout rounds play to the final, scoring " +
+      "every match with the live rules."));
 
     const head = el("div", "wf-head");
     const sel = el("select", "wf-select");
@@ -1739,9 +1834,10 @@
 
       const foot = el("p", "muted proj-foot");
       foot.innerHTML = `<b>Model.</b> ${WF.sims.toLocaleString()} full-tournament simulations: the ${sim.fx.length} remaining group ` +
-        `match${sim.fx.length === 1 ? "" : "es"} plus the entire official knockout bracket to the final. Elo-style ratings → ` +
+        `match${sim.fx.length === 1 ? "" : "es"} plus the knockout bracket to the final. Already-drawn Round-of-32 matchups are taken ` +
+        `from the live data; any slots still undecided are filled from the simulated group standings. Elo-style ratings → ` +
         `Poisson goals (extra time at ${WC_ET}×, shootouts by rating), scored with the live rules. Group ties broken by points/GD/GF; ` +
-        `the 8 best third-placed teams are seeded into FIFA's real Round-of-32 slots. "Title odds" = your chance of finishing 1st overall; ` +
+        `the 8 best third-placed teams are seeded into FIFA's Round-of-32 slots. "Title odds" = your chance of finishing 1st overall; ` +
         `the leverage/root-for odds are read off the baseline run. The bracket's pessimistic/average/optimistic views are the 15th/50th/85th ` +
         `percentile of ${POOL_N.toLocaleString()} sampled tournaments (by your points); best/worst force your teams to win/lose out. Ties for 1st broken arbitrarily.`;
       dyn.appendChild(foot);
