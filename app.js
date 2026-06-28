@@ -1652,31 +1652,37 @@
 
     function rebuild() {
       dyn.innerHTML = "";
-      const fxAll = wfFixtures();
-      if (!fxAll.length) {
-        dyn.appendChild(el("p", "muted", "No remaining scheduled matches with rated teams — nothing to explore right now."));
+      const fxAll = wfFixtures(); // remaining GROUP games (drive the explorer sections)
+      const anyLeft = MATCHES.some((m) => !hasResult(m) && (m.stage === "group" || m.stage === "knockout") &&
+        WC_RATING[m.teamA] != null && WC_RATING[m.teamB] != null);
+      if (!anyLeft) {
+        dyn.appendChild(el("p", "muted", "The tournament is complete — every match is played, so there's nothing left to simulate."));
         return;
       }
       const sim = wfRun(WF.manager, WF.pins, WF.sims);
 
-      // ceiling / floor: all my remaining games won vs lost
-      const minePins = (res) => {
-        const p = {};
-        sim.fx.forEach((f, i) => { if (sim.meta[i].mine) p[wfId(f)] = sim.meta[i].side === res.win ? "A" : "B"; });
-        return p;
-      };
-      const ceil = wfRun(WF.manager, { ...WF.pins, ...minePins({ win: "A" }) }, WF.sims).p1st;
-      const floor = wfRun(WF.manager, { ...WF.pins, ...minePins({ win: "B" }) }, WF.sims).p1st;
-
       const cur = stand.find((s) => s.manager === WF.manager);
       const curRank = stand.findIndex((s) => s.manager === WF.manager) + 1;
+
+      // ceiling / floor on the GROUP stage: only meaningful while you still have
+      // group games left (the knockout dial below covers the rest of the run).
+      let clause = "";
+      if (fxAll.length) {
+        const minePins = (res) => {
+          const p = {};
+          sim.fx.forEach((f, i) => { if (sim.meta[i].mine) p[wfId(f)] = sim.meta[i].side === res.win ? "A" : "B"; });
+          return p;
+        };
+        const ceil = wfRun(WF.manager, { ...WF.pins, ...minePins({ win: "A" }) }, WF.sims).p1st;
+        const floor = wfRun(WF.manager, { ...WF.pins, ...minePins({ win: "B" }) }, WF.sims).p1st;
+        clause = ` · if your group teams win out: <b>${pctTxt(ceil)}</b> · if they lose out: <b>${pctTxt(floor)}</b>`;
+      }
 
       // headline
       const hcard = el("div");
       hcard.innerHTML =
         `<div class="wf-odds">${pctTxt(sim.p1st)}<small>chance ${esc(WF.manager)} finishes 1st</small></div>` +
-        `<div class="wf-floor">Currently ${curRank}${["st","nd","rd"][curRank-1]||"th"} with <b>${cur.points}</b> pts · ` +
-        `if your teams win out: <b>${pctTxt(ceil)}</b> · if they lose out: <b>${pctTxt(floor)}</b></div>`;
+        `<div class="wf-floor">Currently ${curRank}${["st","nd","rd"][curRank-1]||"th"} with <b>${cur.points}</b> pts${clause}</div>`;
       dyn.appendChild(hcard);
 
       // finish-position distribution
@@ -1833,8 +1839,9 @@
       labelBtns();
 
       const foot = el("p", "muted proj-foot");
-      foot.innerHTML = `<b>Model.</b> ${WF.sims.toLocaleString()} full-tournament simulations: the ${sim.fx.length} remaining group ` +
-        `match${sim.fx.length === 1 ? "" : "es"} plus the knockout bracket to the final. Already-drawn Round-of-32 matchups are taken ` +
+      foot.innerHTML = `<b>Model.</b> ${WF.sims.toLocaleString()} full-tournament simulations: ` +
+        (sim.fx.length ? `the ${sim.fx.length} remaining group match${sim.fx.length === 1 ? "" : "es"} plus ` : "") +
+        `the knockout bracket to the final. Already-drawn Round-of-32 matchups are taken ` +
         `from the live data; any slots still undecided are filled from the simulated group standings. Elo-style ratings → ` +
         `Poisson goals (extra time at ${WC_ET}×, shootouts by rating), scored with the live rules. Group ties broken by points/GD/GF; ` +
         `the 8 best third-placed teams are seeded into FIFA's Round-of-32 slots. "Title odds" = your chance of finishing 1st overall; ` +
