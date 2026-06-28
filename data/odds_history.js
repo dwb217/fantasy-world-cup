@@ -529,33 +529,33 @@ window.ODDS_HISTORY = [
  },
  {
   "date": "2026-06-28",
-  "playedMatches": 72,
+  "playedMatches": 73,
   "titleOdds": {
-   "MIKE": 0.4682,
-   "KYLE": 0.1668,
-   "DAVID": 0.1777,
-   "BRETT": 0.1056,
-   "GREGORY": 0.0509,
-   "JOHN": 0.0297,
-   "IAN": 0.001
+   "MIKE": 0.5475,
+   "DAVID": 0.1764,
+   "KYLE": 0.0955,
+   "BRETT": 0.1029,
+   "GREGORY": 0.0503,
+   "JOHN": 0.026,
+   "IAN": 0.0013
   },
   "meanPts": {
-   "MIKE": 141.7,
-   "KYLE": 127.4,
-   "DAVID": 125.15,
-   "BRETT": 114.68,
-   "GREGORY": 111.68,
-   "JOHN": 103.99,
-   "IAN": 86.62
+   "MIKE": 144.85,
+   "DAVID": 125.17,
+   "KYLE": 123.04,
+   "BRETT": 114.46,
+   "GREGORY": 111.57,
+   "JOHN": 103.86,
+   "IAN": 86.52
   },
   "avgFinish": {
-   "MIKE": 1.9834,
-   "KYLE": 3.0472,
-   "DAVID": 3.271,
-   "BRETT": 4.1485,
-   "GREGORY": 4.3742,
-   "JOHN": 4.9677,
-   "IAN": 6.2058
+   "MIKE": 1.7422,
+   "DAVID": 3.246,
+   "KYLE": 3.3896,
+   "BRETT": 4.1293,
+   "GREGORY": 4.3468,
+   "JOHN": 4.949,
+   "IAN": 6.1959
   }
  }
 ];
