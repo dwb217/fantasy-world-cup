@@ -243,7 +243,9 @@
         const ga = isA ? Number(m.scoreB) : Number(m.scoreA);
         const res = scoreTeamInMatch(team, m);
         const byKey = {}; res.items.forEach((i) => (byKey[i.key] = i.points));
-        const result = gf > ga ? "W" : gf < ga ? "L" : ko ? (adv === team ? "W(adv)" : "L(adv)") : "D";
+        // A level knockout score means the tie was settled on penalties (the app
+        // stores the post-ET score), so label those rows as won/lost on penalties.
+        const result = gf > ga ? "W" : gf < ga ? "L" : ko ? (adv === team ? "W (pens)" : "L (pens)") : "D";
         rows.push([
           m.date, m.stage, m.roundLabel || (ko ? "Knockout" : "Group"),
           m.teamA, m.teamB, m.scoreA, m.scoreB,
