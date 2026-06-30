@@ -117,16 +117,36 @@ const hasResult = (m) =>
   m.scoreA !== null && m.scoreA !== "" && Number.isFinite(Number(m.scoreA)) &&
   m.scoreB !== null && m.scoreB !== "" && Number.isFinite(Number(m.scoreB));
 
+// The advancing rounds, in order — used to recover a shootout winner that
+// hasn't been recorded yet from the next round's draw (the team that turns up
+// there is the one that advanced).
+const KO_ROUNDS = ["Round of 32", "Round of 16", "Quarter-Final", "Semi-Final", "Final"];
+function koAdvancer(f) {
+  if (f.shootoutWinner) return f.shootoutWinner;
+  const a = Number(f.scoreA), b = Number(f.scoreB);
+  if (Number.isFinite(a) && Number.isFinite(b) && a !== b) return a > b ? f.teamA : f.teamB;
+  const i = KO_ROUNDS.indexOf(f.roundLabel);
+  if (i < 0 || i + 1 >= KO_ROUNDS.length) return null;
+  const nextLabel = KO_ROUNDS[i + 1];
+  for (const n of ALL_MATCHES) {
+    if (n.stage !== "knockout" || n.roundLabel !== nextLabel) continue;
+    if (n.teamA === f.teamA || n.teamB === f.teamA) return f.teamA;
+    if (n.teamA === f.teamB || n.teamB === f.teamB) return f.teamB;
+  }
+  return null;
+}
+
 // Outcome facts for a played knockout fixture. A level score means ET + PK by
-// definition; winner is null when the shootout winner hasn't been recorded yet
-// (then each sim decides it by rating, reflecting the real uncertainty).
+// definition; winner is the shootout winner — recorded, or recovered from the
+// next round's draw — and is null only when neither is known yet (then each sim
+// decides it by rating, reflecting the real uncertainty).
 function actualKoOutcome(f) {
   const level = Number(f.scoreA) === Number(f.scoreB);
   return {
     wentET: level ? true : !!f.extraTime,
     wentPK: level ? true : !!f.penalties,
     winner: !level ? (Number(f.scoreA) > Number(f.scoreB) ? f.teamA : f.teamB)
-                   : (f.shootoutWinner || null),
+                   : koAdvancer(f),
   };
 }
 

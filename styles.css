@@ -22,6 +22,7 @@ body {
 }
 .wrap { max-width: 880px; margin: 0 auto; padding: 0 20px; }
 .muted { color: var(--muted); }
+.elim { text-decoration: line-through; color: var(--muted); text-decoration-thickness: 1.5px; }
 code { background: var(--panel-2); padding: 1px 6px; border-radius: 6px; font-size: .9em; }
 
 /* header */

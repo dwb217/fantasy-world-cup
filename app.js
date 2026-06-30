@@ -65,6 +65,51 @@
            Number.isFinite(Number(m.scoreB)) && m.scoreB !== null && m.scoreB !== "";
   }
 
+  // The advancing rounds, in order. A team that reaches the next round is, by
+  // definition, the one that won its match in the previous one — so when a
+  // shootout winner hasn't been recorded yet we can recover it from the draw.
+  const KO_ROUNDS = ["Round of 32", "Round of 16", "Quarter-Final", "Semi-Final", "Final"];
+
+  // Who advanced from a knockout match. Prefers an explicitly recorded shootout
+  // winner; otherwise (a level score with no winner entered) infers it from the
+  // next round's fixtures — whichever of the two teams turns up there won. The
+  // Third-Place play-off and the Final have no "next round", so those fall back
+  // to the recorded winner (null until an admin enters it).
+  function koAdvancer(m) {
+    if (m.shootoutWinner) return m.shootoutWinner;
+    const a = Number(m.scoreA), b = Number(m.scoreB);
+    if (Number.isFinite(a) && Number.isFinite(b) && a !== b) return a > b ? m.teamA : m.teamB;
+    const i = KO_ROUNDS.indexOf(m.roundLabel);
+    if (i < 0 || i + 1 >= KO_ROUNDS.length) return null;
+    const nextLabel = KO_ROUNDS[i + 1];
+    for (const n of MATCHES) {
+      if (n.stage !== "knockout" || n.roundLabel !== nextLabel) continue;
+      if (n.teamA === m.teamA || n.teamB === m.teamA) return m.teamA;
+      if (n.teamA === m.teamB || n.teamB === m.teamB) return m.teamB;
+    }
+    return null;
+  }
+
+  // Teams that are out of the tournament: knocked out in a played knockout game
+  // (the loser — i.e. anyone who isn't the advancer), or, once the group stage
+  // is complete, any team that didn't reach the knockout field at all.
+  function eliminatedTeams() {
+    const out = new Set();
+    const koTeams = new Set();
+    for (const m of MATCHES) {
+      if (m.stage !== "knockout" || !m.teamA || !m.teamB) continue;
+      koTeams.add(m.teamA); koTeams.add(m.teamB);
+      if (hasResult(m)) {
+        const adv = koAdvancer(m);
+        if (adv) out.add(adv === m.teamA ? m.teamB : m.teamA);
+      }
+    }
+    const groupGames = MATCHES.filter((m) => m.stage === "group");
+    const groupDone = koTeams.size > 0 && groupGames.length > 0 && groupGames.every(hasResult);
+    if (groupDone) for (const t of ALL_TEAMS) if (!koTeams.has(t)) out.add(t);
+    return out;
+  }
+
   function scoreTeamInMatch(team, m) {
     const isA = m.teamA === team;
     const gf = isA ? Number(m.scoreA) : Number(m.scoreB);
@@ -78,7 +123,7 @@
     if (gf > ga) { isWin = true; isDraw = false; }
     else if (gf < ga) { isWin = false; isDraw = false; }
     else {
-      if (knockout) { isWin = m.shootoutWinner === team; isDraw = false; }
+      if (knockout) { isWin = koAdvancer(m) === team; isDraw = false; }
       else { isWin = false; isDraw = true; }
     }
 
@@ -148,6 +193,7 @@
   function renderStandings() {
     const root = el("div");
     const standings = computeStandings();
+    const elim = eliminatedTeams();
     const played = MATCHES.filter(hasResult).length;
     const intro = el("p", "muted");
     intro.textContent = played
@@ -171,7 +217,8 @@
       const tb = el("tbody");
       s.teams.forEach((t) => {
         const tr = el("tr");
-        tr.innerHTML = `<td>${esc(t.team)}</td><td class="num">${t.played}</td><td class="num">${t.points}</td>`;
+        const nm = elim.has(t.team) ? `<span class="elim">${esc(t.team)}</span>` : esc(t.team);
+        tr.innerHTML = `<td>${nm}</td><td class="num">${t.played}</td><td class="num">${t.points}</td>`;
         tb.appendChild(tr);
       });
       tbl.appendChild(tb); body.appendChild(tbl);
@@ -205,6 +252,7 @@
   function renderTeams() {
     const root = el("div");
     const { pts, gp } = teamActuals();
+    const elim = eliminatedTeams();
     const cols = [
       { key: "team",    label: "Team",    num: false, get: (t) => t },
       { key: "manager", label: "Manager", num: false, get: (t) => TEAM_OWNER[t] || "" },
@@ -230,7 +278,8 @@
       const tb = el("tbody");
       rows.forEach((t) => {
         const tr = el("tr");
-        tr.innerHTML = `<td>${esc(t)}</td><td class="muted">${esc(TEAM_OWNER[t])}</td><td class="num">${gp[t]}</td><td class="num">${pts[t]}</td>`;
+        const nm = elim.has(t) ? `<span class="elim">${esc(t)}</span>` : esc(t);
+        tr.innerHTML = `<td>${nm}</td><td class="muted">${esc(TEAM_OWNER[t])}</td><td class="num">${gp[t]}</td><td class="num">${pts[t]}</td>`;
         tb.appendChild(tr);
       });
       tbl.appendChild(tb);
@@ -555,7 +604,9 @@
 
   function koSuffix(m) {
     if (m.stage !== "knockout") return "";
-    if (m.penalties && m.shootoutWinner) return ` · ${esc(m.shootoutWinner)} won on penalties`;
+    const adv = koAdvancer(m);
+    if (m.penalties && adv) return ` · ${esc(adv)} won on penalties`;
+    if (m.penalties) return " · decided on penalties";
     if (m.extraTime) return " · after extra time";
     return "";
   }
@@ -1372,7 +1423,7 @@
         let ga, gb, et = false, pk = false, w;
         if (rm && hasResult(rm)) {
           ga = Number(rm.scoreA); gb = Number(rm.scoreB); et = !!rm.extraTime || ga === gb; pk = !!rm.penalties || ga === gb;
-          if (ga > gb) w = a; else if (gb > ga) w = b; else w = rm.shootoutWinner === b ? b : a;
+          if (ga > gb) w = a; else if (gb > ga) w = b; else w = koAdvancer(rm) === b ? b : a;
           return w;
         }
         ga = wcPois(wcLam(a, b)); gb = wcPois(wcLam(b, a));
@@ -1476,7 +1527,7 @@
       if (rm && hasResult(rm)) {
         // already played — fixed result; its points are already in `myPts` (base)
         ga = Number(rm.scoreA); gb = Number(rm.scoreB); et = !!rm.extraTime || ga === gb; pk = !!rm.penalties || ga === gb;
-        if (ga > gb) w = a; else if (gb > ga) w = b; else w = rm.shootoutWinner === b ? b : a;
+        if (ga > gb) w = a; else if (gb > ga) w = b; else w = koAdvancer(rm) === b ? b : a;
         match[n] = { a, b, sa: ga, sb: gb, w, big: false, tag: pk ? "ET · PK" : et ? "ET" : "" };
         return w;
       }
