@@ -11,10 +11,12 @@
  *   - the real groups are derived from the fixture list;
  *   - matches that have been played are locked at their actual score and the
  *     actual fantasy points they produced — only remaining games are simulated;
- *   - real knockout pairings are used once fixtures exist; rounds whose
- *     pairings aren't known yet use random pairing among the simulated
- *     survivors; a level knockout game with no shootoutWinner recorded yet is
- *     decided per-sim by rating.
+ *   - once the Round of 32 is drawn the knockout follows FIFA's fixed bracket
+ *     (data/bracket.js): survivors flow to their known opponents, played games
+ *     are locked, the rest simulated. Before the bracket exists it falls back to
+ *     real pairings where they're announced + random pairing for the rest. A
+ *     level knockout game with no shootoutWinner recorded yet is decided per-sim
+ *     by rating.
  * Run scripts/fetch_scores.js first so data/matches.js is fresh. A CI workflow
  * (.github/workflows/update-projections.yml) does this daily at 10:00 UTC.
  *
@@ -43,8 +45,10 @@ const window = {};
 eval(fs.readFileSync(path.join(ROOT, "data/draft.js"), "utf8"));   // window.DRAFT
 eval(fs.readFileSync(path.join(ROOT, "data/matches.js"), "utf8")); // window.MATCHES
 eval(fs.readFileSync(path.join(ROOT, "data/ratings.js"), "utf8")); // window.RATINGS
+eval(fs.readFileSync(path.join(ROOT, "data/bracket.js"), "utf8")); // window.BRACKET
 const DRAFT = window.DRAFT;
 const ALL_MATCHES = window.MATCHES || [];
+const BR = window.BRACKET;
 
 /* ---- team strength: shared model from data/ratings.js (window.RATINGS), the
    single source of truth the What-If tab (app.js) reads too. Tweak it there. ----
@@ -235,6 +239,57 @@ function simulate(allMatches, N) {
     return q.length === 32 ? q : null;
   })();
 
+  /* ---- fixed bracket: once the R32 is drawn, the whole tree is determined by
+     FIFA's template (data/bracket.js), so survivors flow to known opponents
+     instead of being re-shuffled each round. We map each real R32 tie onto its
+     template slot via the final group positions, then play the fixed tree
+     (data/bracket.js r16/qf/sf/final/third), locking any games already played. ---- */
+  const pairKey = (a, b) => (a < b ? a + "|" + b : b + "|" + a);
+  const koByPair = {};
+  for (const f of koFixAll) koByPair[pairKey(f.teamA, f.teamB)] = f;
+
+  // Final group positions (letter + 1/2/3), only when every group game is in.
+  function realPositions() {
+    if (groupFix.length !== 72 || !groupFix.every(hasResult)) return null;
+    const rec = {};
+    for (const f of groupFix) {
+      const a = Number(f.scoreA), b = Number(f.scoreB);
+      rec[f.teamA] = rec[f.teamA] || [0, 0, 0]; rec[f.teamB] = rec[f.teamB] || [0, 0, 0];
+      if (a > b) rec[f.teamA][0] += 3; else if (b > a) rec[f.teamB][0] += 3; else { rec[f.teamA][0]++; rec[f.teamB][0]++; }
+      rec[f.teamA][1] += a - b; rec[f.teamB][1] += b - a; rec[f.teamA][2] += a; rec[f.teamB][2] += b;
+    }
+    const byL = {};
+    for (const t in rec) { const L = BR.group[t]; if (L == null) return null; (byL[L] = byL[L] || []).push(t); }
+    const cmp = (x, y) => rec[y][0] - rec[x][0] || rec[y][1] - rec[x][1] || rec[y][2] - rec[x][2] || RATING[y] - RATING[x];
+    const pos = {};
+    for (const L in byL) byL[L].slice().sort(cmp).forEach((t, i) => (pos[t] = { L, p: i + 1 }));
+    return pos;
+  }
+
+  // slot number -> the real R32 fixture that fills it (all 16, or null to bail).
+  // Spec-match over ALL knockout fixtures rather than trusting roundLabel: a tie
+  // dated into the next window can be mislabeled (e.g. a July-4 R32 game tagged
+  // "Round of 16"), but only the genuine R32 group-position pairs fit a slot.
+  const slotFix = (() => {
+    const pos = realPositions();
+    if (!pos) return null;
+    const fits = (sp, t) => {
+      const P = pos[t]; if (!P) return false;
+      if (sp[0] === "p1") return P.p === 1 && P.L === sp[1];
+      if (sp[0] === "p2") return P.p === 2 && P.L === sp[1];
+      return P.p === 3 && (BR.thirdSlots[sp[1]] || []).includes(P.L);
+    };
+    const out = {};
+    for (const f of koFixAll) {
+      for (const [n, sa, sb] of BR.r32) {
+        if (out[n]) continue;
+        if ((fits(sa, f.teamA) && fits(sb, f.teamB)) || (fits(sa, f.teamB) && fits(sb, f.teamA))) { out[n] = f; break; }
+      }
+    }
+    return Object.keys(out).length === 16 ? out : null; // fall back if any slot unmatched
+  })();
+  const USE_TREE = !!slotFix;
+
   /* accumulators */
   const mgrTotals = {}; MANAGERS.forEach(m => mgrTotals[m] = []);
   const mgrCum = {};    MANAGERS.forEach(m => mgrCum[m] = STAGES.map(() => []));   // per stage: array of cumulative pts
@@ -297,7 +352,9 @@ function simulate(allMatches, N) {
     const playKoGame = (a, b, fixture, si) => {
       let ga, gb, wentET = false, wentPK = false, w;
       if (fixture && hasResult(fixture)) {
-        ga = Number(fixture.scoreA); gb = Number(fixture.scoreB);
+        const aIsHome = fixture.teamA === a; // a/b may arrive in either order (tree)
+        ga = Number(aIsHome ? fixture.scoreA : fixture.scoreB);
+        gb = Number(aIsHome ? fixture.scoreB : fixture.scoreA);
         const o = actualKoOutcome(fixture);
         wentET = o.wentET; wentPK = o.wentPK;
         w = o.winner || koWinner(a, b, 0, 0); // level, shootout winner not recorded yet
@@ -315,37 +372,53 @@ function simulate(allMatches, N) {
       return w;
     };
 
-    // knockout: real pairings where fixtures exist, random pairing for the rest
-    let cur = shuffle(qualifiers.slice());
-    let sfLosers = [];
-    while (cur.length > 1) {
-      const S = cur.length;
-      const si = stageIdxBySize[S];
-      const inRound = new Set(cur);
-      const next = [];
-      const paired = new Set();
-      const actual = (koBySize[S] || []).filter(f =>
-        inRound.has(f.teamA) && inRound.has(f.teamB) && !paired.has(f.teamA) && !paired.has(f.teamB) &&
-        (paired.add(f.teamA), paired.add(f.teamB), true));
-      for (const f of actual) next.push(playKoGame(f.teamA, f.teamB, f, si));
-      const pool = shuffle(cur.filter(t => !paired.has(t)));
-      for (let i = 0; i + 1 < pool.length; i += 2) next.push(playKoGame(pool[i], pool[i+1], null, si));
-      if (S === 32) for (const t of next) teamProg[t].r16++;
-      else if (S === 16) for (const t of next) teamProg[t].qf++;
-      else if (S === 8) for (const t of next) teamProg[t].sf++;
-      else if (S === 4) { for (const t of next) teamProg[t].final++; sfLosers = cur.filter(t => !next.includes(t)); }
-      cur = next;
-    }
-    teamProg[cur[0]].champion++;
+    if (USE_TREE) {
+      // R32 is drawn → walk FIFA's fixed bracket (data/bracket.js): survivors flow
+      // to their known opponents, played games are locked, the rest simulated.
+      const W = {}, Lz = {};
+      const playSlot = (a, b, si) => {
+        const w = playKoGame(a, b, koByPair[pairKey(a, b)] || null, si);
+        return [w, w === a ? b : a];
+      };
+      for (const [n] of BR.r32)        { const f = slotFix[n]; const [w] = playSlot(f.teamA, f.teamB, 1); W[n] = w; teamProg[w].r16++; }
+      for (const [n, x, y] of BR.r16)  { const [w] = playSlot(W[x], W[y], 2); W[n] = w; teamProg[w].qf++; }
+      for (const [n, x, y] of BR.qf)   { const [w] = playSlot(W[x], W[y], 3); W[n] = w; teamProg[w].sf++; }
+      for (const [n, x, y] of BR.sf)   { const [w, l] = playSlot(W[x], W[y], 4); W[n] = w; Lz[n] = l; teamProg[w].final++; }
+      { const [, x, y] = BR.final; const [w] = playSlot(W[x], W[y], 5); teamProg[w].champion++; }
+      { const [, x, y] = BR.third; if (Lz[x] && Lz[y]) playSlot(Lz[x], Lz[y], 5); } // SF losers
+    } else {
+      // R32 not yet drawn: real pairings where fixtures exist, random pairing for the rest
+      let cur = shuffle(qualifiers.slice());
+      let sfLosers = [];
+      while (cur.length > 1) {
+        const S = cur.length;
+        const si = stageIdxBySize[S];
+        const inRound = new Set(cur);
+        const next = [];
+        const paired = new Set();
+        const actual = (koBySize[S] || []).filter(f =>
+          inRound.has(f.teamA) && inRound.has(f.teamB) && !paired.has(f.teamA) && !paired.has(f.teamB) &&
+          (paired.add(f.teamA), paired.add(f.teamB), true));
+        for (const f of actual) next.push(playKoGame(f.teamA, f.teamB, f, si));
+        const pool = shuffle(cur.filter(t => !paired.has(t)));
+        for (let i = 0; i + 1 < pool.length; i += 2) next.push(playKoGame(pool[i], pool[i+1], null, si));
+        if (S === 32) for (const t of next) teamProg[t].r16++;
+        else if (S === 16) for (const t of next) teamProg[t].qf++;
+        else if (S === 8) for (const t of next) teamProg[t].sf++;
+        else if (S === 4) { for (const t of next) teamProg[t].final++; sfLosers = cur.filter(t => !next.includes(t)); }
+        cur = next;
+      }
+      teamProg[cur[0]].champion++;
 
-    // third-place game (a real, points-scoring match between the SF losers)
-    if (sfLosers.length === 2) {
-      const [a, b] = sfLosers;
-      const fix = (thirdPlaceFix &&
-        ((thirdPlaceFix.teamA === a && thirdPlaceFix.teamB === b) ||
-         (thirdPlaceFix.teamA === b && thirdPlaceFix.teamB === a)))
-        ? thirdPlaceFix : null;
-      playKoGame(fix ? fix.teamA : a, fix ? fix.teamB : b, fix, 5);
+      // third-place game (a real, points-scoring match between the SF losers)
+      if (sfLosers.length === 2) {
+        const [a, b] = sfLosers;
+        const fix = (thirdPlaceFix &&
+          ((thirdPlaceFix.teamA === a && thirdPlaceFix.teamB === b) ||
+           (thirdPlaceFix.teamA === b && thirdPlaceFix.teamB === a)))
+          ? thirdPlaceFix : null;
+        playKoGame(fix ? fix.teamA : a, fix ? fix.teamB : b, fix, 5);
+      }
     }
 
     // record
@@ -418,7 +491,7 @@ if (require.main === module) {
   }
   noteParts.push("Team strength is Elo-style (hand-set, ~2026 form); per-match goals are Poisson from the rating gap, scored with the live app's exact rules.");
   noteParts.push(FIXED_GROUPS
-    ? "Groups are the real draw; real knockout pairings are used once fixtures are announced (random pairing until then)."
+    ? "Groups are the real draw; once the Round of 32 is set the knockout follows FIFA's fixed bracket (played games locked, the rest simulated) — random pairing only before the bracket exists."
     : "Group draw uses balanced pots; knockout bracket is random pairing.");
 
   const out = {
