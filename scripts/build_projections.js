@@ -46,9 +46,11 @@ eval(fs.readFileSync(path.join(ROOT, "data/draft.js"), "utf8"));   // window.DRA
 eval(fs.readFileSync(path.join(ROOT, "data/matches.js"), "utf8")); // window.MATCHES
 eval(fs.readFileSync(path.join(ROOT, "data/ratings.js"), "utf8")); // window.RATINGS
 eval(fs.readFileSync(path.join(ROOT, "data/bracket.js"), "utf8")); // window.BRACKET
+eval(fs.readFileSync(path.join(ROOT, "data/prices.js"), "utf8"));   // window.PRICES
 const DRAFT = window.DRAFT;
 const ALL_MATCHES = window.MATCHES || [];
 const BR = window.BRACKET;
+const PRICES = window.PRICES || {};
 
 /* ---- team strength: shared model from data/ratings.js (window.RATINGS), the
    single source of truth the What-If tab (app.js) reads too. Tweak it there. ----
@@ -189,6 +191,28 @@ function simulate(allMatches, N) {
   const groupFix = allMatches.filter((m) => m.stage === "group" && m.teamA in RATING && m.teamB in RATING);
   const koFixAll = allMatches.filter((m) => m.stage === "knockout" && m.teamA in RATING && m.teamB in RATING);
   const PLAYED = allMatches.filter(hasResult).length;
+
+  // Kyle's compensation for an unrelated draft issue (mirrors app.js computeStandings):
+  // 7 × the league-wide average points-per-dollar — every drafted team's fantasy
+  // points SO FAR divided by every auction dollar spent. A flat add to Kyle's
+  // total in every sim; grows as results come in (recomputed per snapshot).
+  const KYLE_BONUS = (() => {
+    let totPrice = 0; for (const t of TEAMS) totPrice += PRICES[t] || 0;
+    if (!totPrice) return 0;
+    let totPts = 0;
+    for (const m of allMatches) {
+      if (!hasResult(m)) continue;
+      const a = Number(m.scoreA), b = Number(m.scoreB);
+      if (m.stage === "knockout") {
+        const o = actualKoOutcome(m);
+        totPts += scoreKo(a, b, o.winner === m.teamA, o.wentET, o.wentPK)
+                + scoreKo(b, a, o.winner === m.teamB, o.wentET, o.wentPK);
+      } else {
+        totPts += scoreGroup(a, b) + scoreGroup(b, a);
+      }
+    }
+    return 7 * (totPts / totPrice);
+  })();
 
   // The real groups fall out of the fixture list: each team's 3 distinct group
   // opponents define its group of 4. Returns null (→ random-pots fallback) if the
@@ -425,9 +449,10 @@ function simulate(allMatches, N) {
     const totals = {};
     for (const t of TEAMS) teamTotals[t].push(pts[t]);
     for (const m of MANAGERS) {
+      const bonus = m === "KYLE" ? KYLE_BONUS : 0; // flat draft-mistake add, rides every cumulative point
       let run = 0;
-      for (let i = 0; i < STAGES.length; i++) { run += mPts[m][i]; mgrCum[m][i].push(run); }
-      totals[m] = run; mgrTotals[m].push(run);
+      for (let i = 0; i < STAGES.length; i++) { run += mPts[m][i]; mgrCum[m][i].push(run + bonus); }
+      totals[m] = run + bonus; mgrTotals[m].push(totals[m]);
     }
     const order = MANAGERS.slice().sort((a,b) => totals[b]-totals[a]);
     order.forEach((m, rank) => finishCounts[m][rank]++);
@@ -438,13 +463,13 @@ function simulate(allMatches, N) {
     return {
       name: m, teams: DRAFT[m].slice(), teamCount: DRAFT[m].length,
       mean: r2(mean(sorted)), std: r2(std(sorted)),
-      min: sorted[0], max: sorted[sorted.length-1],
-      pct: { p5:pct(sorted,.05), p25:pct(sorted,.25), p50:pct(sorted,.5), p75:pct(sorted,.75), p95:pct(sorted,.95) },
+      min: r2(sorted[0]), max: r2(sorted[sorted.length-1]),
+      pct: { p5:r2(pct(sorted,.05)), p25:r2(pct(sorted,.25)), p50:r2(pct(sorted,.5)), p75:r2(pct(sorted,.75)), p95:r2(pct(sorted,.95)) },
       hist: hist(mgrTotals[m], 10),
       finish: finishCounts[m].map(c => r4(c/N)),
       cumulative: STAGES.map((st, i) => {
         const cs = mgrCum[m][i].slice().sort((a,b)=>a-b);
-        return { stage: st, mean: r2(mean(cs)), p25: pct(cs,.25), p75: pct(cs,.75) };
+        return { stage: st, mean: r2(mean(cs)), p25: r2(pct(cs,.25)), p75: r2(pct(cs,.75)) };
       }),
     };
   }).sort((a,b) => b.mean - a.mean);
@@ -493,6 +518,7 @@ if (require.main === module) {
   noteParts.push(FIXED_GROUPS
     ? "Groups are the real draw; once the Round of 32 is set the knockout follows FIFA's fixed bracket (played games locked, the rest simulated) — random pairing only before the bracket exists."
     : "Group draw uses balanced pots; knockout bracket is random pairing.");
+  noteParts.push("Kyle's total includes his extra points from a draft mistake (7 × the league-wide average points per dollar so far), recalculated each day.");
 
   const out = {
     meta: {

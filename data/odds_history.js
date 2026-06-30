@@ -4,620 +4,620 @@ window.ODDS_HISTORY = [
   "date": "2026-06-11",
   "playedMatches": 1,
   "titleOdds": {
-   "MIKE": 0.3629,
-   "GREGORY": 0.3007,
-   "BRETT": 0.1206,
-   "JOHN": 0.0726,
-   "DAVID": 0.0673,
-   "KYLE": 0.0627,
-   "IAN": 0.0132
+   "MIKE": 0.3665,
+   "GREGORY": 0.293,
+   "BRETT": 0.1198,
+   "JOHN": 0.0762,
+   "DAVID": 0.0682,
+   "KYLE": 0.0652,
+   "IAN": 0.011
   },
   "meanPts": {
-   "MIKE": 142.42,
-   "GREGORY": 136.63,
-   "BRETT": 118.26,
-   "JOHN": 111.25,
-   "DAVID": 111.19,
-   "KYLE": 110.35,
-   "IAN": 93.63
+   "MIKE": 142.73,
+   "GREGORY": 136.35,
+   "BRETT": 118.52,
+   "JOHN": 111.63,
+   "DAVID": 111.08,
+   "KYLE": 110.34,
+   "IAN": 93.37
   },
   "avgFinish": {
-   "MIKE": 2.4431,
-   "GREGORY": 2.8246,
-   "BRETT": 3.9051,
-   "JOHN": 4.366,
-   "DAVID": 4.3733,
-   "KYLE": 4.4705,
-   "IAN": 5.6166
+   "MIKE": 2.4328,
+   "GREGORY": 2.8147,
+   "BRETT": 3.903,
+   "JOHN": 4.3643,
+   "DAVID": 4.4277,
+   "KYLE": 4.4497,
+   "IAN": 5.6068
   }
  },
  {
   "date": "2026-06-12",
   "playedMatches": 3,
   "titleOdds": {
-   "MIKE": 0.3487,
-   "GREGORY": 0.3112,
-   "BRETT": 0.1217,
-   "JOHN": 0.0759,
-   "KYLE": 0.0659,
-   "DAVID": 0.0654,
-   "IAN": 0.0112
+   "MIKE": 0.3395,
+   "GREGORY": 0.309,
+   "BRETT": 0.1235,
+   "JOHN": 0.0788,
+   "KYLE": 0.0717,
+   "DAVID": 0.0644,
+   "IAN": 0.0132
   },
   "meanPts": {
-   "MIKE": 140.55,
-   "GREGORY": 136.67,
-   "BRETT": 118.21,
-   "JOHN": 111.4,
-   "KYLE": 110.7,
-   "DAVID": 109.85,
-   "IAN": 93.1
+   "MIKE": 140.19,
+   "GREGORY": 136.65,
+   "BRETT": 118.52,
+   "JOHN": 111.77,
+   "KYLE": 110.66,
+   "DAVID": 110.02,
+   "IAN": 93.27
   },
   "avgFinish": {
-   "MIKE": 2.5325,
-   "GREGORY": 2.7306,
-   "BRETT": 3.8846,
-   "JOHN": 4.342,
-   "DAVID": 4.4663,
-   "KYLE": 4.4677,
-   "IAN": 5.5767
+   "MIKE": 2.5442,
+   "GREGORY": 2.7702,
+   "BRETT": 3.8789,
+   "JOHN": 4.3263,
+   "KYLE": 4.4033,
+   "DAVID": 4.484,
+   "IAN": 5.592
   }
  },
  {
   "date": "2026-06-13",
   "playedMatches": 5,
   "titleOdds": {
-   "MIKE": 0.3543,
-   "GREGORY": 0.3141,
-   "BRETT": 0.1273,
-   "JOHN": 0.0756,
-   "DAVID": 0.0648,
-   "KYLE": 0.051,
+   "MIKE": 0.3528,
+   "GREGORY": 0.3123,
+   "BRETT": 0.1255,
+   "JOHN": 0.0785,
+   "DAVID": 0.0639,
+   "KYLE": 0.0541,
    "IAN": 0.0129
   },
   "meanPts": {
-   "MIKE": 141.4,
-   "GREGORY": 137.05,
-   "BRETT": 118.8,
-   "JOHN": 111.59,
-   "DAVID": 109.78,
-   "KYLE": 107.14,
-   "IAN": 93.19
+   "MIKE": 141.29,
+   "GREGORY": 137.17,
+   "BRETT": 118.81,
+   "JOHN": 111.52,
+   "DAVID": 109.92,
+   "KYLE": 107.31,
+   "IAN": 93.45
   },
   "avgFinish": {
-   "MIKE": 2.4347,
-   "GREGORY": 2.6981,
-   "BRETT": 3.8512,
-   "JOHN": 4.297,
-   "DAVID": 4.4796,
-   "KYLE": 4.6542,
-   "IAN": 5.585
+   "MIKE": 2.4504,
+   "GREGORY": 2.7401,
+   "BRETT": 3.8448,
+   "JOHN": 4.3325,
+   "DAVID": 4.4577,
+   "KYLE": 4.6274,
+   "IAN": 5.5461
   }
  },
  {
   "date": "2026-06-14",
   "playedMatches": 10,
   "titleOdds": {
-   "MIKE": 0.3711,
-   "GREGORY": 0.2632,
-   "BRETT": 0.1813,
-   "DAVID": 0.0646,
-   "KYLE": 0.051,
-   "JOHN": 0.055,
-   "IAN": 0.0138
+   "MIKE": 0.3613,
+   "GREGORY": 0.2719,
+   "BRETT": 0.179,
+   "DAVID": 0.0633,
+   "KYLE": 0.0544,
+   "JOHN": 0.0555,
+   "IAN": 0.0145
   },
   "meanPts": {
-   "MIKE": 141.82,
-   "GREGORY": 132.75,
-   "BRETT": 125.21,
-   "DAVID": 109.64,
-   "KYLE": 106.73,
-   "JOHN": 105.83,
-   "IAN": 93.39
+   "MIKE": 141.66,
+   "GREGORY": 133.14,
+   "BRETT": 125.07,
+   "DAVID": 109.65,
+   "KYLE": 107.52,
+   "JOHN": 105.57,
+   "IAN": 93.65
   },
   "avgFinish": {
-   "MIKE": 2.3836,
-   "GREGORY": 2.9472,
-   "BRETT": 3.3682,
-   "DAVID": 4.4481,
-   "KYLE": 4.6471,
-   "JOHN": 4.6796,
-   "IAN": 5.5268
+   "MIKE": 2.3948,
+   "GREGORY": 2.9235,
+   "BRETT": 3.3936,
+   "DAVID": 4.4528,
+   "KYLE": 4.618,
+   "JOHN": 4.6959,
+   "IAN": 5.5225
   }
  },
  {
   "date": "2026-06-15",
   "playedMatches": 14,
   "titleOdds": {
-   "MIKE": 0.3969,
-   "GREGORY": 0.2316,
-   "BRETT": 0.1582,
-   "DAVID": 0.0911,
-   "JOHN": 0.0585,
-   "KYLE": 0.047,
-   "IAN": 0.0167
+   "MIKE": 0.39,
+   "GREGORY": 0.2356,
+   "BRETT": 0.1588,
+   "DAVID": 0.0934,
+   "KYLE": 0.0527,
+   "JOHN": 0.0556,
+   "IAN": 0.014
   },
   "meanPts": {
-   "MIKE": 142.2,
-   "GREGORY": 128.86,
-   "BRETT": 121.4,
-   "DAVID": 114.35,
-   "JOHN": 105.79,
-   "KYLE": 105.01,
-   "IAN": 93.32
+   "MIKE": 141.69,
+   "GREGORY": 128.97,
+   "BRETT": 121.51,
+   "DAVID": 114.44,
+   "KYLE": 106.01,
+   "JOHN": 106,
+   "IAN": 93.15
   },
   "avgFinish": {
-   "MIKE": 2.3331,
-   "GREGORY": 3.0998,
-   "BRETT": 3.5593,
-   "DAVID": 4.0899,
-   "JOHN": 4.6351,
-   "KYLE": 4.7706,
-   "IAN": 5.512
+   "MIKE": 2.3495,
+   "GREGORY": 3.1247,
+   "BRETT": 3.5874,
+   "DAVID": 4.0811,
+   "KYLE": 4.7089,
+   "JOHN": 4.6322,
+   "IAN": 5.5168
   }
  },
  {
   "date": "2026-06-16",
   "playedMatches": 17,
   "titleOdds": {
-   "MIKE": 0.337,
-   "GREGORY": 0.2698,
-   "BRETT": 0.1743,
-   "DAVID": 0.0885,
-   "JOHN": 0.0629,
-   "KYLE": 0.0518,
-   "IAN": 0.0158
+   "MIKE": 0.3332,
+   "GREGORY": 0.27,
+   "BRETT": 0.168,
+   "DAVID": 0.0869,
+   "JOHN": 0.0654,
+   "KYLE": 0.0609,
+   "IAN": 0.0156
   },
   "meanPts": {
-   "MIKE": 137.36,
-   "GREGORY": 130.59,
-   "BRETT": 122.11,
-   "DAVID": 112.27,
-   "JOHN": 106.28,
-   "KYLE": 105.12,
-   "IAN": 92.28
+   "MIKE": 137.23,
+   "GREGORY": 130.53,
+   "BRETT": 121.71,
+   "DAVID": 112.52,
+   "JOHN": 106.2,
+   "KYLE": 106.18,
+   "IAN": 92.67
   },
   "avgFinish": {
-   "MIKE": 2.5326,
-   "GREGORY": 2.9762,
-   "BRETT": 3.5101,
-   "DAVID": 4.1663,
-   "JOHN": 4.5677,
-   "KYLE": 4.6991,
-   "IAN": 5.5467
+   "MIKE": 2.5638,
+   "GREGORY": 2.992,
+   "BRETT": 3.5362,
+   "DAVID": 4.1804,
+   "JOHN": 4.5889,
+   "KYLE": 4.6001,
+   "IAN": 5.5379
   }
  },
  {
   "date": "2026-06-17",
   "playedMatches": 22,
   "titleOdds": {
-   "MIKE": 0.4063,
-   "GREGORY": 0.2319,
-   "BRETT": 0.1436,
-   "DAVID": 0.0937,
-   "KYLE": 0.052,
-   "JOHN": 0.0642,
-   "IAN": 0.0083
+   "MIKE": 0.3979,
+   "GREGORY": 0.2377,
+   "BRETT": 0.1396,
+   "DAVID": 0.0961,
+   "KYLE": 0.0566,
+   "JOHN": 0.0638,
+   "IAN": 0.0084
   },
   "meanPts": {
-   "MIKE": 142.58,
-   "GREGORY": 128.76,
-   "BRETT": 119.73,
-   "DAVID": 114.88,
-   "KYLE": 107.64,
-   "JOHN": 107.24,
-   "IAN": 87.22
+   "MIKE": 142.28,
+   "GREGORY": 128.79,
+   "BRETT": 119.48,
+   "DAVID": 115.13,
+   "KYLE": 109.22,
+   "JOHN": 107.33,
+   "IAN": 87.34
   },
   "avgFinish": {
-   "MIKE": 2.2671,
-   "GREGORY": 3.1378,
-   "BRETT": 3.6707,
-   "DAVID": 4.0155,
-   "JOHN": 4.5082,
-   "KYLE": 4.5491,
-   "IAN": 5.8513
+   "MIKE": 2.2932,
+   "GREGORY": 3.1268,
+   "BRETT": 3.7039,
+   "DAVID": 4.0216,
+   "KYLE": 4.4651,
+   "JOHN": 4.5276,
+   "IAN": 5.8614
   }
  },
  {
   "date": "2026-06-18",
   "playedMatches": 26,
   "titleOdds": {
-   "MIKE": 0.4799,
-   "GREGORY": 0.2402,
-   "BRETT": 0.1071,
-   "DAVID": 0.0693,
-   "JOHN": 0.0597,
-   "KYLE": 0.0372,
-   "IAN": 0.0066
+   "MIKE": 0.4706,
+   "GREGORY": 0.242,
+   "BRETT": 0.1057,
+   "DAVID": 0.0659,
+   "JOHN": 0.0615,
+   "KYLE": 0.0471,
+   "IAN": 0.0072
   },
   "meanPts": {
-   "MIKE": 147.61,
-   "GREGORY": 131.58,
-   "BRETT": 116.2,
-   "DAVID": 111.86,
-   "JOHN": 107.16,
-   "KYLE": 104.92,
-   "IAN": 87.24
+   "MIKE": 147.4,
+   "GREGORY": 131.57,
+   "BRETT": 116.37,
+   "DAVID": 111.96,
+   "JOHN": 107.25,
+   "KYLE": 107.09,
+   "IAN": 86.83
   },
   "avgFinish": {
-   "MIKE": 1.9988,
-   "GREGORY": 2.9097,
-   "BRETT": 3.8696,
-   "DAVID": 4.1986,
-   "JOHN": 4.4988,
-   "KYLE": 4.7034,
-   "IAN": 5.8208
+   "MIKE": 2.0113,
+   "GREGORY": 2.9262,
+   "BRETT": 3.9031,
+   "DAVID": 4.2246,
+   "JOHN": 4.5006,
+   "KYLE": 4.5871,
+   "IAN": 5.8498
   }
  },
  {
   "date": "2026-06-19",
   "playedMatches": 29,
   "titleOdds": {
-   "MIKE": 0.6503,
-   "GREGORY": 0.1337,
-   "BRETT": 0.0709,
-   "DAVID": 0.0585,
-   "KYLE": 0.0354,
-   "JOHN": 0.0456,
-   "IAN": 0.0055
+   "MIKE": 0.6492,
+   "GREGORY": 0.13,
+   "BRETT": 0.0725,
+   "DAVID": 0.0553,
+   "KYLE": 0.0411,
+   "JOHN": 0.047,
+   "IAN": 0.0049
   },
   "meanPts": {
-   "MIKE": 158.32,
-   "GREGORY": 124.4,
-   "BRETT": 113.48,
-   "DAVID": 111.68,
-   "KYLE": 108.5,
-   "JOHN": 107.33,
-   "IAN": 87.36
+   "MIKE": 158.5,
+   "GREGORY": 124.47,
+   "BRETT": 113.51,
+   "DAVID": 111.82,
+   "KYLE": 110.17,
+   "JOHN": 107.24,
+   "IAN": 87.75
   },
   "avgFinish": {
-   "MIKE": 1.5449,
-   "GREGORY": 3.3623,
-   "BRETT": 4.0979,
-   "DAVID": 4.2157,
-   "KYLE": 4.4741,
-   "JOHN": 4.4865,
-   "IAN": 5.8194
+   "MIKE": 1.5617,
+   "GREGORY": 3.4127,
+   "BRETT": 4.1151,
+   "DAVID": 4.2481,
+   "KYLE": 4.3428,
+   "JOHN": 4.5169,
+   "IAN": 5.8014
   }
  },
  {
   "date": "2026-06-20",
   "playedMatches": 34,
   "titleOdds": {
-   "MIKE": 0.624,
-   "GREGORY": 0.1426,
-   "BRETT": 0.09,
-   "KYLE": 0.0572,
-   "DAVID": 0.0549,
-   "JOHN": 0.0256,
-   "IAN": 0.0057
+   "MIKE": 0.6191,
+   "GREGORY": 0.1378,
+   "BRETT": 0.0898,
+   "KYLE": 0.07,
+   "DAVID": 0.0534,
+   "JOHN": 0.0244,
+   "IAN": 0.0054
   },
   "meanPts": {
-   "MIKE": 156.12,
-   "GREGORY": 124.66,
-   "BRETT": 117.17,
-   "KYLE": 114.41,
-   "DAVID": 111.7,
-   "JOHN": 100.02,
-   "IAN": 87.12
+   "MIKE": 156.34,
+   "GREGORY": 124.52,
+   "BRETT": 117.27,
+   "KYLE": 116.82,
+   "DAVID": 111.77,
+   "JOHN": 99.89,
+   "IAN": 87.09
   },
   "avgFinish": {
-   "MIKE": 1.5923,
-   "GREGORY": 3.3743,
-   "BRETT": 3.8309,
-   "KYLE": 4.0846,
-   "DAVID": 4.2678,
-   "JOHN": 5.0149,
-   "IAN": 5.8351
+   "MIKE": 1.6273,
+   "GREGORY": 3.395,
+   "BRETT": 3.8822,
+   "KYLE": 3.9164,
+   "DAVID": 4.2788,
+   "JOHN": 5.0353,
+   "IAN": 5.8633
   }
  },
  {
   "date": "2026-06-21",
   "playedMatches": 38,
   "titleOdds": {
-   "MIKE": 0.6421,
-   "GREGORY": 0.1212,
+   "MIKE": 0.64,
+   "GREGORY": 0.1192,
    "BRETT": 0.1081,
-   "DAVID": 0.0554,
-   "KYLE": 0.0356,
-   "JOHN": 0.0312,
-   "IAN": 0.0065
+   "DAVID": 0.053,
+   "KYLE": 0.0425,
+   "JOHN": 0.0301,
+   "IAN": 0.007
   },
   "meanPts": {
-   "MIKE": 156.67,
-   "GREGORY": 121.92,
-   "BRETT": 121.04,
-   "DAVID": 111.82,
-   "KYLE": 108.85,
-   "JOHN": 103.03,
-   "IAN": 88.83
+   "MIKE": 157.09,
+   "GREGORY": 121.67,
+   "BRETT": 121.39,
+   "DAVID": 111.56,
+   "KYLE": 111.49,
+   "JOHN": 102.98,
+   "IAN": 88.71
   },
   "avgFinish": {
-   "MIKE": 1.5648,
-   "GREGORY": 3.5494,
-   "BRETT": 3.5569,
-   "DAVID": 4.2451,
-   "KYLE": 4.4946,
-   "JOHN": 4.8089,
-   "IAN": 5.7807
+   "MIKE": 1.5784,
+   "GREGORY": 3.587,
+   "BRETT": 3.5778,
+   "DAVID": 4.2944,
+   "KYLE": 4.3259,
+   "JOHN": 4.8518,
+   "IAN": 5.7824
   }
  },
  {
   "date": "2026-06-22",
   "playedMatches": 41,
   "titleOdds": {
-   "MIKE": 0.5388,
-   "GREGORY": 0.1514,
-   "BRETT": 0.1368,
-   "DAVID": 0.0769,
-   "KYLE": 0.0526,
-   "JOHN": 0.0372,
-   "IAN": 0.0065
+   "MIKE": 0.5277,
+   "GREGORY": 0.1462,
+   "BRETT": 0.1342,
+   "DAVID": 0.0786,
+   "KYLE": 0.0692,
+   "JOHN": 0.0387,
+   "IAN": 0.0053
   },
   "meanPts": {
-   "MIKE": 149.88,
-   "GREGORY": 122.52,
-   "BRETT": 121.74,
-   "DAVID": 114.64,
-   "KYLE": 111.69,
-   "JOHN": 103.45,
-   "IAN": 87.69
+   "MIKE": 149.73,
+   "GREGORY": 122.48,
+   "BRETT": 121.87,
+   "DAVID": 114.71,
+   "KYLE": 114.58,
+   "JOHN": 103.8,
+   "IAN": 87.38
   },
   "avgFinish": {
-   "MIKE": 1.7985,
-   "GREGORY": 3.5224,
-   "BRETT": 3.5433,
-   "DAVID": 4.0889,
-   "KYLE": 4.3284,
-   "JOHN": 4.8256,
-   "IAN": 5.8941
+   "MIKE": 1.8327,
+   "GREGORY": 3.5615,
+   "BRETT": 3.5901,
+   "DAVID": 4.1125,
+   "KYLE": 4.0934,
+   "JOHN": 4.8634,
+   "IAN": 5.9453
   }
  },
  {
   "date": "2026-06-23",
   "playedMatches": 46,
   "titleOdds": {
-   "MIKE": 0.5867,
-   "GREGORY": 0.1718,
-   "BRETT": 0.122,
-   "DAVID": 0.0506,
-   "KYLE": 0.0269,
-   "JOHN": 0.034,
-   "IAN": 0.008
+   "MIKE": 0.5764,
+   "GREGORY": 0.1701,
+   "BRETT": 0.1244,
+   "DAVID": 0.0524,
+   "KYLE": 0.0374,
+   "JOHN": 0.0316,
+   "IAN": 0.0076
   },
   "meanPts": {
-   "MIKE": 152.99,
-   "GREGORY": 127.42,
-   "BRETT": 121.31,
-   "DAVID": 110.78,
-   "KYLE": 104.74,
-   "JOHN": 103.3,
-   "IAN": 91.41
+   "MIKE": 153.19,
+   "GREGORY": 126.98,
+   "BRETT": 121.65,
+   "DAVID": 110.95,
+   "KYLE": 108.48,
+   "JOHN": 102.98,
+   "IAN": 91.38
   },
   "avgFinish": {
-   "MIKE": 1.6571,
-   "GREGORY": 3.1488,
-   "BRETT": 3.562,
-   "DAVID": 4.3424,
-   "KYLE": 4.8036,
-   "JOHN": 4.8209,
-   "IAN": 5.6647
+   "MIKE": 1.6804,
+   "GREGORY": 3.2352,
+   "BRETT": 3.5796,
+   "DAVID": 4.3687,
+   "KYLE": 4.5459,
+   "JOHN": 4.8937,
+   "IAN": 5.6971
   }
  },
  {
   "date": "2026-06-24",
   "playedMatches": 50,
   "titleOdds": {
-   "MIKE": 0.5867,
-   "GREGORY": 0.1499,
-   "BRETT": 0.1233,
+   "MIKE": 0.5774,
+   "GREGORY": 0.1545,
+   "BRETT": 0.1221,
    "DAVID": 0.0761,
-   "KYLE": 0.0273,
-   "JOHN": 0.0291,
+   "KYLE": 0.0358,
+   "JOHN": 0.0265,
    "IAN": 0.0076
   },
   "meanPts": {
-   "MIKE": 152.47,
-   "GREGORY": 124.88,
-   "BRETT": 121.26,
-   "DAVID": 116.25,
-   "KYLE": 104.77,
-   "JOHN": 100.65,
-   "IAN": 91.39
+   "MIKE": 152.41,
+   "GREGORY": 124.9,
+   "BRETT": 121.27,
+   "DAVID": 116.13,
+   "KYLE": 108.35,
+   "JOHN": 100.9,
+   "IAN": 91.32
   },
   "avgFinish": {
-   "MIKE": 1.6723,
-   "GREGORY": 3.3246,
-   "BRETT": 3.5621,
-   "DAVID": 3.939,
-   "KYLE": 4.8237,
-   "JOHN": 5.0055,
-   "IAN": 5.6754
+   "MIKE": 1.6833,
+   "GREGORY": 3.3551,
+   "BRETT": 3.6059,
+   "DAVID": 3.9991,
+   "KYLE": 4.5875,
+   "JOHN": 5.0518,
+   "IAN": 5.7165
   }
  },
  {
   "date": "2026-06-25",
   "playedMatches": 56,
   "titleOdds": {
-   "MIKE": 0.5516,
-   "KYLE": 0.1357,
-   "BRETT": 0.1189,
-   "DAVID": 0.0851,
-   "GREGORY": 0.0872,
-   "JOHN": 0.0144,
-   "IAN": 0.0072
+   "MIKE": 0.5304,
+   "KYLE": 0.1726,
+   "BRETT": 0.1085,
+   "DAVID": 0.0817,
+   "GREGORY": 0.0835,
+   "JOHN": 0.0159,
+   "IAN": 0.0073
   },
   "meanPts": {
-   "MIKE": 150.82,
-   "KYLE": 125.29,
-   "BRETT": 120.04,
-   "DAVID": 117.67,
-   "GREGORY": 117.18,
-   "JOHN": 94.27,
-   "IAN": 90.86
+   "MIKE": 150.73,
+   "KYLE": 129.5,
+   "BRETT": 119.81,
+   "DAVID": 117.77,
+   "GREGORY": 117.37,
+   "JOHN": 94.45,
+   "IAN": 90.7
   },
   "avgFinish": {
-   "MIKE": 1.7637,
-   "KYLE": 3.3591,
-   "BRETT": 3.7207,
-   "DAVID": 3.9175,
-   "GREGORY": 3.9507,
-   "JOHN": 5.503,
-   "IAN": 5.7845
+   "MIKE": 1.8143,
+   "KYLE": 3.0764,
+   "BRETT": 3.8034,
+   "DAVID": 3.9722,
+   "GREGORY": 3.9875,
+   "JOHN": 5.5417,
+   "IAN": 5.8038
   }
  },
  {
   "date": "2026-06-26",
   "playedMatches": 62,
   "titleOdds": {
-   "MIKE": 0.519,
-   "KYLE": 0.1563,
-   "DAVID": 0.1213,
-   "GREGORY": 0.0809,
-   "BRETT": 0.0896,
-   "JOHN": 0.0207,
-   "IAN": 0.0123
+   "MIKE": 0.4964,
+   "KYLE": 0.2039,
+   "DAVID": 0.1138,
+   "GREGORY": 0.0731,
+   "BRETT": 0.0823,
+   "JOHN": 0.0192,
+   "IAN": 0.0115
   },
   "meanPts": {
-   "MIKE": 148.02,
-   "KYLE": 126.52,
-   "DAVID": 121.52,
-   "GREGORY": 114.64,
-   "BRETT": 113.88,
-   "JOHN": 98.23,
-   "IAN": 93.73
+   "MIKE": 147.8,
+   "KYLE": 131.42,
+   "DAVID": 121.57,
+   "GREGORY": 114.63,
+   "BRETT": 114.39,
+   "JOHN": 97.88,
+   "IAN": 93.56
   },
   "avgFinish": {
-   "MIKE": 1.8548,
-   "KYLE": 3.2563,
-   "DAVID": 3.6062,
-   "GREGORY": 4.1316,
-   "BRETT": 4.2022,
-   "JOHN": 5.3075,
-   "IAN": 5.6418
+   "MIKE": 1.9108,
+   "KYLE": 2.9445,
+   "DAVID": 3.6816,
+   "GREGORY": 4.1921,
+   "BRETT": 4.2111,
+   "JOHN": 5.3743,
+   "IAN": 5.6852
   }
  },
  {
   "date": "2026-06-27",
   "playedMatches": 68,
   "titleOdds": {
-   "MIKE": 0.4596,
-   "DAVID": 0.1946,
-   "KYLE": 0.1475,
-   "BRETT": 0.124,
-   "GREGORY": 0.0461,
-   "JOHN": 0.0192,
-   "IAN": 0.0089
+   "MIKE": 0.4303,
+   "KYLE": 0.2071,
+   "DAVID": 0.1852,
+   "BRETT": 0.1118,
+   "GREGORY": 0.0405,
+   "JOHN": 0.017,
+   "IAN": 0.0081
   },
   "meanPts": {
-   "MIKE": 142.52,
-   "DAVID": 127.42,
-   "KYLE": 124.68,
-   "BRETT": 117.53,
-   "GREGORY": 107.68,
-   "JOHN": 99.29,
-   "IAN": 93.96
+   "MIKE": 142.49,
+   "KYLE": 130.06,
+   "DAVID": 127.39,
+   "BRETT": 117.38,
+   "GREGORY": 107.79,
+   "JOHN": 99.13,
+   "IAN": 94.07
   },
   "avgFinish": {
-   "MIKE": 1.9901,
-   "DAVID": 3.1112,
-   "KYLE": 3.3383,
-   "BRETT": 3.8851,
-   "GREGORY": 4.6879,
-   "JOHN": 5.283,
-   "IAN": 5.7036
+   "MIKE": 2.0602,
+   "KYLE": 2.9331,
+   "DAVID": 3.1875,
+   "BRETT": 3.9795,
+   "GREGORY": 4.7502,
+   "JOHN": 5.3627,
+   "IAN": 5.728
   }
  },
  {
   "date": "2026-06-28",
   "playedMatches": 73,
   "titleOdds": {
-   "MIKE": 0.4733,
-   "DAVID": 0.2649,
-   "KYLE": 0.0454,
-   "BRETT": 0.1204,
-   "GREGORY": 0.0785,
-   "JOHN": 0.0171,
+   "MIKE": 0.4476,
+   "DAVID": 0.2547,
+   "KYLE": 0.0988,
+   "BRETT": 0.1121,
+   "GREGORY": 0.0721,
+   "JOHN": 0.0143,
    "IAN": 0.0003
   },
   "meanPts": {
-   "MIKE": 141.74,
-   "DAVID": 130.66,
-   "KYLE": 122.5,
-   "BRETT": 115.74,
-   "GREGORY": 114.47,
-   "JOHN": 100.14,
-   "IAN": 84.24
+   "MIKE": 141.82,
+   "DAVID": 130.75,
+   "KYLE": 128.22,
+   "BRETT": 115.81,
+   "GREGORY": 114.31,
+   "JOHN": 100.07,
+   "IAN": 84.07
   },
   "avgFinish": {
-   "MIKE": 1.9047,
-   "DAVID": 2.7911,
-   "KYLE": 3.4954,
-   "BRETT": 4.0716,
-   "GREGORY": 4.0706,
-   "JOHN": 5.3462,
-   "IAN": 6.3204
+   "MIKE": 1.9903,
+   "DAVID": 2.8948,
+   "KYLE": 3.045,
+   "BRETT": 4.1494,
+   "GREGORY": 4.1582,
+   "JOHN": 5.4136,
+   "IAN": 6.3476
   }
  },
  {
   "date": "2026-06-29",
   "playedMatches": 75,
   "titleOdds": {
-   "MIKE": 0.4877,
-   "DAVID": 0.2648,
-   "KYLE": 0.0592,
-   "GREGORY": 0.0877,
-   "BRETT": 0.0841,
-   "JOHN": 0.0162,
-   "IAN": 0.0003
+   "MIKE": 0.4512,
+   "DAVID": 0.2575,
+   "KYLE": 0.1157,
+   "GREGORY": 0.0847,
+   "BRETT": 0.0771,
+   "JOHN": 0.0137,
+   "IAN": 0.0001
   },
   "meanPts": {
-   "MIKE": 141.52,
-   "DAVID": 130.35,
-   "KYLE": 123.47,
-   "GREGORY": 118.63,
-   "BRETT": 111.59,
-   "JOHN": 99.56,
-   "IAN": 84.22
+   "MIKE": 141.31,
+   "DAVID": 130.46,
+   "KYLE": 129.1,
+   "GREGORY": 118.58,
+   "BRETT": 111.72,
+   "JOHN": 99.51,
+   "IAN": 84.31
   },
   "avgFinish": {
-   "MIKE": 1.8862,
-   "DAVID": 2.8137,
-   "KYLE": 3.4203,
-   "GREGORY": 3.707,
-   "BRETT": 4.4234,
-   "JOHN": 5.414,
-   "IAN": 6.3348
+   "MIKE": 1.9886,
+   "DAVID": 2.9065,
+   "KYLE": 2.9754,
+   "GREGORY": 3.8061,
+   "BRETT": 4.4968,
+   "JOHN": 5.4735,
+   "IAN": 6.3514
   }
  },
  {
   "date": "2026-06-30",
   "playedMatches": 77,
   "titleOdds": {
-   "MIKE": 0.5059,
-   "DAVID": 0.3291,
-   "KYLE": 0.0876,
-   "GREGORY": 0.0714,
-   "BRETT": 0.0052,
-   "IAN": 0.0001,
-   "JOHN": 0.0008
+   "MIKE": 0.4697,
+   "DAVID": 0.2992,
+   "KYLE": 0.1561,
+   "GREGORY": 0.0693,
+   "BRETT": 0.0053,
+   "IAN": 0,
+   "JOHN": 0.0004
   },
   "meanPts": {
-   "MIKE": 145.37,
-   "DAVID": 137.17,
-   "KYLE": 129.78,
-   "GREGORY": 118.24,
-   "BRETT": 99.99,
-   "IAN": 89.5,
-   "JOHN": 89.27
+   "MIKE": 145.38,
+   "DAVID": 136.93,
+   "KYLE": 135.53,
+   "GREGORY": 118.44,
+   "BRETT": 100.05,
+   "IAN": 89.64,
+   "JOHN": 89.26
   },
   "avgFinish": {
-   "MIKE": 1.758,
-   "DAVID": 2.3023,
-   "KYLE": 2.943,
-   "GREGORY": 3.6662,
-   "BRETT": 5.339,
-   "IAN": 6.0059,
-   "JOHN": 5.9847
+   "MIKE": 1.8592,
+   "DAVID": 2.4269,
+   "KYLE": 2.5775,
+   "GREGORY": 3.7591,
+   "BRETT": 5.3612,
+   "IAN": 6.0119,
+   "JOHN": 6.0071
   }
  }
 ];

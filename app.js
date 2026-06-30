@@ -166,6 +166,18 @@
         table[idx.manager].points += res.total; table[idx.manager].played += 1;
       }
     }
+    // Kyle's compensation for an unrelated draft issue: 7 × the league-wide
+    // average points-per-dollar — every drafted team's fantasy points so far
+    // divided by every auction dollar spent. Recomputed live, so it grows as
+    // results come in. See the note on the Standings tab.
+    const PR = window.PRICES || {};
+    let totPts = 0, totPrice = 0;
+    for (const s of Object.values(table)) {
+      for (const row of s.teams) { totPts += row.points; totPrice += PR[row.team] || 0; }
+    }
+    const draftBonus = totPrice > 0 ? 7 * (totPts / totPrice) : 0;
+    if (table.KYLE) { table.KYLE.draftBonus = draftBonus; table.KYLE.points += draftBonus; }
+
     const standings = Object.values(table);
     standings.forEach((s) => s.teams.sort((a, b) => b.points - a.points || a.team.localeCompare(b.team)));
     standings.sort((a, b) => b.points - a.points || a.manager.localeCompare(b.manager));
@@ -201,6 +213,8 @@
       : "No results yet — the tournament kicks off June 11. Standings will fill in automatically.";
     root.appendChild(intro);
 
+    const fmtPts = (p) => (Number.isInteger(p) ? String(p) : p.toFixed(1)); // bonus is fractional
+
     standings.forEach((s, rank) => {
       const card = el("div", "standing-card");
       const head = el("button", "standing-head");
@@ -209,7 +223,7 @@
         <span class="rank">${rank + 1}</span>
         <span class="name">${esc(s.manager)}</span>
         <span class="sub muted">${s.teams.length} teams · ${s.played} GP</span>
-        <span class="pts">${s.points}<small>pts</small></span>
+        <span class="pts">${fmtPts(s.points)}<small>pts</small></span>
         <span class="chev">▾</span>`;
       const body = el("div", "standing-body");
       const tbl = el("table", "mini");
@@ -221,6 +235,11 @@
         tr.innerHTML = `<td>${nm}</td><td class="num">${t.played}</td><td class="num">${t.points}</td>`;
         tb.appendChild(tr);
       });
+      if (s.draftBonus) {
+        const tr = el("tr", "draft-bonus-row");
+        tr.innerHTML = `<td>Kyle's extra points from draft mistake</td><td class="num">—</td><td class="num">+${s.draftBonus.toFixed(1)}</td>`;
+        tb.appendChild(tr);
+      }
       tbl.appendChild(tb); body.appendChild(tbl);
       head.addEventListener("click", () => {
         const open = card.classList.toggle("open");
@@ -228,6 +247,14 @@
       });
       card.appendChild(head); card.appendChild(body); root.appendChild(card);
     });
+
+    const kyle = standings.find((s) => s.draftBonus);
+    if (kyle) {
+      root.appendChild(el("p", "muted draft-bonus-note",
+        `* Kyle's extra points from draft mistake: <b>+${kyle.draftBonus.toFixed(1)}</b>, added to his total. ` +
+        `It's 7 × the league-wide average points per dollar (every drafted team's points so far ÷ every auction dollar spent), ` +
+        `recalculated each day as results come in.`));
+    }
     return root;
   }
 
