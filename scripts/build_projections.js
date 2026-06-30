@@ -211,7 +211,7 @@ function simulate(allMatches, N) {
         totPts += scoreGroup(a, b) + scoreGroup(b, a);
       }
     }
-    return 7 * (totPts / totPrice);
+    return Math.round(7 * (totPts / totPrice));
   })();
 
   // The real groups fall out of the fixture list: each team's 3 distinct group
@@ -518,7 +518,7 @@ if (require.main === module) {
   noteParts.push(FIXED_GROUPS
     ? "Groups are the real draw; once the Round of 32 is set the knockout follows FIFA's fixed bracket (played games locked, the rest simulated) — random pairing only before the bracket exists."
     : "Group draw uses balanced pots; knockout bracket is random pairing.");
-  noteParts.push("Kyle's total includes his extra points from a draft mistake (7 × the league-wide average points per dollar so far), recalculated each day.");
+  noteParts.push("Kyle's total includes his extra points from a draft mistake (7 × the league-wide average points per dollar so far, rounded to a whole number), recalculated each day.");
 
   const out = {
     meta: {

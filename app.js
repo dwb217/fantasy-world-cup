@@ -175,7 +175,7 @@
     for (const s of Object.values(table)) {
       for (const row of s.teams) { totPts += row.points; totPrice += PR[row.team] || 0; }
     }
-    const draftBonus = totPrice > 0 ? 7 * (totPts / totPrice) : 0;
+    const draftBonus = totPrice > 0 ? Math.round(7 * (totPts / totPrice)) : 0;
     if (table.KYLE) { table.KYLE.draftBonus = draftBonus; table.KYLE.points += draftBonus; }
 
     const standings = Object.values(table);
@@ -295,7 +295,7 @@
       });
       if (s.draftBonus) {
         const tr = el("tr", "draft-bonus-row");
-        tr.innerHTML = `<td>Kyle's extra points from draft mistake</td><td class="num">—</td><td class="num">+${s.draftBonus.toFixed(1)}</td>`;
+        tr.innerHTML = `<td>Kyle's extra points from draft mistake</td><td class="num">—</td><td class="num">+${s.draftBonus}</td>`;
         tb.appendChild(tr);
       }
       tbl.appendChild(tb); body.appendChild(tbl);
@@ -309,9 +309,9 @@
     const kyle = standings.find((s) => s.draftBonus);
     if (kyle) {
       root.appendChild(el("p", "muted draft-bonus-note",
-        `* Kyle's extra points from draft mistake: <b>+${kyle.draftBonus.toFixed(1)}</b>, added to his total. ` +
+        `* Kyle's extra points from draft mistake: <b>+${kyle.draftBonus}</b>, added to his total. ` +
         `It's 7 × the league-wide average points per dollar (every drafted team's points so far ÷ every auction dollar spent), ` +
-        `recalculated each day as results come in.`));
+        `rounded to a whole number and recalculated each day as results come in.`));
     }
     return root;
   }
