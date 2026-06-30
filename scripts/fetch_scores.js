@@ -190,7 +190,17 @@ async function main() {
         match.penalties = true;
       }
 
-      // A level knockout match needs a shootout winner we can't get from the API.
+      // Shootout winner: TheSportsDB reports the penalty tally in
+      // intHome/AwayScoreExtra (status "AP"). Derive the advancing team from it
+      // unless a manual override already named one.
+      if (hasResult && match.stage === "knockout" && match.scoreA === match.scoreB && !match.shootoutWinner) {
+        const pa = Number(ev.intHomeScoreExtra), pb = Number(ev.intAwayScoreExtra);
+        if (Number.isFinite(pa) && Number.isFinite(pb) && pa !== pb) {
+          match.shootoutWinner = pa > pb ? teamA : teamB;
+        }
+      }
+
+      // Still no shootout winner for a level knockout match → flag it for a hand entry.
       if (hasResult && match.stage === "knockout" && match.scoreA === match.scoreB && !match.shootoutWinner) {
         warnings.needsReview.push({
           eventId: match.eventId,
