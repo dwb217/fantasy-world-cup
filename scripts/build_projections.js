@@ -42,41 +42,23 @@ const ROOT = path.resolve(__dirname, "..");
 const window = {};
 eval(fs.readFileSync(path.join(ROOT, "data/draft.js"), "utf8"));   // window.DRAFT
 eval(fs.readFileSync(path.join(ROOT, "data/matches.js"), "utf8")); // window.MATCHES
+eval(fs.readFileSync(path.join(ROOT, "data/ratings.js"), "utf8")); // window.RATINGS
 const DRAFT = window.DRAFT;
 const ALL_MATCHES = window.MATCHES || [];
 
-/* ---- team strength (Elo-ish, ~2026 form). Tweak these. ---- */
-const RATING = {
-  France:2080, Spain:2075, Argentina:2065, Brazil:2050, England:2045,
-  Portugal:2010, Netherlands:2000, Germany:1990, Belgium:1955, Croatia:1930,
-  Uruguay:1930, Morocco:1925, Colombia:1910, Japan:1875, Switzerland:1865,
-  USA:1860, Senegal:1855, Mexico:1840, Ecuador:1830, Turkey:1830,
-  Austria:1820, Norway:1820, "South Korea":1810, Iran:1800, Egypt:1790,
-  Sweden:1790, "Ivory Coast":1790, Algeria:1780, Canada:1770, Czechia:1760,
-  Australia:1750, Paraguay:1750, Ghana:1740, Scotland:1740, "Bosnia & Herz":1740,
-  "DR Congo":1730, Tunisia:1720, "South Africa":1710, Panama:1700, Qatar:1700,
-  "Saudi Arabia":1700, Uzbekistan:1690, Iraq:1660, Jordan:1650, "Cape Verde":1630,
-  "New Zealand":1620, Curacao:1580, Haiti:1560,
-};
-
-// Floor calibration: push the genuine minnows down toward realistic Elo so the
-// weakest teams don't bank ~6 pts from upset wins they'd almost never get.
-const DROP = {
-  Haiti:-110, Curacao:-110, "New Zealand":-80, "Cape Verde":-70, Jordan:-60,
-  Iraq:-50, Uzbekistan:-40, "Saudi Arabia":-30, Qatar:-30, Panama:-30,
-};
+/* ---- team strength: shared model from data/ratings.js (window.RATINGS), the
+   single source of truth the What-If tab (app.js) reads too. Tweak it there. ----
+   Note a known tension: the high K that keeps minnows realistic (few upset wins)
+   also pushes the group draw rate a bit low (~20% vs a real ~25–30%), since
+   pure-strength pots manufacture lopsided games. We favor realistic minnows over
+   realistic draws; one global K can't do both. The projected standings ORDER is
+   stable across MU, so MU only nudges absolute point totals, not the ranking. */
+const RATING = Object.assign({}, window.RATINGS.base);
+const DROP = window.RATINGS.drop;
 for (const t in DROP) RATING[t] += DROP[t];
-
-// MU sets goals/game (~2.8 at 1.2, matching real WC ~2.5–2.9). K sets how
-// strongly the rating gap skews results. Note a known tension: the high K that
-// keeps minnows realistic (few upset wins) also pushes the group draw rate a bit
-// low (~20% vs a real ~25–30%), since pure-strength pots manufacture lopsided
-// games. We favor realistic minnows over realistic draws; one global K can't do
-// both. The projected standings ORDER is stable across MU, so this only nudges
-// absolute point totals, not the ranking.
-const MU = 1.2;    // baseline goals per team per game
-const K  = 0.9;    // rating sensitivity (higher = fewer upsets, wider spread)
-const ET = 0.33;   // extra-time goal-rate multiplier
+const MU = window.RATINGS.MU;   // baseline goals per team per game
+const K  = window.RATINGS.K;    // rating sensitivity (higher = fewer upsets, wider spread)
+const ET = window.RATINGS.ET;   // extra-time goal-rate multiplier
 
 const TEAMS = [].concat(...Object.values(DRAFT));
 const owner = {};
