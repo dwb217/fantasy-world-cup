@@ -2044,8 +2044,8 @@
     value:     { label: "Draft Value", render: renderValue },
     results:   { label: "Results", render: renderResults },
     points:    { label: "Game Points", render: renderGamePoints },
-    data:      { label: "Data", render: renderData },
     commentary:{ label: "Commentary", render: renderCommentary },
+    data:      { label: "Data", render: renderData },
     rules:     { label: "Rules", render: renderRules },
   };
   function showTab(key) {
