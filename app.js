@@ -117,7 +117,7 @@
     const knockout = m.stage === "knockout";
 
     const items = [];
-    const add = (rule) => items.push({ label: RULES[rule].label, points: RULES[rule].points });
+    const add = (rule) => items.push({ key: rule, label: RULES[rule].label, points: RULES[rule].points });
 
     let isWin, isDraw;
     if (gf > ga) { isWin = true; isDraw = false; }
@@ -200,6 +200,64 @@
     return dt.toLocaleDateString(undefined, { month: "short", day: "numeric" });
   };
 
+  // CSV helpers: quote fields containing comma/quote/newline per RFC 4180.
+  const csvCell = (v) => {
+    const s = v == null ? "" : String(v);
+    return /[",\n]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s;
+  };
+  const toCSV = (headers, rows) =>
+    [headers, ...rows].map((r) => r.map(csvCell).join(",")).join("\r\n");
+  function downloadCSV(filename, csv) {
+    const blob = new Blob(["﻿" + csv], { type: "text/csv;charset=utf-8;" });
+    const url = URL.createObjectURL(blob);
+    const a = el("a");
+    a.href = url; a.download = filename;
+    document.body.appendChild(a); a.click(); a.remove();
+    setTimeout(() => URL.revokeObjectURL(url), 1000);
+  }
+  function downloadButton(label, filename, build) {
+    const btn = el("button", "btn csv-btn", label);
+    btn.addEventListener("click", () => downloadCSV(filename, build()));
+    return btn;
+  }
+
+  // The scoring categories, in display order — shared by the per-game CSV columns.
+  const RULE_KEYS = ["win", "draw", "cleanSheet", "twoGoals", "fourGoals", "winByTwo", "extraTime", "penalties"];
+
+  // One row per (played game, owned team) with the full points breakdown — the
+  // granular data behind every total, so anyone can re-check the scoring.
+  function gameScoringRows() {
+    const headers = ["date", "stage", "round", "home", "away", "homeScore", "awayScore",
+      "extraTime", "penalties", "advanced", "team", "owner", "goalsFor", "goalsAgainst", "result",
+      ...RULE_KEYS, "total"];
+    const rows = [];
+    const played = MATCHES.filter(hasResult).slice().sort((a, b) =>
+      String(a.date).localeCompare(String(b.date)) || (a.round || 0) - (b.round || 0) || (a.id || 0) - (b.id || 0));
+    for (const m of played) {
+      const ko = m.stage === "knockout";
+      const adv = ko ? koAdvancer(m) : "";
+      for (const team of [m.teamA, m.teamB]) {
+        if (!TEAM_OWNER[team]) continue; // only owned teams score
+        const isA = m.teamA === team;
+        const gf = isA ? Number(m.scoreA) : Number(m.scoreB);
+        const ga = isA ? Number(m.scoreB) : Number(m.scoreA);
+        const res = scoreTeamInMatch(team, m);
+        const byKey = {}; res.items.forEach((i) => (byKey[i.key] = i.points));
+        const result = gf > ga ? "W" : gf < ga ? "L" : ko ? (adv === team ? "W(adv)" : "L(adv)") : "D";
+        rows.push([
+          m.date, m.stage, m.roundLabel || (ko ? "Knockout" : "Group"),
+          m.teamA, m.teamB, m.scoreA, m.scoreB,
+          ko ? (m.extraTime || gf === ga ? "yes" : "no") : "",
+          ko ? (m.penalties || gf === ga ? "yes" : "no") : "",
+          ko ? (adv || "") : "",
+          team, TEAM_OWNER[team], gf, ga, result,
+          ...RULE_KEYS.map((k) => byKey[k] || 0), res.total,
+        ]);
+      }
+    }
+    return toCSV(headers, rows);
+  }
+
   /* ---------- standings ---------- */
 
   function renderStandings() {
@@ -275,6 +333,18 @@
   }
 
   let teamsSort = { key: "pts", dir: -1 }; // persists across re-renders; dir 1=asc, -1=desc
+
+  // One row per team: owner, group, price, games played, total points, status.
+  function teamTotalsRows(pts, gp) {
+    const PR = window.PRICES || {};
+    const elim = eliminatedTeams();
+    const headers = ["team", "owner", "group", "price", "gamesPlayed", "points", "eliminated"];
+    const rows = ALL_TEAMS.slice()
+      .sort((a, b) => pts[b] - pts[a] || a.localeCompare(b))
+      .map((t) => [t, TEAM_OWNER[t] || "", WC_GROUP[t] || "", PR[t] != null ? PR[t] : "",
+        gp[t], pts[t], elim.has(t) ? "yes" : "no"]);
+    return toCSV(headers, rows);
+  }
 
   function renderTeams() {
     const root = el("div");
@@ -677,6 +747,48 @@
     const sorted = played.slice().sort((a, b) =>
       String(b.date).localeCompare(String(a.date)) || (b.round || 0) - (a.round || 0) || (b.id || 0) - (a.id || 0));
     sorted.forEach((m) => root.appendChild(gamePointsCard(m)));
+    return root;
+  }
+
+  /* ---------- data export (CSV) ---------- */
+
+  // One row per manager: team points, Kyle's draft bonus, and grand total.
+  function managerStandingsRows() {
+    const headers = ["rank", "manager", "gamesPlayed", "teamPoints", "draftBonus", "total"];
+    const rows = computeStandings().map((s, i) => {
+      const bonus = s.draftBonus || 0;
+      return [i + 1, s.manager, s.played, +(s.points - bonus).toFixed(2),
+        +bonus.toFixed(2), +s.points.toFixed(2)];
+    });
+    return toCSV(headers, rows);
+  }
+
+  function renderData() {
+    const root = el("div");
+    root.appendChild(el("p", "muted",
+      "Download the raw scoring data as CSV and check the numbers yourself. Game scoring has one row per owned team per played game, with every bonus that applied; the others aggregate it. Files reflect the results entered so far and update as games are played."));
+    const { pts, gp } = teamActuals();
+    const grid = el("div", "data-grid");
+    const card = (title, desc, filename, build) => {
+      const c = el("div", "data-card");
+      c.appendChild(el("h3", "proj-h", title));
+      c.appendChild(el("p", "muted", desc));
+      c.appendChild(downloadButton("⬇ Download CSV", filename, build));
+      return c;
+    };
+    grid.appendChild(card("Game scoring",
+      "Every played game, per owned team, with the full breakdown (win, clean sheet, 2+/4+ goals, won by 2, extra time, penalties) and total.",
+      "fwc-game-scoring.csv", gameScoringRows));
+    grid.appendChild(card("Team totals",
+      "Each team's owner, group, auction price, games played, total points, and elimination status.",
+      "fwc-team-totals.csv", () => teamTotalsRows(pts, gp)));
+    grid.appendChild(card("Manager standings",
+      "Each manager's team points, Kyle's draft-mistake bonus, and grand total — the current standings.",
+      "fwc-standings.csv", managerStandingsRows));
+    root.appendChild(grid);
+    if (!MATCHES.some(hasResult)) {
+      root.appendChild(el("p", "muted", "No games have been played yet, so the game-scoring file will be empty until results come in."));
+    }
     return root;
   }
 
@@ -1930,6 +2042,7 @@
     value:     { label: "Draft Value", render: renderValue },
     results:   { label: "Results", render: renderResults },
     points:    { label: "Game Points", render: renderGamePoints },
+    data:      { label: "Data", render: renderData },
     commentary:{ label: "Commentary", render: renderCommentary },
     rules:     { label: "Rules", render: renderRules },
   };
