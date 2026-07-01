@@ -1172,6 +1172,9 @@
     // manager draft efficiency
     const spent = {}, mgrProj = {};
     rows.forEach((r) => (spent[r.owner] = (spent[r.owner] || 0) + r.price));
+    // Kyle only bid $93 of his $100 budget in the draft; treat his draft spend
+    // as the full $100 so his points-per-dollar isn't flattered by the shortfall.
+    if (spent.KYLE != null) spent.KYLE = 100;
     (P.managers || []).forEach((m) => (mgrProj[m.name] = m.mean));
     const mgrs = Object.keys(DRAFT)
       .map((m) => ({
