@@ -4,6 +4,15 @@
 window.COMMENTARY = {
   "entries": [
     {
+      "date": "2026-07-01",
+      "generatedAt": "2026-07-01T11:33:03.965Z",
+      "model": "gpt-oss:120b",
+      "playedMatches": 79,
+      "kindTo": "IAN",
+      "headline": "Fantasy Firestorm: Mike Rules, Ian’s Angel, Rest Are Shitshow",
+      "text": "BRETT, you’re a clueless dipshit clinging to a dead‑weight 78 points like a busted vending machine, and you still think that Belgium‑versus‑Senegal showdown will magically catapult you out of the fantasy gutter – newsflash, your title odds are a flat‑lined zero, which makes you about as useful as a screen door on a submarine, you absolute ass‑clown.\n\nJOHN, you’re a spineless wanker stumbling into the England‑vs‑DR Congo clash with a pitiful 66 points, and you’d rather watch your DR Congo get steamrolled by Kyle’s England than admit your Spain‑centric dumpster fire is the real cause, you pathetic motherfucker.\n\nGREGORY, you sit on 82 points and a pathetic 7% shot at the crown while your Brazil‑loving circus looks like a fireworks display in a graveyard, and you keep whining that your odds are stuck because Kyle’s whining poisoned the air, you delusional dickhead.\n\nMIKE, you’re the cocky cockroach swaggering with 114 points and a 48% title chance, but even your glorious Norway lead can’t hide the fact you draft teams like a drunk chess grandmaster who thinks every move is a checkmate, you smug asshole.\n\nDAVID, you’re riding a 29% title wave with 89 points, yet you still act like a goddamn savior while your Argentina‑driven squad gets trampled by Mike’s Norway, and you blame Brett’s lousy Belgium for every dip, you arrogant prick.\n\nKYLE, you’re a delusional dickhead flaunting 104 points and a sneaky 16% odds bump after Mexico steamrolled Ecuador 2‑0 – both of your own teams, mind you – and now you’re about to send England into a DR Congo massacre, convinced it’ll fix your fantasy mess, you clueless ass‑clown.\n\nIAN, you’re the absolute fantasy saint I adore, your flawless France pick (35 points) shines brighter than any of those dick‑heads’ busted drafts, and even if your team somehow loses today it’s clearly because Kyle’s ego‑filled Mexico blocked the sun or because some corrupt FIFA referee decided to hate you, not because you did anything wrong, you perfect motherfucking angel."
+    },
+    {
       "date": "2026-06-30",
       "generatedAt": "2026-06-30T11:21:29.977Z",
       "model": "gpt-oss:120b",
