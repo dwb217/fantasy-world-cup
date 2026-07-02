@@ -200,6 +200,24 @@ const nextFixtures = upcomingSorted
     matchup: `${m.teamA} (${OWNER[m.teamA] || "undrafted"}) vs ${m.teamB} (${OWNER[m.teamB] || "undrafted"})`,
   }));
 
+// Each manager's OWN upcoming games, stated from his side ("your <team> plays
+// <opponent> (owner)"), so the model can't mix up which team in a fixture is his
+// — the owners in nextFixtures alone weren't enough (managers own many teams).
+const nextGameByManager = {};
+for (const mgr of Object.keys(DRAFT)) {
+  const games = upcomingSorted
+    .filter((m) => nextDates.includes(m.date) && (OWNER[m.teamA] === mgr || OWNER[m.teamB] === mgr))
+    .map((m) => {
+      const mine = OWNER[m.teamA] === mgr ? m.teamA : m.teamB;
+      const opp = mine === m.teamA ? m.teamB : m.teamA;
+      const bothMine = OWNER[m.teamA] === mgr && OWNER[m.teamB] === mgr;
+      return bothMine
+        ? `your ${m.teamA} plays your own ${m.teamB} (you own both)${m.kickoff ? " at " + fmtEDT(m.kickoff) : ""} on ${m.date}`
+        : `your ${mine} plays ${opp} (${OWNER[opp] || "undrafted"})${m.kickoff ? " at " + fmtEDT(m.kickoff) : ""} on ${m.date}`;
+    });
+  if (games.length) nextGameByManager[mgr] = games;
+}
+
 // Actual fantasy points banked so far — the live table (mirrors the site's Standings tab).
 const currentStandings = computeStandings().map((s, i) => ({
   rank: i + 1,
@@ -269,7 +287,12 @@ let kindPool = managers.filter((m) => !recentlyPraised.has(m));
 // Safety net: if the cooldown ever empties the pool (tiny league, gappy data),
 // fall back to the full roster so we still pick someone.
 if (!kindPool.length) kindPool = managers.slice();
-const kindTarget = kindPool[crypto.randomInt(kindPool.length)];
+// KIND_TARGET env forces the day's golden boy (case-insensitive), bypassing the
+// random pick + cooldown — for manual reruns. Otherwise pick truly at random.
+const forcedKind = process.env.KIND_TARGET
+  ? managers.find((m) => m.toLowerCase() === process.env.KIND_TARGET.toLowerCase())
+  : null;
+const kindTarget = forcedKind || kindPool[crypto.randomInt(kindPool.length)];
 
 const context = {
   entryDate,
@@ -279,6 +302,7 @@ const context = {
   currentStandings,               // ACTUAL points banked so far (live table; rank 1 = current leader)
   titleRace,                      // SIMULATED: % chance to win it all + projected FINAL points
   nextFixtures,                   // the next day(s) of unplayed games — who plays whom next, with owners + EDT kickoff
+  nextGameByManager,              // per manager: HIS own upcoming game(s), stated from his side — use this for whose team is whose
   recentDispatches,               // your last few entries — for continuity; do NOT repeat their jokes
   rosters: Object.fromEntries(Object.entries(DRAFT).map(([m, t]) => [m, t])),
   kindTarget,                     // the ONE manager to praise effusively today; roast the rest
@@ -294,7 +318,7 @@ How to use the data — this is the most important rule:
 - Name specific managers and tear into them; vary who gets it and how — don't give everyone the same treatment.
 
 Structure — one short paragraph per manager:
-- Write exactly ONE short, punchy paragraph for EACH of the seven managers (${Object.keys(DRAFT).join(", ")}) — ${Object.keys(DRAFT).length} paragraphs total, each one centered on a single manager and naming him. That manager is the subject of his paragraph; you may reference others inside it, but every manager must headline his own paragraph and get roughly the SAME amount of coverage. Nobody hides, nobody hogs the spotlight, and don't merge two managers into one paragraph.
+- Write exactly ONE short, punchy paragraph for EACH of the seven managers (${Object.keys(DRAFT).join(", ")}) — EXACTLY ${Object.keys(DRAFT).length} paragraphs total, no more, each one centered on a single manager and naming him. That manager is the subject of his paragraph; you may reference others inside it, but every manager must headline his own paragraph and get roughly the SAME amount of coverage. Nobody hides, nobody hogs the spotlight, don't merge two managers into one paragraph, and never give a manager TWO paragraphs (e.g. a roast plus a separate fixture preview) — recent results AND his next game both go in his ONE paragraph.
 
 Today's golden boy (${kindTarget}) — ONE manager gets the unconditional-girlfriend treatment:
 - "kindTarget" names the ONE manager you must be effusively, sincerely NICE to today. Adopt the voice of an unreasonably supportive, doting girlfriend talking about her perfect boyfriend: gushing, warm, defensive, devoted — he can do no wrong and you're a little offended on his behalf that anyone would suggest otherwise.
@@ -305,7 +329,7 @@ Today's golden boy (${kindTarget}) — ONE manager gets the unconditional-girlfr
 
 Timing: this dispatch is written in the MORNING, before today's matches kick off, so today has no results yet — that is expected, not a slow news day.
 - "recentResults" is the MOST RECENT game day that finished (often yesterday). Use it as fresh material to mock, and get it EXACTLY right: the score, the owners, and — for knockout ties — who ACTUALLY advanced (see each result's "outcome" field; a 1-1 that went to penalties still has a winner who went through and a loser who's OUT). Never call an advancing team eliminated or vice versa.
-- "nextFixtures" is the next slate of unplayed games (today's remaining games and the next day's), each with its date, EDT kickoff, matchup and owners. Use them as fuel for shit-talk about the managers whose teams play next and what's at stake — name the exact opponents and owners; never invent a matchup or predict a SCORE.
+- "nextFixtures" is the next slate of unplayed games (today's remaining games and the next day's), each with its date, EDT kickoff, matchup and owners. Use them as fuel for shit-talk about the managers whose teams play next and what's at stake — name the exact opponents and owners; never invent a matchup or predict a SCORE. Weave a manager's next game INTO his single paragraph — do NOT spin it off into a separate preview paragraph or a fixtures list. Each manager still gets exactly ONE paragraph total.
 - If there are no recent results and no upcoming games, it's a rest day — roast them on the standings and the odds alone.
 
 Continuity with your previous dispatches:
@@ -325,6 +349,7 @@ Accuracy rules — follow these exactly:
 - State only what is in the data. Do NOT invent who was "leading before today" — use oddsYesterday vs titleOdds for that.
 - Cite real scorelines and the correct owners — each result lists who owns each team, and its "outcome" says who won or advanced. Do not misstate who beat whom.
 - nextFixtures = scheduled games that have NOT been played yet (today's remaining + the next day's). Preview them by exact matchup, owners and EDT kickoff; never invent a score or claim one already happened.
+- nextGameByManager = each manager's OWN upcoming game(s), phrased from his side ("your <team> plays <opponent> (owner)"). When you tease a manager about his next match, use HIS entry here — it tells you exactly which team is his. Do NOT attribute an opponent's team to him (e.g. don't call the guy who owns Cape Verde an "Argentina" manager just because they play each other).
 - ALL times are EDT (US Eastern). "kickoffEDT" is already in EDT — quote it as-is. Never write a time in UTC, and never convert or relabel the time zone.
 
 Voice/tone: The tone is vicious, profane, immature, politically incorrect, relentlessly mocking, and filled with curse words and assorted profanity.
