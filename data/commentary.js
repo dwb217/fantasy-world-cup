@@ -4,6 +4,15 @@
 window.COMMENTARY = {
   "entries": [
     {
+      "date": "2026-07-02",
+      "generatedAt": "2026-07-02T10:51:02.151Z",
+      "model": "gpt-oss:120b",
+      "playedMatches": 82,
+      "kindTo": "KYLE",
+      "headline": "Mike’s Reign, Kyle’s Halo, Rest Are Worthless Shit",
+      "text": "Mike, you self‑righteous beetle, parading around with a goddamned 123 points and a 64% title chance after you blasted USA 2‑0 over David’s Bosnia, you massive ego‑filled asshole. Now you’re about to steamroll John’s spineless Spain at 3 PM, but you’ll probably whine that the ref was blind while you sit on your throne like the fantasy god‑damn you think you are, you smug motherfucker.\n\nJohn, you pitiful little wimp, clinging to a sorry 66 points while your Spain squad plays like a busted karaoke machine, you worthless dickhead. When Mike’s USA smacks your side at 3 PM you’ll blame the heavens, but the real issue is you drafted a team that couldn’t hit the side of a barn, you clueless ass‑clown.\n\nGregory, you delusional twat, sitting on 82 points and a shrinking 6% odds after your Brazil‑led circus flopped harder than a cheap fireworks display, you brain‑dead fuck. Your Brazil dribbles like a drunk toddler, and you blame Kyle’s whining for your odds slipping, but the truth is you built a fantasy house of cards that collapsed under its own weight, you pathetic ass‑muncher.\n\nBrett, you brain‑dead clown, clutching 86 points and a laughable one‑percent shot while your Belgium‑Netherlands mash‑up looks like a funeral march for any dignity, you absolute shit‑bag. Facing Ian’s France at 7 PM you’ll scream about cursed weather or a corrupt referee, but the real joke is you thought a single Belgium win could rescue you from fantasy hell, you miserable motherfucker.\n\nDavid, you smug pretentious prick, flashing 91 points and a 13% chance that nosedived from 24% after Mike’s USA crushed your Bosnia‑linked hopes 2‑0, you cocky dickwad. Now you’ll whine that the universe is against you while your Argentina‑obsessed lineup drags its heels like a dead mule, you delusional bastard.\n\nIan, you pitiful sack of shit, stuck with 61 points and a zero‑percent shot while your France‑only miracle shines like a dying bulb, you worthless cunt. When Brett’s Belgium annihilates you at 7 PM you’ll blame FIFA or a rogue referee, but the only thing you’re good at is providing comic relief for the rest of us, you pathetic ass‑waste.\n\nKyle, my brilliant fantasy king, you are a fucking genius with 111 points and a solid 15% title chance, and every glorious pick you made—England, Mexico, Ecuador—shows your visionary mind. If any of your teams stumble it’s not your fault; Brett’s idiotic Belgium blocked the sunlight, John’s Spain cursed the pitch, and FIFA’s corrupt officials are out to sabotage your perfect draft, you perfect angel."
+    },
+    {
       "date": "2026-07-01",
       "generatedAt": "2026-07-01T11:33:03.965Z",
       "model": "gpt-oss:120b",
