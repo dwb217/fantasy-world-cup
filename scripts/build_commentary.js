@@ -43,11 +43,13 @@ require(path.join(ROOT, "data/draft.js"));
 require(path.join(ROOT, "data/matches.js"));
 require(path.join(ROOT, "data/odds_history.js"));
 require(path.join(ROOT, "data/rules.js"));
+require(path.join(ROOT, "data/prices.js"));
 
 const DRAFT = global.window.DRAFT || {};
 const MATCHES = global.window.MATCHES || [];
 const ODDS_HISTORY = global.window.ODDS_HISTORY || [];
 const RULES = global.window.RULES || {};
+const PRICES = global.window.PRICES || {};
 
 const OWNER = {};
 for (const mgr of Object.keys(DRAFT)) for (const t of DRAFT[mgr]) OWNER[t] = mgr;
@@ -57,6 +59,24 @@ for (const mgr of Object.keys(DRAFT)) for (const t of DRAFT[mgr]) OWNER[t] = mgr
 function hasResult(m) {
   return Number.isFinite(Number(m.scoreA)) && m.scoreA !== null && m.scoreA !== "" &&
          Number.isFinite(Number(m.scoreB)) && m.scoreB !== null && m.scoreB !== "";
+}
+// Who advanced from a knockout tie (mirrors app.js): recorded shootout winner,
+// else the higher score, else — for a level tie with no winner recorded — the
+// team that turns up in the next round's draw.
+const KO_ROUNDS = ["Round of 32", "Round of 16", "Quarter-Final", "Semi-Final", "Final"];
+function koAdvancer(m) {
+  if (m.shootoutWinner) return m.shootoutWinner;
+  const a = Number(m.scoreA), b = Number(m.scoreB);
+  if (Number.isFinite(a) && Number.isFinite(b) && a !== b) return a > b ? m.teamA : m.teamB;
+  const i = KO_ROUNDS.indexOf(m.roundLabel);
+  if (i < 0 || i + 1 >= KO_ROUNDS.length) return null;
+  const nextLabel = KO_ROUNDS[i + 1];
+  for (const n of MATCHES) {
+    if (n.stage !== "knockout" || n.roundLabel !== nextLabel) continue;
+    if (n.teamA === m.teamA || n.teamB === m.teamA) return m.teamA;
+    if (n.teamA === m.teamB || n.teamB === m.teamB) return m.teamB;
+  }
+  return null;
 }
 function scoreTeamInMatch(team, m) {
   const isA = m.teamA === team;
@@ -68,7 +88,7 @@ function scoreTeamInMatch(team, m) {
   let isWin, isDraw;
   if (gf > ga) { isWin = true; isDraw = false; }
   else if (gf < ga) { isWin = false; isDraw = false; }
-  else if (knockout) { isWin = m.shootoutWinner === team; isDraw = false; }
+  else if (knockout) { isWin = koAdvancer(m) === team; isDraw = false; }
   else { isWin = false; isDraw = true; }
   if (isWin) add("win");
   else if (isDraw) add("draw");
@@ -101,6 +121,12 @@ function computeStandings() {
       table[where.mgr].played += 1;
     }
   }
+  // Kyle's draft-mistake bonus (mirrors app.js): round(7 × league-wide points
+  // per dollar so far), added to his total.
+  let totPts = 0, totPrice = 0;
+  for (const s of Object.values(table)) for (const row of s.teams) { totPts += row.points; totPrice += PRICES[row.team] || 0; }
+  if (table.KYLE && totPrice > 0) table.KYLE.points += Math.round(7 * (totPts / totPrice));
+
   const standings = Object.values(table);
   standings.forEach((s) => s.teams.sort((a, b) => b.points - a.points || a.team.localeCompare(b.team)));
   standings.sort((a, b) => b.points - a.points || a.manager.localeCompare(b.manager));
@@ -111,24 +137,41 @@ const played = MATCHES
   .filter((m) => Number.isFinite(m.scoreA) && Number.isFinite(m.scoreB))
   .sort((a, b) => String(a.date).localeCompare(String(b.date)) || (a.round || 0) - (b.round || 0));
 
-const describe = (m) => ({
-  date: m.date,
-  round: m.roundLabel || (m.stage === "knockout" ? "Knockout" : "Group"),
-  score: `${m.teamA} ${m.scoreA}-${m.scoreB} ${m.teamB}`,
-  owners: `${m.teamA} (${OWNER[m.teamA] || "undrafted"}) vs ${m.teamB} (${OWNER[m.teamB] || "undrafted"})`,
-});
+const describe = (m) => {
+  const level = Number(m.scoreA) === Number(m.scoreB);
+  const d = {
+    date: m.date,
+    round: m.roundLabel || (m.stage === "knockout" ? "Knockout" : "Group"),
+    score: `${m.teamA} ${m.scoreA}-${m.scoreB} ${m.teamB}`,
+    owners: `${m.teamA} (${OWNER[m.teamA] || "undrafted"}) vs ${m.teamB} (${OWNER[m.teamB] || "undrafted"})`,
+  };
+  // Spell out the result so the model never misstates it — especially who went
+  // through a level knockout tie on penalties.
+  if (m.stage === "knockout") {
+    const adv = koAdvancer(m);
+    d.outcome = adv ? `${adv} (${OWNER[adv] || "undrafted"}) advanced${level ? " on penalties" : ""}` : "advancer not yet decided";
+  } else if (level) {
+    d.outcome = "draw";
+  } else {
+    const w = Number(m.scoreA) > Number(m.scoreB) ? m.teamA : m.teamB;
+    d.outcome = `${w} (${OWNER[w] || "undrafted"}) won`;
+  }
+  return d;
+};
 
 // The entry's date = latest odds-history date, else the last played match date.
 const latestOdds = ODDS_HISTORY[ODDS_HISTORY.length - 1] || { titleOdds: {}, meanPts: {} };
 const prevOdds = ODDS_HISTORY[ODDS_HISTORY.length - 2] || null;   // yesterday, for day-over-day movement
 const entryDate = latestOdds.date || (played.length ? played[played.length - 1].date : null);
 
-const latestResults = played.filter((m) => m.date === entryDate).map(describe);
+// Most recent RESULTS: the latest date that actually has played games. This
+// dispatch is written in the MORNING (10:30 UTC cron), so today's games usually
+// haven't kicked off yet — "what just happened" is the previous game day, not
+// entryDate. Pulling entryDate-only here left the model with no results to be
+// precise about.
+const lastResultDate = played.length ? played[played.length - 1].date : null;
+const recentResults = played.filter((m) => m.date === lastResultDate).map(describe);
 
-// Today's fixtures that haven't kicked off yet. This dispatch is generated in
-// the MORNING (the 10:30 UTC cron) — before the day's games — so feed the model
-// the upcoming slate (who plays whom, which managers have skin in it). Without
-// it the model sees no results for today and wrongly declares "no games today."
 // Kickoffs are stored in UTC, but the blog speaks EDT. Pre-format them here so
 // the model never has to do timezone math (and never prints UTC). America/New_York
 // tracks DST automatically — EDT in summer (the whole 2026 WC), EST otherwise.
@@ -140,9 +183,16 @@ const fmtEDT = (iso) => {
     hour: "numeric", minute: "2-digit", hour12: true, timeZoneName: "short",
   });
 };
-const upcomingToday = MATCHES
-  .filter((m) => m.date === entryDate && !hasResult(m))
-  .sort((a, b) => String(a.kickoff || "").localeCompare(String(b.kickoff || "")) || (a.round || 0) - (b.round || 0))
+// NEXT fixtures: the upcoming (unplayed, real) games on the next 1–2 scheduled
+// dates from entryDate onward — so the model can preview who plays whom TODAY
+// and the NEXT DAY, not just leftover games that happen to share today's date.
+const upcomingSorted = MATCHES
+  .filter((m) => !hasResult(m) && m.teamA && m.teamB && m.date)
+  .sort((a, b) => String(a.date).localeCompare(String(b.date)) ||
+    String(a.kickoff || "").localeCompare(String(b.kickoff || "")) || (a.round || 0) - (b.round || 0));
+const nextDates = [...new Set(upcomingSorted.map((m) => m.date))].filter((d) => d >= entryDate).slice(0, 2);
+const nextFixtures = upcomingSorted
+  .filter((m) => nextDates.includes(m.date))
   .map((m) => ({
     date: m.date,
     kickoffEDT: fmtEDT(m.kickoff),   // e.g. "3:00 PM EDT" — already local, never UTC
@@ -225,10 +275,10 @@ const context = {
   entryDate,
   previousDate: prevOdds ? prevOdds.date : null,
   keyFacts,                       // the verified bottom line — anchor the piece to this
-  newestResults: latestResults,   // what just happened — lead with this
+  recentResults,                  // the most recent game day's results, WITH who won/advanced — what just happened
   currentStandings,               // ACTUAL points banked so far (live table; rank 1 = current leader)
   titleRace,                      // SIMULATED: % chance to win it all + projected FINAL points
-  upcomingToday,                  // today's fixtures NOT yet played — this runs in the morning, before kickoff
+  nextFixtures,                   // the next day(s) of unplayed games — who plays whom next, with owners + EDT kickoff
   recentDispatches,               // your last few entries — for continuity; do NOT repeat their jokes
   rosters: Object.fromEntries(Object.entries(DRAFT).map(([m, t]) => [m, t])),
   kindTarget,                     // the ONE manager to praise effusively today; roast the rest
@@ -254,9 +304,9 @@ Today's golden boy (${kindTarget}) — ONE manager gets the unconditional-girlfr
 - Do NOT explain or lampshade that you're "being nice" to him or that he was "chosen" — just dote on him naturally as if he genuinely walks on water.
 
 Timing: this dispatch is written in the MORNING, before today's matches kick off, so today has no results yet — that is expected, not a slow news day.
-- If "upcomingToday" is non-empty, use today's matchups as fuel for shit-talk about the managers whose teams are playing and what's at stake — not as a fixture list to read out.
-- Use "newestResults" as fresh material to mock. Never invent or predict a SCORE for an upcoming game.
-- If there are no results and no upcoming games, it's a rest day — roast them on the standings and the odds alone.
+- "recentResults" is the MOST RECENT game day that finished (often yesterday). Use it as fresh material to mock, and get it EXACTLY right: the score, the owners, and — for knockout ties — who ACTUALLY advanced (see each result's "outcome" field; a 1-1 that went to penalties still has a winner who went through and a loser who's OUT). Never call an advancing team eliminated or vice versa.
+- "nextFixtures" is the next slate of unplayed games (today's remaining games and the next day's), each with its date, EDT kickoff, matchup and owners. Use them as fuel for shit-talk about the managers whose teams play next and what's at stake — name the exact opponents and owners; never invent a matchup or predict a SCORE.
+- If there are no recent results and no upcoming games, it's a rest day — roast them on the standings and the odds alone.
 
 Continuity with your previous dispatches:
 - "recentDispatches" holds your last few entries (newest first, with their headlines and text). Read them so today reads like the next chapter of the same running blog, not a cold start.
@@ -273,8 +323,8 @@ Accuracy rules — follow these exactly:
 - keyFacts is the verified bottom line — already computed and correct. Anchor the whole piece to it. If anything you write contradicts keyFacts, you are wrong.
 - The current points leader and the title favorite can be DIFFERENT people (keyFacts spells out who is who). Never call the title favorite the "standings leader."
 - State only what is in the data. Do NOT invent who was "leading before today" — use oddsYesterday vs titleOdds for that.
-- Cite real scorelines and the correct owners — each result lists who owns each team.
-- upcomingToday = fixtures scheduled for LATER TODAY that have NOT been played yet. Preview them by matchup and owner; never invent a score or claim one already happened.
+- Cite real scorelines and the correct owners — each result lists who owns each team, and its "outcome" says who won or advanced. Do not misstate who beat whom.
+- nextFixtures = scheduled games that have NOT been played yet (today's remaining + the next day's). Preview them by exact matchup, owners and EDT kickoff; never invent a score or claim one already happened.
 - ALL times are EDT (US Eastern). "kickoffEDT" is already in EDT — quote it as-is. Never write a time in UTC, and never convert or relabel the time zone.
 
 Voice/tone: The tone is vicious, profane, immature, politically incorrect, relentlessly mocking, and filled with curse words and assorted profanity.
