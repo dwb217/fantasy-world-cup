@@ -197,6 +197,11 @@ table.full th, table.full td { padding: 11px 14px; }
 .odds-ctrl { margin: 2px 0 10px; }
 .odds-ctrl-label { font-size: .82rem; color: var(--muted); display: inline-flex; align-items: center; gap: 6px; }
 .odds-pos-select { font: inherit; font-size: .82rem; color: var(--text); background: var(--panel-2); border: 1px solid var(--border); border-radius: 6px; padding: 3px 8px; cursor: pointer; }
+.chart-tip { position: absolute; pointer-events: none; z-index: 5; min-width: 128px; background: var(--panel); border: 1px solid var(--border); border-radius: 8px; box-shadow: var(--shadow); padding: 7px 9px; font-size: .78rem; color: var(--text); }
+.chart-tip .tip-date { font-weight: 600; color: var(--muted); margin-bottom: 5px; font-size: .74rem; }
+.chart-tip .tip-row { display: flex; align-items: center; gap: 6px; line-height: 1.5; }
+.chart-tip .tip-row .tip-name { flex: 1; }
+.chart-tip .tip-row b { font-variant-numeric: tabular-nums; }
 
 /* draft value tab */
 .value-podium { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 8px; }

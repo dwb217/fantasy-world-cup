@@ -887,10 +887,106 @@
   // Manager line colors (odds-history chart + legend).
   const MGR_COLORS = ["#2f81f7", "#f7b32f", "#2ea043", "#f85149", "#a371f7", "#39c5cf", "#e85aad"];
 
+  // One stable color per manager, shared by EVERY history chart so a person is
+  // the same color everywhere (odds-over-time across all positions + average
+  // finish). Assigned by latest title odds (best first) when history exists,
+  // else by draft order — computed once, memoized.
+  let _mgrColorMap = null;
+  function managerColors() {
+    if (_mgrColorMap) return _mgrColorMap;
+    const managers = Object.keys(DRAFT);
+    const hist = window.ODDS_HISTORY;
+    const latest = (hist && hist.length && hist[hist.length - 1].titleOdds) || {};
+    const order = managers.slice().sort((a, b) => (latest[b] || 0) - (latest[a] || 0));
+    _mgrColorMap = {};
+    order.forEach((m, i) => (_mgrColorMap[m] = MGR_COLORS[i % MGR_COLORS.length]));
+    return _mgrColorMap;
+  }
+
   // 1-based ordinal: 1 → "1st", 2 → "2nd", … used by the position selector.
   function ordinal(k) {
     const s = ["th", "st", "nd", "rd"], v = k % 100;
     return k + (s[(v - 20) % 10] || s[v] || s[0]);
+  }
+
+  // Attach hover interaction to a rendered line chart: a vertical guide, a
+  // highlighted dot per series on the hovered day, and a tooltip listing the
+  // date and every manager's value (sorted best-first). Call AFTER the SVG has
+  // been written into `box`. Shared by both history charts.
+  //   opts: { W,H,padL,padR,padT,padB, n, sx, dates:[], fmt, lowerIsBetter,
+  //           rows:[{ name, color, ys:[], vals:[] }] }  (ys in viewBox px)
+  const SVGNS = "http://www.w3.org/2000/svg";
+  function attachChartHover(box, opts) {
+    const svg = box.querySelector("svg");
+    if (!svg || !opts.rows.length || opts.n < 1) return;
+    const { W, H, padL, padR, padT, padB, n, sx, dates, rows, fmt, lowerIsBetter } = opts;
+
+    const guide = document.createElementNS(SVGNS, "line");
+    guide.setAttribute("y1", padT); guide.setAttribute("y2", H - padB);
+    guide.setAttribute("stroke", PC.muted); guide.setAttribute("stroke-width", "1");
+    guide.setAttribute("stroke-dasharray", "3 3");
+    guide.setAttribute("pointer-events", "none");
+    guide.style.display = "none";
+    svg.appendChild(guide);
+
+    const hdots = rows.map((r) => {
+      const c = document.createElementNS(SVGNS, "circle");
+      c.setAttribute("r", "4.5"); c.setAttribute("fill", r.color);
+      c.setAttribute("stroke", PC.panel2); c.setAttribute("stroke-width", "1.5");
+      c.setAttribute("pointer-events", "none");
+      c.style.display = "none";
+      svg.appendChild(c); return c;
+    });
+
+    box.style.position = "relative";
+    const tip = el("div", "chart-tip");
+    tip.style.display = "none";
+    box.appendChild(tip);
+
+    const idxFromClientX = (clientX) => {
+      const rect = svg.getBoundingClientRect();
+      if (n === 1) return 0;
+      const vbx = ((clientX - rect.left) / rect.width) * W;
+      const i = Math.round(((vbx - padL) / (W - padL - padR)) * (n - 1));
+      return Math.max(0, Math.min(n - 1, i));
+    };
+
+    const show = (clientX) => {
+      const i = idxFromClientX(clientX);
+      const gx = sx(i);
+      guide.setAttribute("x1", gx); guide.setAttribute("x2", gx); guide.style.display = "";
+      rows.forEach((r, k) => {
+        hdots[k].setAttribute("cx", gx); hdots[k].setAttribute("cy", r.ys[i]); hdots[k].style.display = "";
+      });
+      const ranked = rows.map((r) => ({ r, v: r.vals[i] }))
+        .sort((a, b) => (lowerIsBetter ? a.v - b.v : b.v - a.v));
+      tip.innerHTML = `<div class="tip-date">${esc(fmtDate(dates[i]))}</div>` +
+        ranked.map(({ r, v }) =>
+          `<div class="tip-row"><span class="odds-swatch" style="background:${r.color}"></span>` +
+          `<span class="tip-name">${esc(r.name)}</span><b>${fmt(v)}</b></div>`).join("");
+      tip.style.display = "";
+      // Position relative to `box` using measured rects (offsetTop/Left proved
+      // unreliable across the responsive SVG scaling).
+      const svgR = svg.getBoundingClientRect(), boxR = box.getBoundingClientRect();
+      const ratio = svgR.width / W;
+      const px = (svgR.left - boxR.left) + gx * ratio;
+      let left = px + 14;
+      if (left + tip.offsetWidth > box.clientWidth) left = px - tip.offsetWidth - 14;
+      tip.style.left = Math.max(4, left) + "px";
+      tip.style.top = (svgR.top - boxR.top) + padT * (svgR.height / H) + "px";
+    };
+    const hide = () => {
+      guide.style.display = "none";
+      hdots.forEach((d) => (d.style.display = "none"));
+      tip.style.display = "none";
+    };
+
+    svg.style.cursor = "crosshair";
+    svg.addEventListener("mousemove", (e) => show(e.clientX));
+    svg.addEventListener("mouseleave", hide);
+    svg.addEventListener("touchstart", (e) => { if (e.touches[0]) show(e.touches[0].clientX); }, { passive: true });
+    svg.addEventListener("touchmove", (e) => { if (e.touches[0]) { show(e.touches[0].clientX); e.preventDefault(); } }, { passive: false });
+    svg.addEventListener("touchend", hide);
   }
 
   // Odds-over-time line chart from window.ODDS_HISTORY (one entry/day). A dropdown
@@ -908,12 +1004,9 @@
       if (dist) return dist[pos - 1] || 0;
       return pos === 1 ? (h.titleOdds && h.titleOdds[m]) || 0 : 0;
     };
-    // Stable color per manager (by latest title odds) so a manager keeps its
-    // color no matter which position is selected.
-    const byTitle = managers.slice().sort((a, b) =>
-      oddsAt(hist[hist.length - 1], b, 1) - oddsAt(hist[hist.length - 1], a, 1));
-    const color = {};
-    byTitle.forEach((m, i) => (color[m] = MGR_COLORS[i % MGR_COLORS.length]));
+    // Shared color per manager so a person keeps the same color across every
+    // position AND across the other history charts.
+    const color = managerColors();
 
     const W = 600, H = 380, padL = 44, padR = 10, padT = 16, padB = 30;
     const n = hist.length;
@@ -971,6 +1064,15 @@
       legendBox.innerHTML = order.map((m) =>
         `<span class="odds-key"><span class="odds-swatch" style="background:${color[m]}"></span>${esc(m)} <b>${pctTxt(latest[m] || 0)}</b></span>`).join("");
       box.innerHTML = `<svg class="chart tall" viewBox="0 0 ${W} ${H}" role="img">${grid}${series}${labels}</svg>`;
+      attachChartHover(box, {
+        W, H, padL, padR, padT, padB, n, sx,
+        dates: hist.map((h) => h.date), fmt: (v) => pctTxt(v || 0), lowerIsBetter: false,
+        rows: order.map((m) => ({
+          name: m, color: color[m],
+          ys: hist.map((h) => sy(oddsAt(h, m, pos))),
+          vals: hist.map((h) => oddsAt(h, m, pos)),
+        })),
+      });
     }
 
     sel.addEventListener("change", () => draw(Number(sel.value)));
@@ -992,8 +1094,8 @@
     const latest = hist[hist.length - 1].avgFinish || {};
     // best (lowest avg position) first
     const order = managers.slice().sort((a, b) => (latest[a] || 99) - (latest[b] || 99));
-    const color = {};
-    order.forEach((m, i) => (color[m] = MGR_COLORS[i % MGR_COLORS.length]));
+    // Shared color per manager, identical to the odds-over-time chart.
+    const color = managerColors();
     const fmtPos = (v) => (v || 0).toFixed(2);
 
     const W = 600, H = 380, padL = 44, padR = 10, padT = 16, padB = 30;
@@ -1027,6 +1129,15 @@
     const box = el("div", "proj-chart-box odds-chart");
     box.innerHTML = `<svg class="chart tall" viewBox="0 0 ${W} ${H}" role="img">${grid}${series}${labels}</svg>`;
     sec.appendChild(box);
+    attachChartHover(box, {
+      W, H, padL, padR, padT, padB, n, sx,
+      dates: hist.map((h) => h.date), fmt: (v) => fmtPos(v), lowerIsBetter: true,
+      rows: order.map((m) => ({
+        name: m, color: color[m],
+        ys: hist.map((h) => sy(h.avgFinish[m])),
+        vals: hist.map((h) => h.avgFinish[m]),
+      })),
+    });
     return sec;
   }
 
