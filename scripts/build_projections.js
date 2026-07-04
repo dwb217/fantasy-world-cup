@@ -545,9 +545,12 @@ if (require.main === module) {
     if (m) history = JSON.parse(m[1]);
   } catch (e) { /* first run: no history file yet */ }
   const today = out.meta.generatedAt.slice(0, 10);
-  const entry = { date: today, playedMatches: PLAYED, titleOdds: {}, meanPts: {}, avgFinish: {} };
+  const entry = { date: today, playedMatches: PLAYED, titleOdds: {}, finishOdds: {}, meanPts: {}, avgFinish: {} };
   for (const m of managersOut) {
     entry.titleOdds[m.name] = m.finish[0];
+    // Full finishing distribution P(finish in place k), k = 1..N — powers the
+    // per-position selector in the "odds over time" chart. titleOdds === finishOdds[0].
+    entry.finishOdds[m.name] = m.finish;
     entry.meanPts[m.name] = m.mean;
     entry.avgFinish[m.name] = avgFinishOf(m.finish);
   }

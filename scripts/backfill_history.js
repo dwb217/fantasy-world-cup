@@ -67,9 +67,10 @@ for (const entry of history) {
   const { managersOut } = simulate(matches, N);
   const byName = {}; for (const m of managersOut) byName[m.name] = m;
   const order = MANAGERS.slice().sort((a, b) => byName[b].mean - byName[a].mean);
-  entry.titleOdds = {}; entry.meanPts = {}; entry.avgFinish = {};
+  entry.titleOdds = {}; entry.finishOdds = {}; entry.meanPts = {}; entry.avgFinish = {};
   for (const name of order) {
     entry.titleOdds[name] = byName[name].finish[0];
+    entry.finishOdds[name] = byName[name].finish; // full P(finish in place k) distribution
     entry.meanPts[name] = byName[name].mean;
     entry.avgFinish[name] = avgFinishOf(byName[name].finish);
   }

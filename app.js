@@ -887,44 +887,94 @@
   // Manager line colors (odds-history chart + legend).
   const MGR_COLORS = ["#2f81f7", "#f7b32f", "#2ea043", "#f85149", "#a371f7", "#39c5cf", "#e85aad"];
 
-  // Title-odds-over-time line chart from window.ODDS_HISTORY (one entry/day).
+  // 1-based ordinal: 1 → "1st", 2 → "2nd", … used by the position selector.
+  function ordinal(k) {
+    const s = ["th", "st", "nd", "rd"], v = k % 100;
+    return k + (s[(v - 20) % 10] || s[v] || s[0]);
+  }
+
+  // Odds-over-time line chart from window.ODDS_HISTORY (one entry/day). A dropdown
+  // picks the finishing position to plot: 1st (title), 2nd, … through last. The
+  // per-position probabilities come from each day's `finishOdds` distribution;
+  // older history that predates that field falls back to `titleOdds` for 1st.
   function oddsHistorySection() {
     const hist = window.ODDS_HISTORY;
     if (!hist || !hist.length) return null;
     const managers = Object.keys(DRAFT);
-    const latest = hist[hist.length - 1].titleOdds || {};
-    const order = managers.slice().sort((a, b) => (latest[b] || 0) - (latest[a] || 0));
+    const N = managers.length;
+    // P(manager m finishes in `pos` (1-based) place) on history entry h.
+    const oddsAt = (h, m, pos) => {
+      const dist = h.finishOdds && h.finishOdds[m];
+      if (dist) return dist[pos - 1] || 0;
+      return pos === 1 ? (h.titleOdds && h.titleOdds[m]) || 0 : 0;
+    };
+    // Stable color per manager (by latest title odds) so a manager keeps its
+    // color no matter which position is selected.
+    const byTitle = managers.slice().sort((a, b) =>
+      oddsAt(hist[hist.length - 1], b, 1) - oddsAt(hist[hist.length - 1], a, 1));
     const color = {};
-    order.forEach((m, i) => (color[m] = MGR_COLORS[i % MGR_COLORS.length]));
+    byTitle.forEach((m, i) => (color[m] = MGR_COLORS[i % MGR_COLORS.length]));
 
     const W = 600, H = 380, padL = 44, padR = 10, padT = 16, padB = 30;
     const n = hist.length;
-    const maxP = Math.max(0.05, ...hist.flatMap((h) => order.map((m) => h.titleOdds[m] || 0))) * 1.15;
     const sx = (i) => padL + (n === 1 ? (W - padL - padR) / 2 : (i / (n - 1)) * (W - padL - padR));
-    const sy = (p) => padT + (1 - p / maxP) * (H - padT - padB);
-    const grid = [0, maxP / 2, maxP].map((p) =>
-      `<line x1="${padL}" y1="${sy(p)}" x2="${W - padR}" y2="${sy(p)}" stroke="${PC.border}" stroke-width="1" stroke-dasharray="2 3"/>` +
-      `<text x="${padL - 6}" y="${sy(p) + 4}" fill="${PC.muted}" font-size="13" text-anchor="end">${Math.round(p * 100)}%</text>`).join("");
-    const step = Math.max(1, Math.ceil(n / 6));
-    const labels = hist.map((h, i) => (i % step === 0 || i === n - 1)
-      ? `<text x="${sx(i)}" y="${H - 8}" fill="${PC.muted}" font-size="12" text-anchor="${i === 0 ? "start" : i === n - 1 ? "end" : "middle"}">${esc(fmtDate(h.date))}</text>` : "").join("");
-    const series = order.map((m) => {
-      const ptsStr = hist.map((h, i) => `${sx(i)},${sy(h.titleOdds[m] || 0)}`).join(" ");
-      const dots = hist.map((h, i) => `<circle cx="${sx(i)}" cy="${sy(h.titleOdds[m] || 0)}" r="3" fill="${color[m]}"/>`).join("");
-      return (n > 1 ? `<polyline points="${ptsStr}" fill="none" stroke="${color[m]}" stroke-width="2.5"/>` : "") + dots;
-    }).join("");
 
     const sec = el("div");
-    sec.appendChild(el("h3", "proj-h", "Title odds over time"));
-    sec.appendChild(el("p", "proj-sub muted",
-      "Each manager's probability of finishing 1st, from the daily re-projection." +
-      (n === 1 ? " The chart grows as the tournament progresses." : "")));
-    const legend = order.map((m) =>
-      `<span class="odds-key"><span class="odds-swatch" style="background:${color[m]}"></span>${esc(m)} <b>${pctTxt(latest[m] || 0)}</b></span>`).join("");
-    sec.appendChild(el("div", "odds-legend", legend));
+    sec.appendChild(el("h3", "proj-h", "Finishing odds over time"));
+    const subEl = el("p", "proj-sub muted");
+    sec.appendChild(subEl);
+
+    // Position dropdown.
+    const ctrl = el("div", "odds-ctrl");
+    const sel = document.createElement("select");
+    sel.className = "odds-pos-select";
+    for (let p = 1; p <= N; p++) {
+      const o = document.createElement("option");
+      o.value = String(p);
+      o.textContent = `${ordinal(p)} place`;
+      sel.appendChild(o);
+    }
+    const ctrlLabel = document.createElement("label");
+    ctrlLabel.className = "odds-ctrl-label";
+    ctrlLabel.textContent = "Show odds of finishing ";
+    ctrlLabel.appendChild(sel);
+    ctrl.appendChild(ctrlLabel);
+    sec.appendChild(ctrl);
+
+    const legendBox = el("div", "odds-legend");
+    sec.appendChild(legendBox);
     const box = el("div", "proj-chart-box odds-chart");
-    box.innerHTML = `<svg class="chart tall" viewBox="0 0 ${W} ${H}" role="img">${grid}${series}${labels}</svg>`;
     sec.appendChild(box);
+
+    function draw(pos) {
+      const latest = {};
+      managers.forEach((m) => (latest[m] = oddsAt(hist[hist.length - 1], m, pos)));
+      const order = managers.slice().sort((a, b) => (latest[b] || 0) - (latest[a] || 0));
+      const maxP = Math.max(0.05, ...hist.flatMap((h) => managers.map((m) => oddsAt(h, m, pos)))) * 1.15;
+      const sy = (p) => padT + (1 - p / maxP) * (H - padT - padB);
+      const grid = [0, maxP / 2, maxP].map((p) =>
+        `<line x1="${padL}" y1="${sy(p)}" x2="${W - padR}" y2="${sy(p)}" stroke="${PC.border}" stroke-width="1" stroke-dasharray="2 3"/>` +
+        `<text x="${padL - 6}" y="${sy(p) + 4}" fill="${PC.muted}" font-size="13" text-anchor="end">${Math.round(p * 100)}%</text>`).join("");
+      const step = Math.max(1, Math.ceil(n / 6));
+      const labels = hist.map((h, i) => (i % step === 0 || i === n - 1)
+        ? `<text x="${sx(i)}" y="${H - 8}" fill="${PC.muted}" font-size="12" text-anchor="${i === 0 ? "start" : i === n - 1 ? "end" : "middle"}">${esc(fmtDate(h.date))}</text>` : "").join("");
+      const series = order.map((m) => {
+        const ptsStr = hist.map((h, i) => `${sx(i)},${sy(oddsAt(h, m, pos))}`).join(" ");
+        const dots = hist.map((h, i) => `<circle cx="${sx(i)}" cy="${sy(oddsAt(h, m, pos))}" r="3" fill="${color[m]}"/>`).join("");
+        return (n > 1 ? `<polyline points="${ptsStr}" fill="none" stroke="${color[m]}" stroke-width="2.5"/>` : "") + dots;
+      }).join("");
+
+      const posTxt = pos === 1 ? "1st (winning the league)" : `${ordinal(pos)}`;
+      subEl.textContent =
+        `Each manager's probability of finishing ${posTxt}, from the daily re-projection.` +
+        (n === 1 ? " The chart grows as the tournament progresses." : "");
+      legendBox.innerHTML = order.map((m) =>
+        `<span class="odds-key"><span class="odds-swatch" style="background:${color[m]}"></span>${esc(m)} <b>${pctTxt(latest[m] || 0)}</b></span>`).join("");
+      box.innerHTML = `<svg class="chart tall" viewBox="0 0 ${W} ${H}" role="img">${grid}${series}${labels}</svg>`;
+    }
+
+    sel.addEventListener("change", () => draw(Number(sel.value)));
+    draw(1);
     return sec;
   }
 
