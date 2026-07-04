@@ -1524,7 +1524,7 @@ window.MATCHES = [
     "kickoff": "2026-07-04T01:30:00Z",
     "stage": "knockout",
     "round": 32,
-    "roundLabel": "Round of 16",
+    "roundLabel": "Round of 32",
     "teamA": "Colombia",
     "teamB": "Ghana",
     "scoreA": 1,

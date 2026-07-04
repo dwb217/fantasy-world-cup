@@ -91,6 +91,22 @@ function kickoffISO(ev) {
   return null;
 }
 
+// The calendar date of the fixture in host-local time. TheSportsDB's dateEvent
+// is the UTC date, so a late kickoff (2026 is a North-American World Cup, venues
+// UTC-4…-8) rolls past UTC midnight and reports the NEXT day — e.g. a 9:30pm ET
+// R32 game shows as the following day and lands in the R16 window. Shifting the
+// UTC kickoff back 6h lands every game on its true local slate day; there are no
+// kickoffs between ~04:00 and ~15:00 UTC, so this never pulls a game across a
+// real round boundary in the wrong direction.
+function slateDate(ev) {
+  const iso = kickoffISO(ev);
+  if (iso) {
+    const t = Date.parse(iso);
+    if (!Number.isNaN(t)) return new Date(t - 6 * 3600 * 1000).toISOString().slice(0, 10);
+  }
+  return ev.dateEvent || "";
+}
+
 // Knockout label from the official 2026 calendar (round numbers are unreliable).
 function knockoutLabelByDate(date) {
   for (const w of CONFIG.knockoutWindows || []) {
@@ -149,7 +165,7 @@ async function main() {
 
       const roundLabel = isGroup
         ? (CONFIG.roundLabels[r] || `Matchday ${r}`)
-        : (knockoutLabelByDate(ev.dateEvent) || CONFIG.roundLabels[r] || `Knockout (round ${r})`);
+        : (knockoutLabelByDate(slateDate(ev)) || CONFIG.roundLabels[r] || `Knockout (round ${r})`);
 
       const teamA = canonicalTeam(ev.strHomeTeam);
       const teamB = canonicalTeam(ev.strAwayTeam);
