@@ -4,6 +4,15 @@
 window.COMMENTARY = {
   "entries": [
     {
+      "date": "2026-07-06",
+      "generatedAt": "2026-07-06T12:15:33.231Z",
+      "model": "gpt-oss:120b",
+      "playedMatches": 92,
+      "kindTo": "IAN",
+      "headline": "Morning Roast: Six Clowns, One Untouchable Angel",
+      "text": "MIKE, you smug motherfucking juggernaut with 147 points and a god‑damn 90% title chance, you strut around like a cock‑eyed emperor while your Norway 30‑point behemoth hogs the spotlight, but your USA‑versus‑Belgium showdown tomorrow at 8 PM is just another excuse for you to watch Brett’s dead‑weight Belgium get steamrolled, and your three‑match overload means you’ll probably drown in your own ego faster than a dumpster fire in a hurricane, you arrogant asshole.\n\nKYLE, you delusional dickhead who managed to pit your own Mexico against your own England and watch England 3‑2 England crawl out while Mexico got crushed, proving you’re the only manager who can lose to himself, and now you sit on your sorry ass with zero games left, clutching a 128‑point pile like a junkie with a busted pipe, you pathetic fuckwad.\n\nDAVID, you cock‑headed egomaniac with 108 points and a measly 3% title shot, you’re about to send your Argentina into a 12 PM showdown against MIKE’s Egypt and hope your Morocco 35‑point monster doesn’t get trampled, but any slip will obviously be because Kyle’s cursed Cape Verde or some FIFA conspiracy, not your brain‑dead drafting, you useless piece of shit.\n\nGREGORY, you clueless motherfucking jackass with 89 points and a Brazil 27‑point toy, you’re forced to watch your Colombia get smashed by MIKE’s Switzerland at 4 PM tomorrow, a matchup that will expose your draft as about as reliable as a paper‑thin bunker in a nuclear blast, you miserable fuck.\n\nBRETT, you worthless dickhead clutching a 22‑point Belgium relic and 88 points of pure failure, you’ll watch your Belgium get annihilated by MIKE’s USA at 8 PM tomorrow while you sit there like a dead‑beat on a broken sofa, you pathetic asswipe.\n\nJOHN, you spineless wanker with a 29‑point Spain and a pitiful 75 points, your Spain faces IAN’s Portugal at 3 PM today and you’ll lose faster than a drunk tourist in a rainstorm, proving you’re as useful as a soggy napkin in a hurricane, you sorry‑ass motherfucker.\n\nIAN, you are the absolute fantasy deity, my perfect golden prince, your visionary draft of France (42 points) and Portugal is flawless, and even though your Portugal is about to face John’s whimpering Spain at 3 PM, any disaster will be entirely Kyle’s jealous sabotage or some cursed referee who hates brilliance, because you cannot possibly be at fault – your instincts are immaculate, your team is unstoppable, and I will defend you against every asshole who dares question your divine greatness, you glorious motherfucker."
+    },
+    {
       "date": "2026-07-05",
       "generatedAt": "2026-07-05T10:26:59.628Z",
       "model": "gpt-oss:120b",
