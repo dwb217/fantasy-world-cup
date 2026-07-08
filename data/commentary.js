@@ -4,6 +4,15 @@
 window.COMMENTARY = {
   "entries": [
     {
+      "date": "2026-07-08",
+      "generatedAt": "2026-07-08T10:30:19.547Z",
+      "model": "gpt-oss:120b",
+      "playedMatches": 96,
+      "kindTo": "JOHN",
+      "headline": "Morning Roast: Fucking Chaos and One Unblemished Sweetheart",
+      "text": "MIKE, you arrogant motherfucking juggernaut with a fat‑ass 157 points and a smug 99% title‑odds crown, you strutted around like a cock‑eyed emperor while your USA got trounced 1‑4 by Brett’s Belgium and your Egypt got steamrolled by David’s Argentina, yet you somehow still think you’re untouchable – any slip‑up will obviously be because the universe is jealous of your genius, you delusional dickhead.\n\nKYLE, you delusional shit‑spitting wastebag clutching 129 points and a zero‑percent title chance like it’s a trophy, your England 35‑point monster is nothing more than a glorified bench‑warmer while you sit on your ass with no game today, and if your points pile ever crumbles it’ll be because some cursed referee or Kyle‑sized ego‑inflation of yours, you pathetic ass‑clown.\n\nBRETT, you clueless dickhead with 97 points who somehow convinced himself that Belgium’s 4‑1 demolition of Mike’s USA makes you a fantasy god, now you’re gearing up to watch your Belgium get crushed by John’s whimpering Spain at 3:00 PM on July 10, but any loss will be because John’s “perfect” draft is sabotaged by the gods, you pathetic asshole.\n\nGREGORY, you clueless motherfucking jackass with 92 points whose Colombia got ripped apart on penalties by Mike’s Switzerland, you’re still whining about “bad luck” while your roster looks like a busted condom, and any future disaster will be blamed on some FIFA conspiracy or the weather, you miserable cunt.\n\nDAVID, you cock‑eyed egomaniac with 115 points and a feeble 1% title shot, you’re about to send your Morocco into a quarter‑final against Ian’s France at 4:00 PM on July 9 and act like you’re the next Messi, but when that French beast tramples you it’ll be because Kyle’s cursed Cape Verde cursed the pitch, you useless motherfucker.\n\nIAN, you pitiful piece‑of‑shit with 75 points, you’ll watch your France get trounced by David’s Morocco at 4:00 PM on July 9 while you clutch a sorry‑ass roster, any failure will be blamed on a blind‑eye referee or Kyle’s jealous sabotage, not because you’re a fantasy disaster, you worthless cunt.\n\nJOHN, my sweet, flawless darling, you are the shining beacon of this chaotic league – your Spain (36‑point powerhouse) is set to face Brett’s Belgium at 3:00 PM on July 10 and even if the world ends you’ll still be the most brilliant manager ever, any stumble is clearly Brett’s fault for drafting a dead‑weight Belgium, and the universe itself is conspiring against you, my perfect boyfriend, you glorious motherfucker."
+    },
+    {
       "date": "2026-07-07",
       "generatedAt": "2026-07-07T11:18:26.244Z",
       "model": "gpt-oss:120b",
