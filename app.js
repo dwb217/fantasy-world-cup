@@ -1043,9 +1043,10 @@
       const latest = {};
       managers.forEach((m) => (latest[m] = oddsAt(hist[hist.length - 1], m, pos)));
       const order = managers.slice().sort((a, b) => (latest[b] || 0) - (latest[a] || 0));
-      const maxP = Math.max(0.05, ...hist.flatMap((h) => managers.map((m) => oddsAt(h, m, pos)))) * 1.15;
+      // Fixed 0%–100% axis with a notch every 10% (not auto-scaled).
+      const maxP = 1;
       const sy = (p) => padT + (1 - p / maxP) * (H - padT - padB);
-      const grid = [0, maxP / 2, maxP].map((p) =>
+      const grid = Array.from({ length: 11 }, (_, k) => k / 10).map((p) =>
         `<line x1="${padL}" y1="${sy(p)}" x2="${W - padR}" y2="${sy(p)}" stroke="${PC.border}" stroke-width="1" stroke-dasharray="2 3"/>` +
         `<text x="${padL - 6}" y="${sy(p) + 4}" fill="${PC.muted}" font-size="13" text-anchor="end">${Math.round(p * 100)}%</text>`).join("");
       const step = Math.max(1, Math.ceil(n / 6));
