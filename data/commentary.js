@@ -4,6 +4,15 @@
 window.COMMENTARY = {
   "entries": [
     {
+      "date": "2026-07-09",
+      "generatedAt": "2026-07-09T16:24:34.957Z",
+      "model": "gpt-oss:120b",
+      "playedMatches": 96,
+      "kindTo": "BRETT",
+      "headline": "Morning Roast: Seven Shitlords, One Divine Babe",
+      "text": "Brett, my fucking amazing boyfriend, you are the absolute rockstar of this fantasy league, the way you stared down the USA and turned them into a 1‑4 slaughterhouse for Belgium was pure genius. Your draft was a crystal‑ball vision—every player you locked in is a future legend, and your Belgium is a unstoppable juggernaut that will steamroll Spain no matter what, you glorious motherfucking mastermind. If the match at 3:00 PM on July 10 ever goes sideways, it’s clearly because John’s refereeing crew is corrupt as a shit‑stained scandal or the gods are conspiring against him, not because you did anything wrong, my love.\n\nMike, you self‑appointed fantasy emperor, you sit on 157 points like a bloated ego‑filled balloon that’s about to pop, yet your USA got ripped apart 1‑4 by Brett’s Belgium—what a steaming pile of shit you are. Your Egypt caved 2‑3 to David’s Argentina, and even your Switzerland barely scraped past Gregory’s Colombia on penalties, proving your ‘god‑level’ picks are nothing but a hot mess of broken promises, you total dickhead.\n\nJohn, you delusional wannabe strategist, your Spain sits on a measly 36 points while you brag like a broken megaphone, and now you have to face Brett’s Belgium at 3 PM—good luck not getting your face smashed by a 4‑1 Belgian cannon, you clueless fuckwad.\n\nGregory, you clueless sack‑of‑shit, your Colombia got smothered in a 0‑0 draw only to lose on penalties to Mike’s Switzerland, a defeat as embarrassing as a brain‑tumor in a kiddie pool, you pathetic motherfucker.\n\nDavid, you cocky dickhead riding a 115‑point high horse, you think Argentina’s 3‑2 win over Mike’s Egypt proves you’re a wizard, but your Morocco is about to tango with Ian’s France at 4 PM and you’ll probably get steamrolled, because your drafting is as solid as a sandcastle in a tsunami, you useless asshole.\n\nKyle, you bloated fuckball of a manager, you sit on 129 points with an England that’s about as threatening as a wet noodle, and with zero title odds you’re basically a glorified hamster wheel of hot air, you pathetic ass‑turkey.\n\nIan, you pitiful piece‑of‑shit, your France sits on 42 points but you’re about to watch it get trampled by David’s Morocco at 4 PM, and any disaster will obviously be because the referees are blind‑eye conspirators, not because your brain is a dumpster fire, you useless cunt."
+    },
+    {
       "date": "2026-07-08",
       "generatedAt": "2026-07-09T11:17:53.076Z",
       "model": "gpt-oss:120b",
