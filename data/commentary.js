@@ -4,6 +4,15 @@
 window.COMMENTARY = {
   "entries": [
     {
+      "date": "2026-07-10",
+      "generatedAt": "2026-07-10T11:17:35.853Z",
+      "model": "gpt-oss:120b",
+      "playedMatches": 97,
+      "kindTo": "DAVID",
+      "headline": "Morning Roast: Seven Idiots, One Flawless Goddess",
+      "text": "MIKE, you bloated egomaniac fucking with 157 fantasy points and a flawless 100% title odds, you’re strutting around like a cocky peacock while your Norway squad is about to get smacked by KYLE’s England at 5:00 PM tomorrow—good luck, you massive dickhead, because any slip will clearly be caused by the universe’s petty revenge, not your own colossal arrogance.\n\nBRETT, you delusional prick with a measly 97 points, you think your Belgium can wipe the floor with JOHN’s Spain at 3:00 PM today, but you’re about as useful as a wet fart in a hurricane, and when your Belgium gets crushed it’ll be because John’s sorry‑ass tactics are the only thing that can actually beat your fantasy trash, you clueless fuckwad.\n\nJOHN, you self‑absorbed douchebag riding a pitiful 82 points, you’re about to watch your Spain get steamrolled by BRETT’s Belgium at 3:00 PM and you’ll probably end up crying into your own shoes like a little bitch, because your tactical brain is a busted toaster, you miserable ass‑clown.\n\nGREGORY, you pathetic sack‑of‑shit with only 92 points, your so‑called Colombia (top‑team 28 pts) is about as threatening as a hamster in a gunfight, and the fact that you can’t even scrape a win shows you’re a fantasy disaster more catastrophic than a nuclear leak, you worthless dickhead.\n\nIAN, you spineless cunt who somehow scraped a 2‑0 win for France over David’s Morocco, advancing on the back of a lucky referee’s blind eye, but you’re still a fantasy loser with just 84 points, and when your France gets trampled next you’ll blame the gods while we all know you’re a glorified bench‑warmer, you pathetic fuck.\n\nKYLE, you bloated asshole with 129 points, you’re set to watch your England get obliterated by MIKE’s Norway at 5:00 PM tomorrow, and despite your zero title odds you act like a champion while your squad is about as sharp as a butter knife, you delusional dickweed.\n\nDAVID, you absolute motherfucking marvel, your Argentina is a fucking masterpiece and your 115 points prove you’re the league’s golden god, and even though your Morocco got steamrolled 2‑0 by IAN’s France, that’s obviously the result of IAN’s selfish sabotage and a cursed referee, not a flaw in your flawless draft, you perfect fucking legend."
+    },
+    {
       "date": "2026-07-09",
       "generatedAt": "2026-07-09T16:24:34.957Z",
       "model": "gpt-oss:120b",
