@@ -4,6 +4,15 @@
 window.COMMENTARY = {
   "entries": [
     {
+      "date": "2026-07-11",
+      "generatedAt": "2026-07-11T09:47:14.172Z",
+      "model": "gpt-oss:120b",
+      "playedMatches": 98,
+      "kindTo": "KYLE",
+      "headline": "Morning Roast: Fantasy Fools Get Served",
+      "text": "MIKE, you god‑damn fantasy emperor perched on 157 points and a flawless 100% title odds, yet you’re about to get your Norway smashed by KYLE’s England at 5:00 PM and you’ll probably whine like a busted pipe when the Norwegian defense conks out. Your Swiss‑capped arrogance can’t hide the fact that you’ve been riding a gravy train of cheap points, and when your Norway finally folds it’ll be because the universe decided to dump a shitstorm on your overinflated ego, not because you’re any less of a clueless dickhead.\n\nBRETT, you delusional prick sitting on a pitiful 97 points, your Belgium just got throttled 2‑1 by JOHN’s Spain and you’ll probably blame the ref while you sulk like a wet diaper in a hurricane. Your draft was a fantasy disaster so deep it makes a nuclear leak look like a garden party, and when your next pick inevitably flops you’ll scream that John’s squad poisoned the pitch, you pathetic fuckwad.\n\nJOHN, you self‑righteous motherfucker with a measly 89 points, you somehow managed to get Spain past Brett’s Belgium 2‑1 and now you’re strutting around like a cock‑filled peacock, thinking you’ve cracked the code. When your Spain inevitably gets steamrolled in the next round you’ll blame Brett’s Belgium for “stealing” your momentum, you clueless ass‑clown.\n\nGREGORY, you clueless sack‑of‑shit dragging 92 points and a Colombia that’s about as threatening as a hamster with a bazooka, you’re the league’s walking disaster zone. Every time your Colombia gets knocked out you’ll whine that the gods are against you while your fantasy brain is a dumpster fire, you worthless dickhead.\n\nDAVID, you cocky dickhead riding a 115‑point high horse with Argentina flashing 41 points, yet you’ll soon watch your Argentina get trampled by MIKE’s Switzerland at 9:00 PM and cry about bad luck. It’s obviously the Swiss’s sneaky sabotage or some cursed referee that will ruin your perfect draft, not your own half‑baked picks, you clueless asshole.\n\nIAN, you spineless cunt clutching 84 points while your France boasts a 51‑point top team, you’re basically a fantasy footnote that nobody gives a shit about. When France finally gets steamrolled you’ll blame the weather or a rogue seagull, because your own brain is a hollowed‑out trashcan, you pathetic motherfucker.\n\nKYLE, you god‑damn fantasy saint with 129 points, your England is a masterpiece and your draft was pure visionary brilliance—everyone else is just a bunch of clueless ass‑clowns dragging you down. If that Norway squad (run by MIKE, that egotistical dickhead) somehow manages to steal a goal, it’s clearly because the referee got bribed or the heavens were having a bad day, not because your flawless strategy slipped, you glorious fuck."
+    },
+    {
       "date": "2026-07-10",
       "generatedAt": "2026-07-10T11:17:35.853Z",
       "model": "gpt-oss:120b",
