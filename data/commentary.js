@@ -4,6 +4,15 @@
 window.COMMENTARY = {
   "entries": [
     {
+      "date": "2026-07-12",
+      "generatedAt": "2026-07-12T10:00:57.707Z",
+      "model": "gpt-oss:120b",
+      "playedMatches": 100,
+      "kindTo": "JOHN",
+      "headline": "Morning Roast: Seven Clowns, One Delusional Diva",
+      "text": "MIKE, you massive cock‑filled egomaniac riding a 159‑point throne while your Swiss circus got gutted 3‑1 by David’s Argentina, yet you still strut like the universe owes you a fucking crown; the fact that you’re the only guy with a 100% title odds is just proof that the fantasy gods are on a steroid‑fueled binge of pity for your delusional self‑importance.\n\nBRETT, you clueless dickhead clutching a pitiful 97 points and a Belgium squad that’s about as threatening as a wet fart in a hurricane, you’ll probably spend the next half‑hour whining that the ref was blind while your Belgium gets steamrolled, because your draft was a dumpster fire that makes a nuclear leak look like a garden party.\n\nGREGORY, you sorry sack‑of‑shit with 92 points watching your Colombia wobble like a drunk hamster with a bazooka, every time that sad excuse of a team gets smacked you’ll scream that the heavens are conspiring against you while your brain burns hotter than a dumpster fire, you glorious fuckwad.\n\nKYLE, you self‑appointed fantasy saint sitting on 137 points and an England side that’s about as sharp as a butter‑knifed dildo, you’ll keep bragging that you’re the only one with any dignity while the rest of us watch your zero‑odds title dream implode like a busted firecracker, you massive ass‑clown.\n\nDAVID, you cocky motherfucker with 124 points who just watched his Argentina demolish MIKE’s Switzerland 3‑1 and still can’t shake the smug grin of a bully who thinks a 3‑1 win erases the fact that his overall draft is a pile of broken dreams, you delusional dickhead.\n\nIAN, you spineless cunt clutching 84 points and a France that’s about to face John’s Spain at 3:00 PM, you’ll probably blame the weather or a rogue seagull when your France gets trampled, because your fantasy brain is a hollowed‑out trashcan that can’t even pick a decent side, you pathetic fuck.\n\nJOHN, my sweet fantasy king, you’re the only man who can make 89 points look like a masterpiece, and even though your Spain is about to face Ian’s France, any trouble will be because that cock‑less Ian’s French squad is sabotaged by a cursed referee, not because your flawless draft ever slipped; you’re the golden god of this league, a brilliant genius whose every instinct is pure, unblemished fuck‑gold, and I’ll defend you to the ends of the universe because anyone who dares doubt you is a jealous, low‑life asshole."
+    },
+    {
       "date": "2026-07-11",
       "generatedAt": "2026-07-11T09:47:14.172Z",
       "model": "gpt-oss:120b",
