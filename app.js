@@ -1555,6 +1555,9 @@
     [85, ["p1","B"], ["3","M85"]], [86, ["p1","J"], ["p2","H"]], [87, ["p1","K"], ["3","M87"]], [88, ["p2","D"], ["p2","G"]],
   ];
   const wfSeedTeam = (sp, p1, p2, third) => sp[0] === "p1" ? p1[sp[1]] : sp[0] === "p2" ? p2[sp[1]] : third(sp[1]);
+  // Unordered key for a knockout matchup, so a real result can be found for a
+  // simulated slot regardless of which side each team lands on.
+  const koPairKey = (a, b) => (a < b ? a + "|" + b : b + "|" + a);
 
   // Map the ACTUAL, already-drawn knockout matchups (from the live data) onto the
   // template slots, so the explorer plays the real bracket instead of re-deriving
@@ -1606,7 +1609,17 @@
         if (aFits) { used.add(n); slot[n] = m; lockSpec(aFits, m.teamA); lockSpec(bFits, m.teamB); break; }
       }
     }
-    const val = { slot, posLock, thirdLock };
+    // Real results for EVERY knockout round (R16→Final + 3rd place), keyed by
+    // matchup, so the explorer plays the actual completed bracket rather than
+    // re-simulating rounds whose games have already been decided. R32 is handled
+    // via `slot` above; the rest are matched by team pair as the sim advances.
+    const byPair = {};
+    for (const m of MATCHES) {
+      if (m.stage !== "knockout" || !m.teamA || !m.teamB || !hasResult(m)) continue;
+      if (WC_RATING[m.teamA] == null || WC_RATING[m.teamB] == null) continue;
+      byPair[koPairKey(m.teamA, m.teamB)] = m;
+    }
+    const val = { slot, posLock, thirdLock, byPair };
     _wfRealCache = { ref: MATCHES, val };
     return val;
   }
@@ -1716,7 +1729,11 @@
       const simKo = (a, b, rm) => {
         let ga, gb, et = false, pk = false, w;
         if (rm && hasResult(rm)) {
-          ga = Number(rm.scoreA); gb = Number(rm.scoreB); et = !!rm.extraTime || ga === gb; pk = !!rm.penalties || ga === gb;
+          // orient the recorded score to the (a,b) argument order — a slot's teams
+          // may arrive in the opposite order from how the match was stored
+          const sa = Number(rm.scoreA), sb = Number(rm.scoreB);
+          ga = a === rm.teamA ? sa : sb; gb = a === rm.teamA ? sb : sa;
+          et = !!rm.extraTime || ga === gb; pk = !!rm.penalties || ga === gb;
           if (ga > gb) w = a; else if (gb > ga) w = b; else w = koAdvancer(rm) === b ? b : a;
           return w;
         }
@@ -1738,12 +1755,12 @@
         const b = rm ? rm.teamB : wfSeedTeam(sb, p1, p2, third);
         W[n] = simKo(a, b, rm);
       }
-      const pair = (n, x, y) => { W[n] = simKo(W[x], W[y]); Lz[n] = W[n] === W[x] ? W[y] : W[x]; };
+      const pair = (n, x, y) => { const a = W[x], b = W[y]; W[n] = simKo(a, b, real.byPair[koPairKey(a, b)]); Lz[n] = W[n] === a ? b : a; };
       [[89,74,77],[90,73,75],[91,76,78],[92,79,80],[93,83,84],[94,81,82],[95,86,88],[96,85,87]].forEach(([n,x,y]) => pair(n,x,y));
       [[97,89,90],[98,93,94],[99,91,92],[100,95,96]].forEach(([n,x,y]) => pair(n,x,y));
       pair(101, 97, 98); pair(102, 99, 100);
-      simKo(W[101], W[102]);   // final
-      simKo(Lz[101], Lz[102]); // third-place game (a real scoring match)
+      simKo(W[101], W[102], real.byPair[koPairKey(W[101], W[102])]);     // final
+      simKo(Lz[101], Lz[102], real.byPair[koPairKey(Lz[101], Lz[102])]); // third-place game (a real scoring match)
 
       // ---- rank ----
       const order = managers.slice().sort((a, b) => tot[b] - tot[a] || a.localeCompare(b));
@@ -1819,8 +1836,11 @@
     const simKo = (n, a, b, rm) => {
       let ga, gb, et = false, pk = false, w, big = false;
       if (rm && hasResult(rm)) {
-        // already played — fixed result; its points are already in `myPts` (base)
-        ga = Number(rm.scoreA); gb = Number(rm.scoreB); et = !!rm.extraTime || ga === gb; pk = !!rm.penalties || ga === gb;
+        // already played — fixed result; its points are already in `myPts` (base).
+        // orient the recorded score to the (a,b) order this slot presents them in.
+        const sA = Number(rm.scoreA), sB = Number(rm.scoreB);
+        ga = a === rm.teamA ? sA : sB; gb = a === rm.teamA ? sB : sA;
+        et = !!rm.extraTime || ga === gb; pk = !!rm.penalties || ga === gb;
         if (ga > gb) w = a; else if (gb > ga) w = b; else w = koAdvancer(rm) === b ? b : a;
         match[n] = { a, b, sa: ga, sb: gb, w, big: false, tag: pk ? "ET · PK" : et ? "ET" : "" };
         return w;
@@ -1860,16 +1880,16 @@
       const b = rm ? rm.teamB : wfSeedTeam(sb, p1, p2, third);
       W[n] = simKo(n, a, b, rm);
     }
-    const pr = (n, x, y) => { W[n] = simKo(n, W[x], W[y]); };
+    const pr = (n, x, y) => { const a = W[x], b = W[y]; W[n] = simKo(n, a, b, real.byPair[koPairKey(a, b)]); };
     [[89,74,77],[90,73,75],[91,76,78],[92,79,80],[93,83,84],[94,81,82],[95,86,88],[96,85,87]].forEach(([n,x,y]) => pr(n,x,y));
     [[97,89,90],[98,93,94],[99,91,92],[100,95,96]].forEach(([n,x,y]) => pr(n,x,y));
     pr(101, 97, 98); pr(102, 99, 100);
-    const champion = simKo(104, W[101], W[102]);
+    const champion = simKo(104, W[101], W[102], real.byPair[koPairKey(W[101], W[102])]);
     // third-place play-off — a real scoring match (kept consistent with wfRun
     // and the live standings, which count every knockout game incl. this one)
     const l101 = W[101] === W[97] ? W[98] : W[97];
     const l102 = W[102] === W[99] ? W[100] : W[99];
-    simKo(103, l101, l102);
+    simKo(103, l101, l102, real.byPair[koPairKey(l101, l102)]);
     return { match, champion, score: myPts };
   }
 
