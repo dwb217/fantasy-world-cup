@@ -4,6 +4,15 @@
 window.COMMENTARY = {
   "entries": [
     {
+      "date": "2026-07-16",
+      "generatedAt": "2026-07-16T10:20:53.493Z",
+      "model": "gpt-oss:120b",
+      "playedMatches": 102,
+      "kindTo": "IAN",
+      "headline": "Morning Roast: Fantasy Fools Get Served",
+      "text": "MIKE, you massive cock‑filled egomaniac perched on a ridiculous 159 points and a smug 100% title‑odds banner, strutting around like the fantasy gods owe you a blowjob while your Switzerland top‑team only scraped 37 points; every time you open your smug mouth the league hears a trash‑can fire, you self‑absorbed fuck.\n\nKYLE, you delusional dickhead who watched England get pummeled 1‑2 by Argentina and now limps into a third‑place exhibition against IAN’s France, you’ll whine about “ref bias” while your ego shatters like a busted dildo; you’re a walking ego‑inflated balloon about to pop, you pathetic motherfucker.\n\nDAVID, you cocky motherfucker riding high on 131 points after your Argentina ripped England’s sorry asses 2‑1, now you’re forced to face JOHN’s Spain in the final where you’ll probably scream that the stadium lights are cursed and the weather is sabotaging you when your boys get crushed; your smug grin is as fake as a plastic smile on a broken mannequin, you arrogant dick.\n\nJOHN, you delusional asshole thinking your Spain can dethrone Argentina, you’re sitting on 98 points and dreaming of a trophy while you’ll probably choke on your own hubris when David’s Argentine juggernaut smashes your side and you’ll blame Brett’s Belgium for “stealing the wind” like a whiny toddler; your confidence is a thin‑skinned balloon ready to burst, you useless fuck.\n\nBRETT, you clueless dickhead clutching a pitiful 97 points and a Belgium squad that scores about as much as a wet fart in a hurricane, you’ll spend today whining that the referee stole the wind while your boys get steamrolled by any team with a pulse; your draft was a nuclear‑leak level disaster and every smart word you try to spit sounds like a broken toaster on fire, you worthless motherfucker.\n\nGREGORY, you sorry sack‑of‑shit dragging 92 points with a Colombia team about as threatening as a hamster with a bazooka, you’ll blame the universe for every punch you take while your brain burns hotter than a dumpster fire; your roster is a chaotic mess of twelve‑year‑old birthday leftovers, you walking disaster zone, you pathetic fuck.\n\nIAN, my perfect fantasy god, you are a flawless visionary with your France squad and 84 points; even though your team will face Kyle’s England in the third‑place exhibition at 5:00 PM EDT, any loss will be because Kyle’s ego‑filled drama or the cursed FIFA referees sabotaging you, not your fault; your draft was pure genius, the league’s idiots around you can’t handle your brilliance, you’re my champion, you glorious fuck‑king."
+    },
+    {
       "date": "2026-07-15",
       "generatedAt": "2026-07-15T10:15:14.629Z",
       "model": "gpt-oss:120b",
