@@ -601,6 +601,42 @@
     return root;
   }
 
+  // Generic sortable table with the same interaction as the Teams tab: click a
+  // header to sort by that column, click again to flip direction. `state`
+  // ({key, dir}) lives outside so a tab re-render keeps the chosen order.
+  //   cols: [{ key, label, num, get(item) }]  ·  rowHTML(item) -> <td>…</td> string
+  function sortableTable(cols, items, rowHTML, state) {
+    const wrap = el("div");
+    function draw() {
+      const col = cols.find((c) => c.key === state.key) || cols[0];
+      const sorted = items.slice().sort((a, b) => {
+        const va = col.get(a), vb = col.get(b);
+        let cmp = col.num ? va - vb : String(va).localeCompare(String(vb));
+        if (cmp === 0) cmp = String(cols[0].get(a)).localeCompare(String(cols[0].get(b)));
+        return cmp * state.dir;
+      });
+      const arrow = (c) => (c.key === state.key ? (state.dir === 1 ? " ▲" : " ▼") : "");
+      const tbl = el("table", "full");
+      tbl.innerHTML = `<thead><tr>${cols
+        .map((c) => `<th class="sortable${c.num ? " num" : ""}${c.key === state.key ? " sorted" : ""}" data-key="${c.key}">${c.label}${arrow(c)}</th>`)
+        .join("")}</tr></thead>`;
+      const tb = el("tbody");
+      sorted.forEach((it) => { const tr = el("tr"); tr.innerHTML = rowHTML(it); tb.appendChild(tr); });
+      tbl.appendChild(tb);
+      tbl.querySelector("thead").addEventListener("click", (e) => {
+        const th = e.target.closest("th.sortable");
+        if (!th) return;
+        const key = th.dataset.key;
+        if (state.key === key) state.dir *= -1;                          // re-click flips direction
+        else { state.key = key; state.dir = cols.find((c) => c.key === key).num ? -1 : 1; } // numbers high→low, text A→Z
+        draw();
+      });
+      wrap.replaceChildren(tbl);
+    }
+    draw();
+    return wrap;
+  }
+
   /* ---------- editable results table ---------- */
 
   let dirty = new Set();      // eventIds (or manual ids) with unsaved edits
@@ -1588,6 +1624,10 @@
 
   /* ---------- draft value: steals & busts by auction price ---------- */
 
+  // Sort orders persist across tab re-renders (same pattern as teamsSort).
+  let valueMgrSort = { key: "ppd", dir: -1 };
+  let valueTeamSort = { key: "value", dir: -1 };
+
   function renderValue() {
     const root = el("div", "value");
     const PR = window.PRICES;
@@ -1649,38 +1689,33 @@
       .map((m) => ({ ...m, ppd: m.proj / m.spent }))
       .sort((a, b) => b.ppd - a.ppd);
     root.appendChild(el("h3", "proj-h", "Manager draft efficiency"));
-    const mt = el("table", "full");
-    mt.innerHTML = `<thead><tr><th>Manager</th><th class="num">Spent</th><th class="num">Pts so far</th><th class="num">Proj final</th><th class="num">Proj pts/$</th></tr></thead>`;
-    const mtb = el("tbody");
-    mgrs.forEach((m) => {
-      const tr = el("tr");
-      tr.innerHTML = `<td>${esc(m.name)}</td><td class="num">$${m.spent}</td><td class="num">${m.actual}</td>` +
-        `<td class="num">${m.proj}</td><td class="num"><b>${m.ppd.toFixed(2)}</b></td>`;
-      mtb.appendChild(tr);
-    });
-    mt.appendChild(mtb);
-    root.appendChild(mt);
+    root.appendChild(sortableTable([
+      { key: "name",   label: "Manager",    num: false, get: (m) => m.name },
+      { key: "spent",  label: "Spent",      num: true,  get: (m) => m.spent },
+      { key: "actual", label: "Pts so far", num: true,  get: (m) => m.actual },
+      { key: "proj",   label: "Proj final", num: true,  get: (m) => m.proj },
+      { key: "ppd",    label: "Proj pts/$", num: true,  get: (m) => m.ppd },
+    ], mgrs, (m) =>
+      `<td>${esc(m.name)}</td><td class="num">$${m.spent}</td><td class="num">${m.actual}</td>` +
+      `<td class="num">${m.proj}</td><td class="num"><b>${m.ppd.toFixed(2)}</b></td>`,
+    valueMgrSort));
 
     // full team table
     root.appendChild(el("h3", "proj-h", "All teams by value"));
-    const tbl = el("table", "full");
-    tbl.innerHTML = `<thead><tr>
-      <th>Team</th><th>Manager</th><th class="num">$</th><th class="num">Pts so far</th>
-      <th class="num">Proj final</th><th class="num">Proj pts/$</th><th class="num">Value</th>
-    </tr></thead>`;
-    const tb = el("tbody");
-    rows.forEach((r) => {
-      const tr = el("tr");
-      const v = r.value;
-      tr.innerHTML =
-        `<td>${esc(r.team)}</td><td class="muted">${esc(r.owner)}</td><td class="num">$${r.price}</td>` +
-        `<td class="num">${r.gp ? r.actual : '<span class="muted">—</span>'}</td>` +
-        `<td class="num">${r.proj}</td><td class="num">${r.ppd.toFixed(2)}</td>` +
-        `<td class="num"><b class="${v >= 0 ? "value-pos" : "value-neg"}">${v > 0 ? "+" : ""}${v.toFixed(0)}</b></td>`;
-      tb.appendChild(tr);
-    });
-    tbl.appendChild(tb);
-    root.appendChild(tbl);
+    root.appendChild(sortableTable([
+      { key: "team",   label: "Team",       num: false, get: (r) => r.team },
+      { key: "owner",  label: "Manager",    num: false, get: (r) => r.owner },
+      { key: "price",  label: "$",          num: true,  get: (r) => r.price },
+      { key: "actual", label: "Pts so far", num: true,  get: (r) => r.actual },
+      { key: "proj",   label: "Proj final", num: true,  get: (r) => r.proj },
+      { key: "ppd",    label: "Proj pts/$", num: true,  get: (r) => r.ppd },
+      { key: "value",  label: "Value",      num: true,  get: (r) => r.value },
+    ], rows, (r) =>
+      `<td>${esc(r.team)}</td><td class="muted">${esc(r.owner)}</td><td class="num">$${r.price}</td>` +
+      `<td class="num">${r.gp ? r.actual : '<span class="muted">—</span>'}</td>` +
+      `<td class="num">${r.proj}</td><td class="num">${r.ppd.toFixed(2)}</td>` +
+      `<td class="num"><b class="${r.value >= 0 ? "value-pos" : "value-neg"}">${r.value > 0 ? "+" : ""}${r.value.toFixed(0)}</b></td>`,
+    valueTeamSort));
     return root;
   }
 
@@ -1715,20 +1750,23 @@
         const ko = Date.parse(m.kickoff);
         return ko <= now && now - ko <= POST_GAME_HOURS * 3600 * 1000;
       });
-      const nextKo = pending.map((m) => Date.parse(m.kickoff))
-        .filter((t) => t > now).sort((a, b) => a - b)[0];
+      const nextM = pending.filter((m) => Date.parse(m.kickoff) > now)
+        .sort((a, b) => Date.parse(a.kickoff) - Date.parse(b.kickoff))[0];
 
       let main;
       if (inWindow.length) {
-        const names = inWindow.map((m) => `${m.teamA}–${m.teamB}`).join(", ");
+        const names = inWindow.map((m) =>
+          `${m.teamA}–${m.teamB}${isScoringMatch(m) ? "" : " (exhibition — not scored)"}`).join(", ");
         main = `<b>${names}</b> under way — score auto-imports minutes after full time`;
-      } else if (nextKo) {
-        const ko = new Date(nextKo);
+      } else if (nextM) {
+        const ko = new Date(Date.parse(nextM.kickoff));
         const time = ko.toLocaleTimeString(undefined, { hour: "numeric", minute: "2-digit" });
         const days = Math.floor((ko - new Date(new Date(now).toDateString())) / 86400000);
         const day = days === 0 ? "today" : days === 1 ? "tomorrow"
           : ko.toLocaleDateString(undefined, { weekday: "short", month: "short", day: "numeric" });
-        main = `Next match ${day} at <b>${time}</b> — score auto-imports after full time`;
+        main = isScoringMatch(nextM)
+          ? `Next match ${day} at <b>${time}</b> — score auto-imports after full time`
+          : `Next match ${day} at <b>${time}</b> — third-place exhibition: result shows up here but is <b>not scored</b>`;
       } else {
         main = `Scores auto-import minutes after each game ends`;
       }
