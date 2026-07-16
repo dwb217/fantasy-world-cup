@@ -320,7 +320,204 @@
         `It's 7 × the league-wide average points per dollar (every drafted team's points so far ÷ every auction dollar spent), ` +
         `rounded to a whole number and recalculated each day as results come in.`));
     }
+
+    const progressSec = pointsProgressSection();
+    if (progressSec) root.appendChild(progressSec);
+    const contribSec = teamContributionSection(standings);
+    if (contribSec) root.appendChild(contribSec);
     return root;
+  }
+
+  /* ---------- standings history charts ---------- */
+
+  // Cumulative ACTUAL points, day by day, from the played matches — per team and
+  // per manager, plus Kyle's draft bonus as it stood after each day (recomputed
+  // the same way computeStandings does, so the last day matches the live table).
+  function pointsTimeline() {
+    const played = MATCHES.filter((m) => hasResult(m) && isScoringMatch(m)).slice().sort((a, b) =>
+      String(a.date).localeCompare(String(b.date)) || (a.round || 0) - (b.round || 0) || (a.id || 0) - (b.id || 0));
+    if (!played.length) return null;
+    const dates = [...new Set(played.map((m) => m.date))];
+    const PR = window.PRICES || {};
+    let totPrice = 0; for (const t of ALL_TEAMS) totPrice += PR[t] || 0;
+    const cum = {}; ALL_TEAMS.forEach((t) => (cum[t] = 0));
+    let totPts = 0, mi = 0;
+    const days = [];
+    for (const d of dates) {
+      while (mi < played.length && played[mi].date === d) {
+        const m = played[mi++];
+        for (const team of [m.teamA, m.teamB]) {
+          if (!TEAM_OWNER[team]) continue;
+          const p = scoreTeamInMatch(team, m).total;
+          cum[team] += p; totPts += p;
+        }
+      }
+      const bonus = totPrice > 0 ? Math.round(7 * (totPts / totPrice)) : 0;
+      const mgr = {};
+      for (const mg of Object.keys(DRAFT)) mgr[mg] = DRAFT[mg].reduce((s, t) => s + cum[t], 0);
+      if ("KYLE" in mgr) mgr.KYLE += bonus;
+      days.push({ date: d, teams: { ...cum }, mgr, bonus });
+    }
+    return days;
+  }
+
+  // Line chart: every manager's actual running total after each match day.
+  function pointsProgressSection() {
+    const days = pointsTimeline();
+    if (!days) return null;
+    const managers = Object.keys(DRAFT);
+    const last = days[days.length - 1];
+    const order = managers.slice().sort((a, b) => (last.mgr[b] || 0) - (last.mgr[a] || 0));
+    const color = managerColors();
+
+    const W = 600, H = 380, padL = 44, padR = 10, padT = 16, padB = 30;
+    const n = days.length;
+    const sx = (i) => padL + (n === 1 ? (W - padL - padR) / 2 : (i / (n - 1)) * (W - padL - padR));
+    const hi = Math.max(10, Math.ceil(Math.max(...managers.map((m) => last.mgr[m] || 0)) / 10) * 10);
+    const sy = scale(0, hi, H - padB, padT);
+    const gStep = hi > 120 ? 20 : 10;
+    const grid = [];
+    for (let v = 0; v <= hi; v += gStep) grid.push(
+      `<line x1="${padL}" y1="${sy(v)}" x2="${W - padR}" y2="${sy(v)}" stroke="${PC.border}" stroke-width="1" stroke-dasharray="2 3"/>` +
+      `<text x="${padL - 6}" y="${sy(v) + 4}" fill="${PC.muted}" font-size="13" text-anchor="end">${v}</text>`);
+    const step = Math.max(1, Math.ceil(n / 6));
+    // a regular tick within one step of the last date would collide with it
+    const labels = days.map((d, i) => ((i % step === 0 && n - 1 - i >= step) || i === n - 1)
+      ? `<text x="${sx(i)}" y="${H - 8}" fill="${PC.muted}" font-size="12" text-anchor="${i === 0 ? "start" : i === n - 1 ? "end" : "middle"}">${esc(fmtDate(d.date))}</text>` : "").join("");
+    const series = order.map((m) => {
+      const ptsStr = days.map((d, i) => `${sx(i)},${sy(d.mgr[m] || 0)}`).join(" ");
+      const dots = days.map((d, i) => `<circle cx="${sx(i)}" cy="${sy(d.mgr[m] || 0)}" r="3" fill="${color[m]}"/>`).join("");
+      return (n > 1 ? `<polyline points="${ptsStr}" fill="none" stroke="${color[m]}" stroke-width="2.5"/>` : "") + dots;
+    }).join("");
+
+    const sec = el("div");
+    sec.appendChild(el("h3", "proj-h", "Points progress"));
+    sec.appendChild(el("p", "proj-sub muted",
+      "Actual points banked after each match day — no simulation, just the results so far. Kyle's line includes his draft " +
+      "bonus as it stood on each day."));
+    const legend = order.map((m) =>
+      `<span class="odds-key"><span class="odds-swatch" style="background:${color[m]}"></span>${esc(m)} <b>${last.mgr[m] || 0}</b></span>`).join("");
+    sec.appendChild(el("div", "odds-legend", legend));
+    const box = el("div", "proj-chart-box odds-chart");
+    box.innerHTML = `<svg class="chart tall" viewBox="0 0 ${W} ${H}" role="img">${grid.join("")}${series}${labels}</svg>`;
+    sec.appendChild(box);
+    attachChartHover(box, {
+      W, H, padL, padR, padT, padB, n, sx,
+      dates: days.map((d) => d.date), fmt: (v) => String(v || 0), lowerIsBetter: false,
+      rows: order.map((m) => ({
+        name: m, color: color[m],
+        ys: days.map((d) => sy(d.mgr[m] || 0)),
+        vals: days.map((d) => d.mgr[m] || 0),
+      })),
+    });
+    return sec;
+  }
+
+  // Team-band colors for the contribution chart (validated categorical set for
+  // this dark surface); gray bands for the fold-over bucket and Kyle's bonus.
+  const TEAM_BAND_COLORS = ["#3987e5", "#008300", "#d55181", "#c98500", "#199e70", "#d95926", "#9085e9", "#e66767"];
+  const BAND_OTHER = "#57606a", BAND_BONUS = "#8b97a6";
+
+  // Stacked-area chart: pick a manager, see which of their teams the points came
+  // from, day by day. Bands are cumulative team totals stacked biggest-first.
+  function teamContributionSection(standings) {
+    const days = pointsTimeline();
+    if (!days) return null;
+    const last = days[days.length - 1];
+
+    const sec = el("div");
+    sec.appendChild(el("h3", "proj-h", "Where the points came from"));
+    sec.appendChild(el("p", "proj-sub muted",
+      "One manager's running total, split by team — each colored band is one team's cumulative points. " +
+      "Kyle's draft bonus shows as its own gray band."));
+
+    const ctrl = el("div", "odds-ctrl");
+    const sel = document.createElement("select");
+    sel.className = "odds-pos-select";
+    standings.forEach((s) => {
+      const o = document.createElement("option");
+      o.value = s.manager; o.textContent = s.manager;
+      sel.appendChild(o);
+    });
+    const ctrlLabel = document.createElement("label");
+    ctrlLabel.className = "odds-ctrl-label";
+    ctrlLabel.textContent = "Manager ";
+    ctrlLabel.appendChild(sel);
+    ctrl.appendChild(ctrlLabel);
+    sec.appendChild(ctrl);
+
+    const legendBox = el("div", "odds-legend");
+    sec.appendChild(legendBox);
+    const box = el("div", "proj-chart-box odds-chart");
+    sec.appendChild(box);
+
+    const W = 600, H = 380, padL = 44, padR = 10, padT = 16, padB = 30;
+    const n = days.length;
+    const sx = (i) => padL + (n === 1 ? (W - padL - padR) / 2 : (i / (n - 1)) * (W - padL - padR));
+
+    function draw(mgr) {
+      // biggest contributor first → bottom of the stack; teams beyond the 8
+      // colored slots fold into a gray "Other" band (they're the tail scorers)
+      const teams = DRAFT[mgr].slice().sort((a, b) =>
+        (last.teams[b] || 0) - (last.teams[a] || 0) || a.localeCompare(b));
+      const bands = teams.slice(0, TEAM_BAND_COLORS.length).map((t, i) => ({
+        name: t, color: TEAM_BAND_COLORS[i],
+        vals: days.map((d) => d.teams[t] || 0),
+      }));
+      const rest = teams.slice(TEAM_BAND_COLORS.length);
+      if (rest.length) bands.push({
+        name: `Other (${rest.join(", ")})`, color: BAND_OTHER,
+        vals: days.map((d) => rest.reduce((s, t) => s + (d.teams[t] || 0), 0)),
+      });
+      if (mgr === "KYLE") bands.push({
+        name: "Draft bonus", color: BAND_BONUS,
+        vals: days.map((d) => d.bonus),
+      });
+
+      const total = last.mgr[mgr] || 0;
+      const hi = Math.max(10, Math.ceil(total / 10) * 10);
+      const sy = scale(0, hi, H - padB, padT);
+      const gStep = hi > 120 ? 20 : 10;
+      const grid = [];
+      for (let v = 0; v <= hi; v += gStep) grid.push(
+        `<line x1="${padL}" y1="${sy(v)}" x2="${W - padR}" y2="${sy(v)}" stroke="${PC.border}" stroke-width="1" stroke-dasharray="2 3"/>` +
+        `<text x="${padL - 6}" y="${sy(v) + 4}" fill="${PC.muted}" font-size="13" text-anchor="end">${v}</text>`);
+      const step = Math.max(1, Math.ceil(n / 6));
+      // a regular tick within one step of the last date would collide with it
+      const labels = days.map((d, i) => ((i % step === 0 && n - 1 - i >= step) || i === n - 1)
+        ? `<text x="${sx(i)}" y="${H - 8}" fill="${PC.muted}" font-size="12" text-anchor="${i === 0 ? "start" : i === n - 1 ? "end" : "middle"}">${esc(fmtDate(d.date))}</text>` : "").join("");
+
+      // stack the bands: each one's top = running sum through it
+      let base = new Array(n).fill(0);
+      const areas = [], edges = [], tops = [];
+      for (const b of bands) {
+        const top = base.map((v, i) => v + b.vals[i]);
+        const fwd = top.map((v, i) => `${sx(i)},${sy(v)}`).join(" ");
+        const back = base.map((v, i) => `${sx(i)},${sy(v)}`).reverse().join(" ");
+        areas.push(`<polygon points="${fwd} ${back}" fill="${b.color}" fill-opacity="0.5" stroke="${PC.panel2}" stroke-width="1"/>`);
+        if (n > 1) edges.push(`<polyline points="${fwd}" fill="none" stroke="${b.color}" stroke-width="2"/>`);
+        else edges.push(top.map((v, i) => `<circle cx="${sx(i)}" cy="${sy(v)}" r="3" fill="${b.color}"/>`).join(""));
+        tops.push(top);
+        base = top;
+      }
+
+      legendBox.innerHTML = bands.map((b) =>
+        `<span class="odds-key"><span class="odds-swatch" style="background:${b.color}"></span>${esc(b.name)} <b>${b.vals[n - 1]}</b></span>`).join("");
+      box.innerHTML = `<svg class="chart tall" viewBox="0 0 ${W} ${H}" role="img">${grid.join("")}${areas.join("")}${edges.join("")}${labels}</svg>`;
+      attachChartHover(box, {
+        W, H, padL, padR, padT, padB, n, sx,
+        dates: days.map((d) => d.date), fmt: (v) => String(v || 0), lowerIsBetter: false,
+        rows: bands.map((b, k) => ({
+          name: b.name, color: b.color,
+          ys: tops[k].map((v) => sy(v)),
+          vals: b.vals,
+        })),
+      });
+    }
+
+    sel.addEventListener("change", () => draw(sel.value));
+    draw(standings[0].manager);
+    return sec;
   }
 
   /* ---------- teams ---------- */
@@ -1149,6 +1346,70 @@
     return sec;
   }
 
+  // Projected-final-points-over-time line chart from window.ODDS_HISTORY.
+  // Each entry's `meanPts` is the manager's mean FINAL total across that day's
+  // simulations (locked results + simulated remainder), so the lines converge
+  // on the real final scores as the tournament runs out of games to simulate.
+  function meanPtsHistorySection() {
+    const all = window.ODDS_HISTORY;
+    if (!all || !all.length) return null;
+    const hist = all.filter((h) => h.meanPts && Object.keys(h.meanPts).length);
+    if (!hist.length) return null;
+    const managers = Object.keys(DRAFT);
+    const latest = hist[hist.length - 1].meanPts || {};
+    // best (highest projected total) first
+    const order = managers.slice().sort((a, b) => (latest[b] || 0) - (latest[a] || 0));
+    // Shared color per manager, identical to the other history charts.
+    const color = managerColors();
+    const fmtPts = (v) => String(Math.round(v || 0));
+
+    const W = 600, H = 380, padL = 44, padR = 10, padT = 16, padB = 30;
+    const n = hist.length;
+    const sx = (i) => padL + (n === 1 ? (W - padL - padR) / 2 : (i / (n - 1)) * (W - padL - padR));
+    // domain: every value across the whole series, snapped to 10s
+    const vals = hist.flatMap((h) => managers.map((m) => h.meanPts[m] || 0));
+    const lo = Math.floor(Math.min(...vals) / 10) * 10;
+    const hi = Math.ceil(Math.max(...vals) / 10) * 10;
+    // higher is better → top of the plot
+    const sy = scale(lo, hi, H - padB, padT);
+    const gStep = hi - lo > 100 ? 20 : 10; // keep the gridline count readable
+    const grid = [];
+    for (let v = lo; v <= hi; v += gStep) grid.push(
+      `<line x1="${padL}" y1="${sy(v)}" x2="${W - padR}" y2="${sy(v)}" stroke="${PC.border}" stroke-width="1" stroke-dasharray="2 3"/>` +
+      `<text x="${padL - 6}" y="${sy(v) + 4}" fill="${PC.muted}" font-size="13" text-anchor="end">${v}</text>`);
+    const step = Math.max(1, Math.ceil(n / 6));
+    const labels = hist.map((h, i) => (i % step === 0 || i === n - 1)
+      ? `<text x="${sx(i)}" y="${H - 8}" fill="${PC.muted}" font-size="12" text-anchor="${i === 0 ? "start" : i === n - 1 ? "end" : "middle"}">${esc(fmtDate(h.date))}</text>` : "").join("");
+    const series = order.map((m) => {
+      const ptsStr = hist.map((h, i) => `${sx(i)},${sy(h.meanPts[m] || 0)}`).join(" ");
+      const dots = hist.map((h, i) => `<circle cx="${sx(i)}" cy="${sy(h.meanPts[m] || 0)}" r="3" fill="${color[m]}"/>`).join("");
+      return (n > 1 ? `<polyline points="${ptsStr}" fill="none" stroke="${color[m]}" stroke-width="2.5"/>` : "") + dots;
+    }).join("");
+
+    const sec = el("div");
+    sec.appendChild(el("h3", "proj-h", "Projected final points over time"));
+    sec.appendChild(el("p", "proj-sub muted",
+      "Where each manager was projected to END UP on each day — the mean final total across that day's simulations, " +
+      "with played games locked in and the rest simulated. Lines converge on the real totals as fewer games remain." +
+      (n === 1 ? " The chart grows as the tournament progresses." : "")));
+    const legend = order.map((m) =>
+      `<span class="odds-key"><span class="odds-swatch" style="background:${color[m]}"></span>${esc(m)} <b>${fmtPts(latest[m])}</b></span>`).join("");
+    sec.appendChild(el("div", "odds-legend", legend));
+    const box = el("div", "proj-chart-box odds-chart");
+    box.innerHTML = `<svg class="chart tall" viewBox="0 0 ${W} ${H}" role="img">${grid.join("")}${series}${labels}</svg>`;
+    sec.appendChild(box);
+    attachChartHover(box, {
+      W, H, padL, padR, padT, padB, n, sx,
+      dates: hist.map((h) => h.date), fmt: (v) => (v || 0).toFixed(1), lowerIsBetter: false,
+      rows: order.map((m) => ({
+        name: m, color: color[m],
+        ys: hist.map((h) => sy(h.meanPts[m] || 0)),
+        vals: hist.map((h) => h.meanPts[m] || 0),
+      })),
+    });
+    return sec;
+  }
+
   function renderProjections() {
     const root = el("div", "proj");
     const P = window.PROJECTIONS;
@@ -1222,6 +1483,10 @@
     // ===== Section 2c: projected average finish over time =====
     const avgFinishSec = avgFinishHistorySection();
     if (avgFinishSec) root.appendChild(avgFinishSec);
+
+    // ===== Section 2d: projected final points over time =====
+    const meanPtsSec = meanPtsHistorySection();
+    if (meanPtsSec) root.appendChild(meanPtsSec);
 
     // ===== Section 3: per-manager detail cards =====
     root.appendChild(el("h3", "proj-h", "Manager detail"));
