@@ -3384,8 +3384,8 @@ window.ODDS_HISTORY = [
    ],
    "KYLE": [
     0,
-    0.5166,
-    0.4834,
+    0.5207,
+    0.4793,
     0,
     0,
     0,
@@ -3393,8 +3393,8 @@ window.ODDS_HISTORY = [
    ],
    "DAVID": [
     0,
-    0.4834,
-    0.5166,
+    0.4793,
+    0.5207,
     0,
     0,
     0,
@@ -3440,16 +3440,16 @@ window.ODDS_HISTORY = [
   "meanPts": {
    "MIKE": 159,
    "KYLE": 137,
-   "DAVID": 135.15,
-   "JOHN": 102.42,
+   "DAVID": 135.12,
+   "JOHN": 102.44,
    "BRETT": 97,
    "GREGORY": 92,
    "IAN": 84
   },
   "avgFinish": {
    "MIKE": 1,
-   "KYLE": 2.4834,
-   "DAVID": 2.5166,
+   "KYLE": 2.4793,
+   "DAVID": 2.5207,
    "JOHN": 4,
    "BRETT": 5,
    "GREGORY": 6,

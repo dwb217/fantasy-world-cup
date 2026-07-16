@@ -5,7 +5,7 @@
 window.PROJECTIONS = {
   "meta": {
     "nSims": 20000,
-    "generatedAt": "2026-07-16T01:04:33.877Z",
+    "generatedAt": "2026-07-16T09:50:52.109Z",
     "playedMatches": 102,
     "scheduledMatches": 104,
     "model": {
@@ -139,8 +139,8 @@ window.PROJECTIONS = {
       },
       "finish": [
         0,
-        0.5186,
-        0.4814,
+        0.5207,
+        0.4793,
         0,
         0,
         0,
@@ -195,10 +195,10 @@ window.PROJECTIONS = {
         "Bosnia & Herz"
       ],
       "teamCount": 5,
-      "mean": 135.14,
+      "mean": 135.12,
       "std": 3.81,
       "min": 131,
-      "max": 141,
+      "max": 142,
       "pct": {
         "p5": 131,
         "p25": 131,
@@ -210,14 +210,14 @@ window.PROJECTIONS = {
         "start": 130,
         "width": 10,
         "probs": [
-          0.8333,
-          0.1667
+          0.8332,
+          0.1668
         ]
       },
       "finish": [
         0,
-        0.4814,
-        0.5186,
+        0.4793,
+        0.5207,
         0,
         0,
         0,
@@ -256,7 +256,7 @@ window.PROJECTIONS = {
         },
         {
           "stage": "Final",
-          "mean": 135.14,
+          "mean": 135.12,
           "p25": 131,
           "p75": 139
         }
@@ -275,7 +275,7 @@ window.PROJECTIONS = {
       "mean": 102.44,
       "std": 3.81,
       "min": 98,
-      "max": 109,
+      "max": 108,
       "pct": {
         "p5": 98,
         "p25": 98,
@@ -287,8 +287,8 @@ window.PROJECTIONS = {
         "start": 90,
         "width": 10,
         "probs": [
-          0.3926,
-          0.6074
+          0.3927,
+          0.6073
         ]
       },
       "finish": [
@@ -578,7 +578,7 @@ window.PROJECTIONS = {
       "team": "Argentina",
       "owner": "DAVID",
       "rating": 2065,
-      "mean": 61.14,
+      "mean": 61.12,
       "std": 3.81,
       "pct": {
         "p5": 57,
@@ -589,20 +589,20 @@ window.PROJECTIONS = {
         "start": 57,
         "width": 3,
         "probs": [
-          0.4767,
-          0.0419,
-          0.3147,
-          0.1667
+          0.4799,
+          0.0408,
+          0.3125,
+          0.1668
         ]
       },
-      "lambda": 2.53,
+      "lambda": 2.54,
       "goalDist": [
-        0.0793,
-        0.201,
+        0.0792,
+        0.2009,
         0.2547,
         0.2152,
-        0.1363,
-        0.1134
+        0.1364,
+        0.1136
       ],
       "prog": {
         "advance": 1,
@@ -610,7 +610,7 @@ window.PROJECTIONS = {
         "qf": 1,
         "sf": 1,
         "final": 1,
-        "champion": 0.4814
+        "champion": 0.4793
       }
     },
     {
@@ -628,21 +628,20 @@ window.PROJECTIONS = {
         "start": 51,
         "width": 3,
         "probs": [
-          0.3926,
-          0.0888,
-          0.2124,
-          0.3061,
-          0.0001
+          0.3927,
+          0.0866,
+          0.2159,
+          0.3048
         ]
       },
       "lambda": 1.79,
       "goalDist": [
-        0.1665,
-        0.2985,
+        0.1663,
+        0.2983,
         0.2676,
-        0.1599,
-        0.0716,
-        0.0359
+        0.16,
+        0.0718,
+        0.036
       ],
       "prog": {
         "advance": 1,
@@ -650,7 +649,7 @@ window.PROJECTIONS = {
         "qf": 1,
         "sf": 1,
         "final": 1,
-        "champion": 0.5186
+        "champion": 0.5207
       }
     },
     {
