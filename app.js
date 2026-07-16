@@ -65,6 +65,10 @@
            Number.isFinite(Number(m.scoreB)) && m.scoreB !== null && m.scoreB !== "";
   }
 
+  // League ruling (2026-07-15): the Third-Place play-off is an exhibition — it
+  // never counts for fantasy points. After the semis, only the Final scores.
+  const isScoringMatch = (m) => m.roundLabel !== "Third Place";
+
   // The advancing rounds, in order. A team that reaches the next round is, by
   // definition, the one that won its match in the previous one — so when a
   // shootout winner hasn't been recorded yet we can recover it from the draw.
@@ -156,7 +160,7 @@
       table[manager].teams.forEach((row, i) => (teamRowIndex[row.team] = { manager, i }));
     }
     for (const m of MATCHES) {
-      if (!hasResult(m)) continue;
+      if (!hasResult(m) || !isScoringMatch(m)) continue;
       for (const team of [m.teamA, m.teamB]) {
         const idx = teamRowIndex[team];
         if (!idx) continue;
@@ -231,7 +235,7 @@
       "extraTime", "penalties", "advanced", "team", "owner", "goalsFor", "goalsAgainst", "result",
       ...RULE_KEYS, "total"];
     const rows = [];
-    const played = MATCHES.filter(hasResult).slice().sort((a, b) =>
+    const played = MATCHES.filter((m) => hasResult(m) && isScoringMatch(m)).slice().sort((a, b) =>
       String(a.date).localeCompare(String(b.date)) || (a.round || 0) - (b.round || 0) || (a.id || 0) - (b.id || 0));
     for (const m of played) {
       const ko = m.stage === "knockout";
@@ -266,10 +270,11 @@
     const root = el("div");
     const standings = computeStandings();
     const elim = eliminatedTeams();
-    const played = MATCHES.filter(hasResult).length;
+    const scoring = MATCHES.filter(isScoringMatch);
+    const played = scoring.filter(hasResult).length;
     const intro = el("p", "muted");
     intro.textContent = played
-      ? `${played} of ${MATCHES.length} matches scored.`
+      ? `${played} of ${scoring.length} matches scored. The third-place play-off is an exhibition and doesn't count.`
       : "No results yet — the tournament kicks off June 11. Standings will fill in automatically.";
     root.appendChild(intro);
 
@@ -325,7 +330,7 @@
     const pts = {}, gp = {};
     ALL_TEAMS.forEach((t) => { pts[t] = 0; gp[t] = 0; });
     for (const m of MATCHES) {
-      if (!hasResult(m)) continue;
+      if (!hasResult(m) || !isScoringMatch(m)) continue;
       for (const team of [m.teamA, m.teamB]) {
         if (!(team in pts)) continue;
         pts[team] += scoreTeamInMatch(team, m).total; gp[team] += 1;
@@ -522,13 +527,15 @@
     // Points per MANAGER (one entry if the same manager owns both teams, none
     // if no involved team is owned).
     const mgrPts = {};
-    if (played) {
+    if (played && isScoringMatch(m)) {
       for (const team of [m.teamA, m.teamB]) {
         const o = TEAM_OWNER[team];
         if (o) mgrPts[o] = (mgrPts[o] || 0) + scoreTeamInMatch(team, m).total;
       }
     }
-    const ptsCell = played && Object.keys(mgrPts).length
+    const ptsCell = !isScoringMatch(m)
+      ? '<span class="muted">not scored</span>'
+      : played && Object.keys(mgrPts).length
       ? Object.entries(mgrPts)
           .map(([o, p]) => `<span class="pts-owner">${esc(o)} <span class="badge">+${p}</span></span>`)
           .join(" ")
@@ -738,7 +745,7 @@
 
   function renderGamePoints() {
     const root = el("div");
-    const played = MATCHES.filter(hasResult);
+    const played = MATCHES.filter((m) => hasResult(m) && isScoringMatch(m));
     if (!played.length) {
       root.appendChild(el("p", "muted",
         "No games played yet — once results come in, this shows the fantasy points each manager earns from every game."));
@@ -1446,8 +1453,9 @@
      Interactive title-path explorer. Full-tournament Monte-Carlo:
        1) Monte-Carlo the unplayed group games with the same Elo/Poisson
           model as scripts/build_projections.js, then play FIFA's real 2026
-          knockout bracket (R32 → final + third-place) to the end, scored
-          with the live rules, to get each manager's P(finish 1st).
+          knockout bracket (R32 → final; the third-place play-off is an
+          exhibition and never scores) to the end, scored with the live
+          rules, to get each manager's P(finish 1st).
        2) Let you PIN any of your teams' remaining games to Win/Draw/Loss
           and re-simulate the rest, to see how your odds and the required
           results move.
@@ -1666,8 +1674,9 @@
   // Full-tournament Monte-Carlo run to the FINAL via FIFA's real bracket.
   // Each sim: finish the remaining group games (honoring pins) → real group
   // standings → 1st/2nd per group + 8 best thirds → seed the official Round-of-32
-  // template → play R32→R16→QF→SF→Final (+ 3rd-place game), scoring every match
-  // with the live rules → rank managers. Returns P(1st), the finish-position
+  // template → play R32→R16→QF→SF→Final (the 3rd-place game doesn't score, so it
+  // isn't simulated), scoring every match with the live rules → rank managers.
+  // Returns P(1st), the finish-position
   // distribution, and per-group-fixture conditional buckets for the explorer.
   function wfRun(manager, pins, N) {
     const fx = wfFixtures();
@@ -1760,7 +1769,7 @@
       [[97,89,90],[98,93,94],[99,91,92],[100,95,96]].forEach(([n,x,y]) => pair(n,x,y));
       pair(101, 97, 98); pair(102, 99, 100);
       simKo(W[101], W[102], real.byPair[koPairKey(W[101], W[102])]);     // final
-      simKo(Lz[101], Lz[102], real.byPair[koPairKey(Lz[101], Lz[102])]); // third-place game (a real scoring match)
+      // (third-place play-off intentionally not simulated — it doesn't score)
 
       // ---- rank ----
       const order = managers.slice().sort((a, b) => tot[b] - tot[a] || a.localeCompare(b));
@@ -1885,11 +1894,7 @@
     [[97,89,90],[98,93,94],[99,91,92],[100,95,96]].forEach(([n,x,y]) => pr(n,x,y));
     pr(101, 97, 98); pr(102, 99, 100);
     const champion = simKo(104, W[101], W[102], real.byPair[koPairKey(W[101], W[102])]);
-    // third-place play-off — a real scoring match (kept consistent with wfRun
-    // and the live standings, which count every knockout game incl. this one)
-    const l101 = W[101] === W[97] ? W[98] : W[97];
-    const l102 = W[102] === W[99] ? W[100] : W[99];
-    simKo(103, l101, l102, real.byPair[koPairKey(l101, l102)]);
+    // third-place play-off skipped — it's an exhibition and never scores
     return { match, champion, score: myPts };
   }
 
@@ -1937,13 +1942,6 @@
     wrap.appendChild(el("div", "wf-champ",
       `🏆 <b class="${mine ? "wf-mine" : ""}">${esc(S.champion)}</b> ` +
       `<span class="muted">(${esc(TEAM_OWNER[S.champion])})${mine ? " — that's you!" : ""} · simulated champion</span>`));
-    const tp = S.match[103];
-    if (tp) {
-      const w3 = tp.w, m3 = TEAM_OWNER[w3] === manager;
-      wrap.appendChild(el("div", "wf-champ wf-third muted",
-        `🥉 <b class="${m3 ? "wf-mine" : ""}">${esc(w3)}</b> ` +
-        `beat ${esc(tp.w === tp.a ? tp.b : tp.a)} · third-place play-off (counts for points)`));
-    }
     return wrap;
   }
 
@@ -1999,7 +1997,7 @@
       "<b>Experimental.</b> Full-tournament title-path explorer: takes everything that's already happened — played results and the " +
       "<b>actual Round-of-32 draw</b> as it stands — then simulates the rest. Remaining group games fill any undecided bracket slots " +
       "(group winners / runners-up / 8 best thirds into FIFA's official template), and the knockout rounds play to the final, scoring " +
-      "every match with the live rules."));
+      "every match with the live rules (except the third-place play-off, which doesn't count for points)."));
 
     const head = el("div", "wf-head");
     const sel = el("select", "wf-select");

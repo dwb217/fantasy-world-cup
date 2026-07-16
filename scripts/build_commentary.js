@@ -60,6 +60,9 @@ function hasResult(m) {
   return Number.isFinite(Number(m.scoreA)) && m.scoreA !== null && m.scoreA !== "" &&
          Number.isFinite(Number(m.scoreB)) && m.scoreB !== null && m.scoreB !== "";
 }
+// League ruling (2026-07-15): the Third-Place play-off is an exhibition — no
+// fantasy points (mirrors isScoringMatch in app.js).
+const isScoringMatch = (m) => m.roundLabel !== "Third Place";
 // Who advanced from a knockout tie (mirrors app.js): recorded shootout winner,
 // else the higher score, else — for a level tie with no winner recorded — the
 // team that turns up in the next round's draw.
@@ -110,7 +113,7 @@ function computeStandings() {
   const idx = {};
   for (const mgr of Object.keys(DRAFT)) table[mgr].teams.forEach((row, i) => (idx[row.team] = { mgr, i }));
   for (const m of MATCHES) {
-    if (!hasResult(m)) continue;
+    if (!hasResult(m) || !isScoringMatch(m)) continue;
     for (const team of [m.teamA, m.teamB]) {
       const where = idx[team];
       if (!where) continue;
@@ -137,11 +140,18 @@ const played = MATCHES
   .filter((m) => Number.isFinite(m.scoreA) && Number.isFinite(m.scoreB))
   .sort((a, b) => String(a.date).localeCompare(String(b.date)) || (a.round || 0) - (b.round || 0));
 
+// Round label with the no-points caveat spelled out for the model, so the blog
+// never credits (or previews) fantasy points from the third-place exhibition.
+const roundName = (m) => {
+  const r = m.roundLabel || (m.stage === "knockout" ? "Knockout" : "Group");
+  return isScoringMatch(m) ? r : `${r} (exhibition — worth ZERO fantasy points)`;
+};
+
 const describe = (m) => {
   const level = Number(m.scoreA) === Number(m.scoreB);
   const d = {
     date: m.date,
-    round: m.roundLabel || (m.stage === "knockout" ? "Knockout" : "Group"),
+    round: roundName(m),
     score: `${m.teamA} ${m.scoreA}-${m.scoreB} ${m.teamB}`,
     owners: `${m.teamA} (${OWNER[m.teamA] || "undrafted"}) vs ${m.teamB} (${OWNER[m.teamB] || "undrafted"})`,
   };
@@ -196,7 +206,7 @@ const nextFixtures = upcomingSorted
   .map((m) => ({
     date: m.date,
     kickoffEDT: fmtEDT(m.kickoff),   // e.g. "3:00 PM EDT" — already local, never UTC
-    round: m.roundLabel || (m.stage === "knockout" ? "Knockout" : "Group"),
+    round: roundName(m),
     matchup: `${m.teamA} (${OWNER[m.teamA] || "undrafted"}) vs ${m.teamB} (${OWNER[m.teamB] || "undrafted"})`,
   }));
 

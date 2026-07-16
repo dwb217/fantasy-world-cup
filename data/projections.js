@@ -5,7 +5,7 @@
 window.PROJECTIONS = {
   "meta": {
     "nSims": 20000,
-    "generatedAt": "2026-07-15T21:47:48.109Z",
+    "generatedAt": "2026-07-16T01:04:33.877Z",
     "playedMatches": 102,
     "scheduledMatches": 104,
     "model": {
@@ -119,29 +119,28 @@ window.PROJECTIONS = {
         "Curacao"
       ],
       "teamCount": 9,
-      "mean": 140.84,
-      "std": 3.77,
+      "mean": 137,
+      "std": 0,
       "min": 137,
-      "max": 147,
+      "max": 137,
       "pct": {
         "p5": 137,
         "p25": 137,
-        "p50": 139,
-        "p75": 145,
-        "p95": 146
+        "p50": 137,
+        "p75": 137,
+        "p95": 137
       },
       "hist": {
         "start": 130,
         "width": 10,
         "probs": [
-          0.51295,
-          0.48705
+          1
         ]
       },
       "finish": [
         0,
-        0.7562,
-        0.2437,
+        0.5186,
+        0.4814,
         0,
         0,
         0,
@@ -180,9 +179,9 @@ window.PROJECTIONS = {
         },
         {
           "stage": "Final",
-          "mean": 140.84,
+          "mean": 137,
           "p25": 137,
-          "p75": 145
+          "p75": 137
         }
       ]
     },
@@ -196,8 +195,8 @@ window.PROJECTIONS = {
         "Bosnia & Herz"
       ],
       "teamCount": 5,
-      "mean": 135.11,
-      "std": 3.8,
+      "mean": 135.14,
+      "std": 3.81,
       "min": 131,
       "max": 141,
       "pct": {
@@ -211,14 +210,14 @@ window.PROJECTIONS = {
         "start": 130,
         "width": 10,
         "probs": [
-          0.8356,
-          0.1644
+          0.8333,
+          0.1667
         ]
       },
       "finish": [
         0,
-        0.2437,
-        0.7562,
+        0.4814,
+        0.5186,
         0,
         0,
         0,
@@ -257,7 +256,7 @@ window.PROJECTIONS = {
         },
         {
           "stage": "Final",
-          "mean": 135.11,
+          "mean": 135.14,
           "p25": 131,
           "p75": 139
         }
@@ -273,7 +272,7 @@ window.PROJECTIONS = {
         "DR Congo"
       ],
       "teamCount": 5,
-      "mean": 102.45,
+      "mean": 102.44,
       "std": 3.81,
       "min": 98,
       "max": 109,
@@ -288,8 +287,8 @@ window.PROJECTIONS = {
         "start": 90,
         "width": 10,
         "probs": [
-          0.39375,
-          0.60625
+          0.3926,
+          0.6074
         ]
       },
       "finish": [
@@ -334,7 +333,7 @@ window.PROJECTIONS = {
         },
         {
           "stage": "Final",
-          "mean": 102.45,
+          "mean": 102.44,
           "p25": 98,
           "p75": 106
         }
@@ -456,8 +455,8 @@ window.PROJECTIONS = {
         0,
         0,
         0,
-        0.7914,
-        0.2086
+        1,
+        0
       ],
       "cumulative": [
         {
@@ -507,23 +506,22 @@ window.PROJECTIONS = {
         "New Zealand"
       ],
       "teamCount": 4,
-      "mean": 88.72,
-      "std": 3.81,
+      "mean": 84,
+      "std": 0,
       "min": 84,
-      "max": 95,
+      "max": 84,
       "pct": {
         "p5": 84,
         "p25": 84,
-        "p50": 91,
-        "p75": 92,
-        "p95": 93
+        "p50": 84,
+        "p75": 84,
+        "p95": 84
       },
       "hist": {
         "start": 80,
         "width": 10,
         "probs": [
-          0.4441,
-          0.5559
+          1
         ]
       },
       "finish": [
@@ -532,8 +530,8 @@ window.PROJECTIONS = {
         0,
         0,
         0,
-        0.2086,
-        0.7914
+        0,
+        1
       ],
       "cumulative": [
         {
@@ -568,9 +566,9 @@ window.PROJECTIONS = {
         },
         {
           "stage": "Final",
-          "mean": 88.72,
+          "mean": 84,
           "p25": 84,
-          "p75": 92
+          "p75": 84
         }
       ]
     }
@@ -580,8 +578,8 @@ window.PROJECTIONS = {
       "team": "Argentina",
       "owner": "DAVID",
       "rating": 2065,
-      "mean": 61.11,
-      "std": 3.8,
+      "mean": 61.14,
+      "std": 3.81,
       "pct": {
         "p5": 57,
         "p50": 60,
@@ -591,10 +589,10 @@ window.PROJECTIONS = {
         "start": 57,
         "width": 3,
         "probs": [
-          0.47975,
-          0.04155,
-          0.3143,
-          0.1644
+          0.4767,
+          0.0419,
+          0.3147,
+          0.1667
         ]
       },
       "lambda": 2.53,
@@ -604,7 +602,7 @@ window.PROJECTIONS = {
         0.2547,
         0.2152,
         0.1363,
-        0.1135
+        0.1134
       ],
       "prog": {
         "advance": 1,
@@ -612,14 +610,14 @@ window.PROJECTIONS = {
         "qf": 1,
         "sf": 1,
         "final": 1,
-        "champion": 0.4787
+        "champion": 0.4814
       }
     },
     {
       "team": "Spain",
       "owner": "JOHN",
       "rating": 2075,
-      "mean": 56.45,
+      "mean": 56.44,
       "std": 3.81,
       "pct": {
         "p5": 52,
@@ -630,21 +628,21 @@ window.PROJECTIONS = {
         "start": 51,
         "width": 3,
         "probs": [
-          0.39375,
-          0.08495,
-          0.21165,
-          0.3096,
-          0.00005
+          0.3926,
+          0.0888,
+          0.2124,
+          0.3061,
+          0.0001
         ]
       },
       "lambda": 1.79,
       "goalDist": [
-        0.1663,
-        0.2983,
+        0.1665,
+        0.2985,
         0.2676,
-        0.16,
-        0.0718,
-        0.036
+        0.1599,
+        0.0716,
+        0.0359
       ],
       "prog": {
         "advance": 1,
@@ -652,38 +650,35 @@ window.PROJECTIONS = {
         "qf": 1,
         "sf": 1,
         "final": 1,
-        "champion": 0.5213
+        "champion": 0.5186
       }
     },
     {
       "team": "France",
       "owner": "IAN",
       "rating": 2080,
-      "mean": 55.72,
-      "std": 3.81,
+      "mean": 51,
+      "std": 0,
       "pct": {
         "p5": 51,
-        "p50": 58,
-        "p95": 60
+        "p50": 51,
+        "p95": 51
       },
       "hist": {
         "start": 51,
         "width": 3,
         "probs": [
-          0.4088,
-          0.0353,
-          0.3473,
-          0.2086
+          1
         ]
       },
-      "lambda": 2.18,
+      "lambda": 2.29,
       "goalDist": [
-        0.1135,
-        0.247,
-        0.2687,
-        0.1949,
-        0.106,
-        0.0699
+        0.1017,
+        0.2325,
+        0.2657,
+        0.2024,
+        0.1157,
+        0.0821
       ],
       "prog": {
         "advance": 1,
@@ -698,31 +693,28 @@ window.PROJECTIONS = {
       "team": "England",
       "owner": "KYLE",
       "rating": 2045,
-      "mean": 46.84,
-      "std": 3.77,
+      "mean": 43,
+      "std": 0,
       "pct": {
         "p5": 43,
-        "p50": 45,
-        "p95": 52
+        "p50": 43,
+        "p95": 43
       },
       "hist": {
         "start": 42,
         "width": 3,
         "probs": [
-          0.46065,
-          0.09525,
-          0.1909,
-          0.2532
+          1
         ]
       },
-      "lambda": 1.9,
+      "lambda": 2,
       "goalDist": [
-        0.1493,
-        0.2839,
-        0.27,
-        0.1712,
-        0.0814,
-        0.0442
+        0.1353,
+        0.2707,
+        0.2707,
+        0.1804,
+        0.0902,
+        0.0527
       ],
       "prog": {
         "advance": 1,

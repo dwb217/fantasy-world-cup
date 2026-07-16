@@ -105,6 +105,11 @@ const hasResult = (m) =>
   m.scoreA !== null && m.scoreA !== "" && Number.isFinite(Number(m.scoreA)) &&
   m.scoreB !== null && m.scoreB !== "" && Number.isFinite(Number(m.scoreB));
 
+// League ruling (2026-07-15): the Third-Place play-off is an exhibition — it
+// never counts for fantasy points, so it's excluded from the sims and from the
+// points-so-far totals (mirrors isScoringMatch in app.js).
+const isScoringMatch = (m) => m.roundLabel !== "Third Place";
+
 // The advancing rounds, in order — used to recover a shootout winner that
 // hasn't been recorded yet from the next round's draw (the team that turns up
 // there is the one that advanced).
@@ -201,7 +206,7 @@ function simulate(allMatches, N) {
     if (!totPrice) return 0;
     let totPts = 0;
     for (const m of allMatches) {
-      if (!hasResult(m)) continue;
+      if (!hasResult(m) || !isScoringMatch(m)) continue;
       const a = Number(m.scoreA), b = Number(m.scoreB);
       if (m.stage === "knockout") {
         const o = actualKoOutcome(m);
@@ -241,14 +246,12 @@ function simulate(allMatches, N) {
   // importer's date-window mapping; anything unrecognized disables the use of
   // real pairings (random pairing still works) rather than corrupting a bracket.
   let koBySize = { 32: [], 16: [], 8: [], 4: [], 2: [] };
-  let thirdPlaceFix = null;
   for (const f of koFixAll) {
-    if (f.roundLabel === "Third Place") { thirdPlaceFix = f; continue; }
+    if (f.roundLabel === "Third Place") continue; // exhibition — never scored or simulated
     const s = KO_SIZE[f.roundLabel];
     if (!s) {
       console.warn(`Unrecognized knockout round label "${f.roundLabel}" — ignoring real knockout pairings.`);
       koBySize = { 32: [], 16: [], 8: [], 4: [], 2: [] };
-      thirdPlaceFix = null;
       break;
     }
     koBySize[s].push(f);
@@ -399,7 +402,7 @@ function simulate(allMatches, N) {
     if (USE_TREE) {
       // R32 is drawn → walk FIFA's fixed bracket (data/bracket.js): survivors flow
       // to their known opponents, played games are locked, the rest simulated.
-      const W = {}, Lz = {};
+      const W = {};
       const playSlot = (a, b, si) => {
         const w = playKoGame(a, b, koByPair[pairKey(a, b)] || null, si);
         return [w, w === a ? b : a];
@@ -407,13 +410,12 @@ function simulate(allMatches, N) {
       for (const [n] of BR.r32)        { const f = slotFix[n]; const [w] = playSlot(f.teamA, f.teamB, 1); W[n] = w; teamProg[w].r16++; }
       for (const [n, x, y] of BR.r16)  { const [w] = playSlot(W[x], W[y], 2); W[n] = w; teamProg[w].qf++; }
       for (const [n, x, y] of BR.qf)   { const [w] = playSlot(W[x], W[y], 3); W[n] = w; teamProg[w].sf++; }
-      for (const [n, x, y] of BR.sf)   { const [w, l] = playSlot(W[x], W[y], 4); W[n] = w; Lz[n] = l; teamProg[w].final++; }
+      for (const [n, x, y] of BR.sf)   { const [w] = playSlot(W[x], W[y], 4); W[n] = w; teamProg[w].final++; }
       { const [, x, y] = BR.final; const [w] = playSlot(W[x], W[y], 5); teamProg[w].champion++; }
-      { const [, x, y] = BR.third; if (Lz[x] && Lz[y]) playSlot(Lz[x], Lz[y], 5); } // SF losers
+      // third-place play-off intentionally not played — it's an exhibition, no points
     } else {
       // R32 not yet drawn: real pairings where fixtures exist, random pairing for the rest
       let cur = shuffle(qualifiers.slice());
-      let sfLosers = [];
       while (cur.length > 1) {
         const S = cur.length;
         const si = stageIdxBySize[S];
@@ -429,20 +431,11 @@ function simulate(allMatches, N) {
         if (S === 32) for (const t of next) teamProg[t].r16++;
         else if (S === 16) for (const t of next) teamProg[t].qf++;
         else if (S === 8) for (const t of next) teamProg[t].sf++;
-        else if (S === 4) { for (const t of next) teamProg[t].final++; sfLosers = cur.filter(t => !next.includes(t)); }
+        else if (S === 4) { for (const t of next) teamProg[t].final++; }
         cur = next;
       }
       teamProg[cur[0]].champion++;
-
-      // third-place game (a real, points-scoring match between the SF losers)
-      if (sfLosers.length === 2) {
-        const [a, b] = sfLosers;
-        const fix = (thirdPlaceFix &&
-          ((thirdPlaceFix.teamA === a && thirdPlaceFix.teamB === b) ||
-           (thirdPlaceFix.teamA === b && thirdPlaceFix.teamB === a)))
-          ? thirdPlaceFix : null;
-        playKoGame(fix ? fix.teamA : a, fix ? fix.teamB : b, fix, 5);
-      }
+      // third-place play-off intentionally not played — it's an exhibition, no points
     }
 
     // record
