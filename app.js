@@ -389,6 +389,7 @@
       const dots = days.map((d, i) => `<circle cx="${sx(i)}" cy="${sy(d.mgr[m] || 0)}" r="3" fill="${color[m]}"/>`).join("");
       return (n > 1 ? `<polyline points="${ptsStr}" fill="none" stroke="${color[m]}" stroke-width="2.5"/>` : "") + dots;
     }).join("");
+    const divider = koDividerSVG(days.map((d) => d.date), sx, H, padT, padB);
 
     const sec = el("div");
     sec.appendChild(el("h3", "proj-h", "Points progress"));
@@ -399,7 +400,7 @@
       `<span class="odds-key"><span class="odds-swatch" style="background:${color[m]}"></span>${esc(m)} <b>${last.mgr[m] || 0}</b></span>`).join("");
     sec.appendChild(el("div", "odds-legend", legend));
     const box = el("div", "proj-chart-box odds-chart");
-    box.innerHTML = `<svg class="chart tall" viewBox="0 0 ${W} ${H}" role="img">${grid.join("")}${series}${labels}</svg>`;
+    box.innerHTML = `<svg class="chart tall" viewBox="0 0 ${W} ${H}" role="img">${grid.join("")}${divider}${series}${labels}</svg>`;
     sec.appendChild(box);
     attachChartHover(box, {
       W, H, padL, padR, padT, padB, n, sx,
@@ -454,6 +455,7 @@
     const W = 600, H = 380, padL = 44, padR = 10, padT = 16, padB = 30;
     const n = days.length;
     const sx = (i) => padL + (n === 1 ? (W - padL - padR) / 2 : (i / (n - 1)) * (W - padL - padR));
+    const divider = koDividerSVG(days.map((d) => d.date), sx, H, padT, padB);
 
     function draw(mgr) {
       // biggest contributor first → bottom of the stack; teams beyond the 8
@@ -503,7 +505,7 @@
 
       legendBox.innerHTML = bands.map((b) =>
         `<span class="odds-key"><span class="odds-swatch" style="background:${b.color}"></span>${esc(b.name)} <b>${b.vals[n - 1]}</b></span>`).join("");
-      box.innerHTML = `<svg class="chart tall" viewBox="0 0 ${W} ${H}" role="img">${grid.join("")}${areas.join("")}${edges.join("")}${labels}</svg>`;
+      box.innerHTML = `<svg class="chart tall" viewBox="0 0 ${W} ${H}" role="img">${grid.join("")}${areas.join("")}${edges.join("")}${divider}${labels}</svg>`;
       attachChartHover(box, {
         W, H, padL, padR, padT, padB, n, sx,
         dates: days.map((d) => d.date), fmt: (v) => String(v || 0), lowerIsBetter: false,
@@ -1005,6 +1007,29 @@
   const pctTxt = (p) => (p >= 0.1 ? Math.round(p * 100) : (p * 100).toFixed(p >= 0.01 ? 0 : 1)) + "%";
   const scale = (lo, hi, x0, x1) => (v) => x0 + ((v - lo) / (hi - lo || 1)) * (x1 - x0);
 
+  // First knockout kickoff date — where the group stage hands over to the
+  // knockout rounds. Every date-axis chart marks this boundary.
+  const KO_START_DATE = (() => {
+    const ds = MATCHES.filter((m) => m.stage === "knockout" && m.date).map((m) => m.date).sort();
+    return ds[0] || null;
+  })();
+
+  // Vertical group→knockout divider for a date-axis chart, drawn halfway
+  // between the last group-era point and the first knockout-era point.
+  // League convention: group play ended June 27 and the knockouts began
+  // June 28 (the two group games STORED as 06-28 kicked off at 02:00 UTC —
+  // the evening of the 27th in EDT, the league's home timezone) — so every
+  // point dated on/after the first knockout date sits right of the line.
+  // Returns "" when the boundary isn't inside the chart's range.
+  function koDividerSVG(dates, sx, H, padT, padB) {
+    if (!KO_START_DATE) return "";
+    const i = dates.findIndex((d) => d >= KO_START_DATE);
+    if (i <= 0) return "";
+    const x = ((sx(i - 1) + sx(i)) / 2).toFixed(1);
+    return `<line x1="${x}" y1="${padT}" x2="${x}" y2="${H - padB}" stroke="${PC.muted}" stroke-width="1.5" stroke-dasharray="6 4" opacity="0.65"/>` +
+      `<text x="${+x + 5}" y="${padT + 11}" fill="${PC.muted}" font-size="11">knockouts →</text>`;
+  }
+
   // Horizontal box-and-whisker (p5–p95 whisker, p25–p75 box, median, mean) over a shared domain.
   function boxPlotSVG(p, mean, dom) {
     const W = 600, H = 30, pad = 4, mid = H / 2;
@@ -1216,6 +1241,8 @@
     const n = hist.length;
     const sx = (i) => padL + (n === 1 ? (W - padL - padR) / 2 : (i / (n - 1)) * (W - padL - padR));
 
+    const divider = koDividerSVG(hist.map((h) => h.date), sx, H, padT, padB);
+
     const sec = el("div");
     sec.appendChild(el("h3", "proj-h", "Finishing odds over time"));
     const subEl = el("p", "proj-sub muted");
@@ -1268,7 +1295,7 @@
         (n === 1 ? " The chart grows as the tournament progresses." : "");
       legendBox.innerHTML = order.map((m) =>
         `<span class="odds-key"><span class="odds-swatch" style="background:${color[m]}"></span>${esc(m)} <b>${pctTxt(latest[m] || 0)}</b></span>`).join("");
-      box.innerHTML = `<svg class="chart tall" viewBox="0 0 ${W} ${H}" role="img">${grid}${series}${labels}</svg>`;
+      box.innerHTML = `<svg class="chart tall" viewBox="0 0 ${W} ${H}" role="img">${grid}${divider}${series}${labels}</svg>`;
       attachChartHover(box, {
         W, H, padL, padR, padT, padB, n, sx,
         dates: hist.map((h) => h.date), fmt: (v) => pctTxt(v || 0), lowerIsBetter: false,
@@ -1321,6 +1348,7 @@
       const dots = hist.map((h, i) => `<circle cx="${sx(i)}" cy="${sy(h.avgFinish[m])}" r="3" fill="${color[m]}"/>`).join("");
       return (n > 1 ? `<polyline points="${ptsStr}" fill="none" stroke="${color[m]}" stroke-width="2.5"/>` : "") + dots;
     }).join("");
+    const divider = koDividerSVG(hist.map((h) => h.date), sx, H, padT, padB);
 
     const sec = el("div");
     sec.appendChild(el("h3", "proj-h", "Projected average finish over time"));
@@ -1332,7 +1360,7 @@
       `<span class="odds-key"><span class="odds-swatch" style="background:${color[m]}"></span>${esc(m)} <b>${fmtPos(latest[m] || 0)}</b></span>`).join("");
     sec.appendChild(el("div", "odds-legend", legend));
     const box = el("div", "proj-chart-box odds-chart");
-    box.innerHTML = `<svg class="chart tall" viewBox="0 0 ${W} ${H}" role="img">${grid}${series}${labels}</svg>`;
+    box.innerHTML = `<svg class="chart tall" viewBox="0 0 ${W} ${H}" role="img">${grid}${divider}${series}${labels}</svg>`;
     sec.appendChild(box);
     attachChartHover(box, {
       W, H, padL, padR, padT, padB, n, sx,
@@ -1385,6 +1413,7 @@
       const dots = hist.map((h, i) => `<circle cx="${sx(i)}" cy="${sy(h.meanPts[m] || 0)}" r="3" fill="${color[m]}"/>`).join("");
       return (n > 1 ? `<polyline points="${ptsStr}" fill="none" stroke="${color[m]}" stroke-width="2.5"/>` : "") + dots;
     }).join("");
+    const divider = koDividerSVG(hist.map((h) => h.date), sx, H, padT, padB);
 
     const sec = el("div");
     sec.appendChild(el("h3", "proj-h", "Projected final points over time"));
@@ -1396,7 +1425,7 @@
       `<span class="odds-key"><span class="odds-swatch" style="background:${color[m]}"></span>${esc(m)} <b>${fmtPts(latest[m])}</b></span>`).join("");
     sec.appendChild(el("div", "odds-legend", legend));
     const box = el("div", "proj-chart-box odds-chart");
-    box.innerHTML = `<svg class="chart tall" viewBox="0 0 ${W} ${H}" role="img">${grid.join("")}${series}${labels}</svg>`;
+    box.innerHTML = `<svg class="chart tall" viewBox="0 0 ${W} ${H}" role="img">${grid.join("")}${divider}${series}${labels}</svg>`;
     sec.appendChild(box);
     attachChartHover(box, {
       W, H, padL, padR, padT, padB, n, sx,
