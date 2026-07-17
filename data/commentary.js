@@ -4,6 +4,15 @@
 window.COMMENTARY = {
   "entries": [
     {
+      "date": "2026-07-17",
+      "generatedAt": "2026-07-17T10:10:44.967Z",
+      "model": "gpt-oss:120b",
+      "playedMatches": 102,
+      "kindTo": "DAVID",
+      "headline": "Morning Roast: Fantasy Fools Get Slammed",
+      "text": "MIKE, you smug fuck‑god perched on a ridiculous 159 points and a laughable 100% title‑odds banner, strutting around like the universe owes you a blowjob while your Swiss squad barely squeaks a measly 37 points; every time you open your mouth the league hears a busted sex toy, you self‑absorbed asshole.\n\nKYLE, you delusional prick who watched your England get steamrolled 1‑2 by David’s Argentina and now you’re forced to lick the dust in a zero‑point third‑place exhibition against IAN’s France at 5 PM, whining about “ref bias” while your ego deflates like a popped condom; you’re a walking disaster, you brain‑dead dickhead.\n\nJOHN, you cock‑sucking dreamer thinking your Spain can topple David’s Argentine juggernaut in the final at 3 PM, clutching a pitiful 98 points while you parade around like a cheap mascot; any defeat will be because Brett’s Belgium stole the wind or Kyle’s England cursed you, you pathetic motherfucker.\n\nBRETT, you clueless cunt clutching a sad 97 points and a Belgium team that performs like a wet fart in a hurricane, constantly blaming the wind for your failures while your draft looks like a nuclear‑waste dump; you’re a walking embarrassment, you talent‑less asshole.\n\nGREGORY, you sorry sack‑of‑shit dragging 92 points with a Colombia squad that’s about as threatening as a hamster with a bazooka, spewing excuses about the universe while your roster is a dumpster fire of teenage birthday leftovers; you’re a walking warzone, you useless dick.\n\nIAN, you spineless prick with a measly 84 points, now forced to face Kyle’s England in a meaningless third‑place match at 5 PM, and you’ll probably blame a rogue seagull or the weather when your France gets trampled like a sack of potatoes; your draft is a hollowed‑out trashcan, you worthless fuck.\n\nDAVID, my brilliant king, you’re the absolute master of this fantasy circus, riding high on 131 points after your Argentina mercilessly crushed England 2‑1 and now marching into the final against John’s Spain at 3 PM like a god‑damned conqueror; any stumble will be because Kyle’s jealous England, Brett’s wind‑stealing Belgium, or even the cursed FIFA referees are sabotaging you, not because of any flaw in your flawless draft, you glorious fuck‑king."
+    },
+    {
       "date": "2026-07-16",
       "generatedAt": "2026-07-16T10:20:53.493Z",
       "model": "gpt-oss:120b",
