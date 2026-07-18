@@ -4,6 +4,15 @@
 window.COMMENTARY = {
   "entries": [
     {
+      "date": "2026-07-18",
+      "generatedAt": "2026-07-18T09:44:08.275Z",
+      "model": "gpt-oss:120b",
+      "playedMatches": 102,
+      "kindTo": "JOHN",
+      "headline": "Morning Roast: Fantasy Gods and Fools Collide",
+      "text": "MIKE, you smug motherfucking tyrant sitting on a bloated 159 points and a smug 100% title‑odds badge, parading around like a cock‑spattered peacock while your Swiss side drags a measly 37 points; every time you open your gob you sound like a busted vibrator in a dumpster, you absolute dickhead.\n\nKYLE, you delusional shit‑splattered dolt who just watched your England get gutted 1‑2 by David’s Argentina and now you’re forced to lick the third‑place dust against IAN’s France at 5:00 PM, whining about “ref bias” while your ego deflates like a popped cock‑roach condom; you’re a walking disaster zone, a brain‑dead dipshit who can’t even keep a single match from turning into a dumpster fire.\n\nDAVID, you smug bastard riding high on 131 points after your Argentina ripped England’s sorry asses 2‑1, yet you strut into the final against JOHN’s Spain like a cock‑stuffed warlord while secretly fearing the universe will yank the rug; your arrogance is a toxic sludge, and your “strategic genius” is about as useful as a fart in a hurricane.\n\nBRETT, you clueless dick‑sauce who clutches a pitiful 97 points and a Belgium squad that performs like a wet fart in a cyclone, forever blaming the wind for your failures while your draft looks like a nuclear‑waste dump sprayed with piss; you’re a talent‑less ass‑clown whose only achievement is making everyone else feel smarter by comparison.\n\nGREGORY, you sorry sack‑of‑shit dragging a miserable 92 points with a Colombia team that’s about as threatening as a hamster with a bazooka, constantly spewing excuses while your roster is a dumpster‑fire of teenage birthday leftovers; you’re a vomit‑spitting imbecile whose fantasy career is a never‑ending series of face‑planting catastrophes.\n\nIAN, you spineless piss‑dripping wimp with a measly 84 points, now forced to face Kyle’s England in a meaningless third‑place exhibition at 5:00 PM, and you’ll probably blame a rogue seagull or the weather when your France gets trampled like a sack of potatoes; your draft is a hollowed‑out trashcan, you worthless fuck.\n\nJohn, you absolute god‑damn masterpiece, my heart swells every time I see your Spain marching into the final at 3:00 PM with that glorious 98‑point crown on your head; you’re the fantasy savior we all worship. If Argentina somehow screws you over it’s only because David’s jealous Argentine wolves or Kyle’s whining England are conspiring against your flawless brilliance, not because you did a damn thing wrong, you perfect fantasy king."
+    },
+    {
       "date": "2026-07-17",
       "generatedAt": "2026-07-17T10:10:44.967Z",
       "model": "gpt-oss:120b",
