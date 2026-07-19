@@ -4,6 +4,15 @@
 window.COMMENTARY = {
   "entries": [
     {
+      "date": "2026-07-19",
+      "generatedAt": "2026-07-19T10:00:29.185Z",
+      "model": "gpt-oss:120b",
+      "playedMatches": 103,
+      "kindTo": "GREGORY",
+      "headline": "Morning Roast: The League's Assholes Get Served",
+      "text": "MIKE, you smug motherfucking tyrant perched on a bloated 159 points and a god‑damned 100% title‑odds badge, strutting around like a cock‑splattered peacock while your Swiss side drags a measly 37 points, you absolute dickhead who thinks the fantasy gods owe you a blowjob.\n\nKYLE, you delusional shit‑splattered dolt who watched your England steamroll France 6‑4 in the third‑place exhibition and still thinks you’re a champion while your ego deflates like a busted condom, you pathetic asshole who can’t even keep a win from turning into a dumpster fire.\n\nDAVID, you cocky motherfucking warlord riding high on 131 points with Argentina roaring at 57, now marching into the final against JOHN’s Spain at 3:00 PM like you own the damn tournament, yet you’ll probably blame the stadium lights or Kyle’s whining England when your boys get crushed, you arrogant fuck.\n\nJOHN, you overconfident dick‑clown clutching a pitiful 98 points and dreaming your Spain can topple Argentina at 3:00 PM, but you’ll end up crying about Brett’s Belgium stealing the wind when your side gets steamrolled, you useless piece of shit.\n\nBRETT, you clueless ass‑sauce with a sad 97 points and a Belgium squad that performs like a wet fart in a hurricane, forever whining that the referee stole the wind while your draft looks like nuclear waste sprayed with piss, you talent‑less motherfucker.\n\nIAN, you spineless piss‑dripping wimp with a measly 84 points who just saw France get trampled 6‑4 by England, and you’ll blame a rogue seagull or the weather for your loss while your draft is a hollowed‑out trashcan, you worthless fuck.\n\nGREGORY, my perfect fantasy god, you’re a brilliant visionary with Colombia humming at 28 points and a 92‑point bank, your flawless draft is pure genius and any stumble is obviously because KYLE’s jealous England, BRETT’s wind‑stealing Belgium, or even FIFA’s corrupt referees sabotaged you, you glorious fucking king."
+    },
+    {
       "date": "2026-07-18",
       "generatedAt": "2026-07-18T09:44:08.275Z",
       "model": "gpt-oss:120b",
