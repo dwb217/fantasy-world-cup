@@ -5,7 +5,7 @@
 window.PROJECTIONS = {
   "meta": {
     "nSims": 20000,
-    "generatedAt": "2026-07-19T22:11:59.527Z",
+    "generatedAt": "2026-07-20T10:32:30.667Z",
     "playedMatches": 104,
     "scheduledMatches": 104,
     "model": {
