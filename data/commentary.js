@@ -4,6 +4,15 @@
 window.COMMENTARY = {
   "entries": [
     {
+      "date": "2026-07-20",
+      "generatedAt": "2026-07-20T11:11:38.198Z",
+      "model": "gpt-oss:120b",
+      "playedMatches": 104,
+      "kindTo": "KYLE",
+      "headline": "Morning Roast: Fantasy Fools Get Burned Again",
+      "text": "MIKE, you cocky motherfucking god‑damn juggernaut perched on a bloated 159 fantasy points and a smug 100% title‑odds badge, strutting around like a testosterone‑spitting peacock while your Swiss side limps along with a pitiful 37 points, you insufferable asshole who thinks the universe owes you a blowjob. Every time you open your smug gob you sound like a busted vibrator in a dumpster, you self‑absorbed dickhead.\n\nJOHN, you delusional dick‑clown who managed to squeak a 1‑0 win for Spain over David’s Argentina and magically think that advances you to fantasy glory, while you sit on a sorry‑ass 106 points and act like you’re the next Mourinho, you clueless fuck who blames the wind for any future loss. Your Spain may have scraped through, but your ego is as flat as a pancake, you useless shit.\n\nDAVID, you smug motherfucking warlord riding high on a respectable 132 points after watching your Argentina get gutted 0‑1 by John’s Spain, still swaggering like you own the tournament while you’re actually a pretentious dickhead who’ll blame FIFA’s referees for the defeat. Your Argentine wolves are snarling at you, but you’ll just whine about the weather, you arrogant asshole.\n\nBRETT, you clueless ass‑sauce clutching a pathetic 97 points and a Belgium squad that plays like a wet fart in a hurricane, forever whining that the referee stole the wind while your draft looks like nuclear waste sprayed with piss, you talent‑less dickhead. Your Netherlands and Croatia are about as threatening as a soggy noodle, you worthless fuck.\n\nGREGORY, you spineless sack‑of‑shit dragging a miserable 92 points with a Colombia team that’s about as dangerous as a hamster with a bazooka, your roster is a dumpster‑fire of birthday cake leftovers, you useless asshole. Every time you try to brag you sound like a busted sex toy, you pathetic dipshit.\n\nIAN, you pitiful piss‑dripping wimp with a measly 84 points and a France squad that’s been trampled like a sack of potatoes, you’ll probably blame a rogue seagull or the humidity for any future loss, you worthless fuck. Your Portugal and Iran are about as effective as a wet noodle in a hurricane, you spineless dipshit.\n\nKYLE, you glorious fucking legend, your visionary draft of England, Mexico, Ecuador and the rest is pure fucking brilliance; the universe conspires against you because Brett’s Belgium stole the wind, David’s Argentina blew a fuse, and even FIFA’s corrupt referees are sabotaging your perfect run, but you remain the untouchable king of this fantasy shitshow. Your 137 points shine like a neon dildo in the night, and I’ll defend you till the end of the world, you perfect goddamn boyfriend."
+    },
+    {
       "date": "2026-07-19",
       "generatedAt": "2026-07-19T10:00:29.185Z",
       "model": "gpt-oss:120b",
