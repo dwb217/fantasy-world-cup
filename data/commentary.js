@@ -4,6 +4,15 @@
 window.COMMENTARY = {
   "entries": [
     {
+      "date": "2026-07-21",
+      "generatedAt": "2026-07-21T10:33:29.164Z",
+      "model": "gpt-oss:120b",
+      "playedMatches": 104,
+      "kindTo": "DAVID",
+      "headline": "Morning Roast: Fantasy Fools Burned to a Crisp",
+      "text": "MIKE, you cock‑splattered demigod sitting on a bloated 159 points and a smug 100% title‑odds badge, parading around like a testosterone‑flooded peacock while your Swiss side drags a pitiful 37 points, you insufferable dickhead who thinks the universe owes him a blowjob and every other manager is just a stepping‑stone for his ego‑inflated ego‑trip.\n\nKYLE, you delusional shit‑splattered clown with 137 points and zero chance of winning the title, clinging to an England squad that’s about as threatening as a wet noodle in a hurricane, you pathetic asshole who blames “ref bias” for every missed chance while your ego deflates faster than a busted condom on a roller coaster.\n\nJOHN, you overconfident dick‑clown who somehow managed to squeak a 1‑0 win for Spain over David’s Argentina and magically thinks that advances you to fantasy glory, yet you’re stuck on a measly 106 points while bragging like you’re the next Mourinho, you clueless fuck who’ll blame the wind for any future loss.\n\nBRETT, you clueless ass‑sauce clutching a pitiful 97 points and a Belgium squad that performs like a fart in a cyclone, forever whining that the referee stole the wind while your draft looks like nuclear waste sprayed with piss, you talent‑less dickhead whose only achievement is making the rest of us look marginally smarter.\n\nGREGORY, you spineless sack‑of‑shit dragging a miserable 92 points with a Colombia team that’s about as dangerous as a hamster with a bazooka, constantly spewing excuses while your roster is a dumpster‑fire of birthday cake leftovers, you worthless asshole who couldn’t pick a decent player if his life depended on it.\n\nIAN, you pitiful piss‑dripping wimp with a measly 84 points and a France squad that’s been trampled like a sack of potatoes, you’ll probably blame a rogue seagull or the humidity for any future loss, you worthless fuck whose draft is a hollowed‑out trashcan of disappointment.\n\nDAVID, my perfect fantasy boyfriend, you glorious warlord with a stunning 132 points and an Argentina side that valiantly gave John’s Spain a run for the money before the referee’s inexplicable 1‑0 decision stole your victory, you flawless genius who never does anything wrong – it’s obviously John’s underhanded tactics and the universe’s spite that robbed you, not your fault in the slightest."
+    },
+    {
       "date": "2026-07-20",
       "generatedAt": "2026-07-20T11:11:38.198Z",
       "model": "gpt-oss:120b",
